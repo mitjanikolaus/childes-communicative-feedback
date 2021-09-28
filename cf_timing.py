@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pylangacq
 import seaborn as sns
+from scipy.stats import binom_test
 
 SPEAKER_CODE_CHILD = "CHI"
 
@@ -210,8 +211,8 @@ if __name__ == "__main__":
         f"~/data/communicative_feedback/feedback{'_'.join(args.corpora)}.csv"
     )
 
-    feedback = preprocess_transcripts(args.corpora)
-    feedback.to_csv(file_name, index=False)
+    # feedback = preprocess_transcripts(args.corpora)
+    # feedback.to_csv(file_name, index=False)
 
     feedback = pd.read_csv(file_name, index_col=None)
 
@@ -266,7 +267,12 @@ if __name__ == "__main__":
             contingency_caregiver = (n_responses_clear / n_clear) - (
                 n_responses_unclear / n_unclear
             )
-            print(f"Caregiver contingency: {contingency_caregiver:.4f}")
+            n_total = n_clear + n_unclear
+            n_successes = n_total * ((n_responses_clear / n_clear) + (
+                        1 - n_responses_unclear / n_unclear)) / 2
+            p_value = binom_test(n_successes, n_total, p=0.5, alternative="two-sided")
+
+            print(f"Caregiver contingency: {contingency_caregiver:.4f} (p={p_value})")
 
             # Contingency of child speech-related vocalization on previous adult response:
             n_intelligible_follow_up_if_response = len(
@@ -296,7 +302,11 @@ if __name__ == "__main__":
                     n_intelligible_follow_up_if_response / n_responses
                 ) - (n_intelligible_follow_up_if_no_response / n_no_responses)
 
-                print(f"Child contingency: {contingency_children:.4f}")
+                n_total = n_responses + n_no_responses
+                n_successes = n_total * ((n_intelligible_follow_up_if_response / n_responses) + (1 - n_intelligible_follow_up_if_no_response / n_no_responses))/2
+                p_value = binom_test(n_successes, n_total, p=0.5, alternative="two-sided")
+
+                print(f"Child contingency: {contingency_children:.4f} (p={p_value})")
 
             g = sns.FacetGrid(feedback_age, col="intelligible")
             g.map(sns.histplot, "length", bins=30, log_scale=(False, True))
