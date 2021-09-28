@@ -98,6 +98,7 @@ def find_feedback_occurrences(transcripts):
         clean=True,
         time_marker=True,
         raise_error_on_missing_time_marker=False,
+        phon=True # Setting phon to true to keep "xxx" and "yyy" in utterances
     )
 
     # Filter out empty transcripts and transcripts without age information
@@ -182,10 +183,27 @@ def remove_babbling(utterance):
             word.endswith(CODE_BABBLING)
             or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
             or word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM)
+            or word == CODE_UNCLEAR
+            or word == CODE_PHONETIC
         ):
             filtered_utterance.append(word)
 
     return " ".join(filtered_utterance)
+
+
+def is_partially_intelligible(utterance):
+    utt_without_babbling = remove_babbling(utterance)
+
+    if len(utt_without_babbling) == 0:
+        raise ValueError("Empty utterance!")
+
+    if len(utt_without_babbling) == 1:
+        return False
+
+    if len(utt_without_babbling) != len(utterance):
+        return True
+
+    return False
 
 
 def preprocess_transcripts(corpora):
@@ -218,6 +236,11 @@ if __name__ == "__main__":
 
     # Remove feedback with too long negative pauses
     feedback = feedback[(feedback.length > MAX_NEG_PAUSE_LENGTH)]
+
+    # Remove utterances that are partially intelligible
+    feedback["partially_intelligible"] = feedback.utt_child.apply(is_partially_intelligible)
+    feedback["follow_up_partially_intelligible"] = feedback.utt_child_follow_up.apply(is_partially_intelligible)
+    feedback = feedback[~(feedback.partially_intelligible | feedback.follow_up_partially_intelligible)]
 
     # Remove babbling
     feedback["utt_child"] = feedback.utt_child.apply(remove_babbling)
