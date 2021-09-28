@@ -273,24 +273,28 @@ if __name__ == "__main__":
                 feedback_age[
                     feedback_age.intelligible_follow_up
                     & feedback_age.intelligible
-                    & (feedback_age.length <= 1)
+                    & (feedback_age.length <= RESPONSE_THRESHOLD)
                 ]
             )
-            n_responses = len(feedback_age[feedback_age.length <= 1])
+            n_responses = len(
+                feedback_age[feedback_age.intelligible & (feedback_age.length <= RESPONSE_THRESHOLD)]
+            )
 
             n_intelligible_follow_up_if_no_response = len(
                 feedback_age[
                     feedback_age.intelligible_follow_up
                     & feedback_age.intelligible
-                    & (feedback_age.length > 1)
+                    & (feedback_age.length > RESPONSE_THRESHOLD)
                 ]
             )
-            n_no_responses = len(feedback_age[feedback_age.length > 1])
+            n_no_responses = len(
+                feedback_age[feedback_age.intelligible & (feedback_age.length > RESPONSE_THRESHOLD)]
+            )
 
             if (n_responses > 0) and (n_no_responses > 0):
                 contingency_children = (
                     n_intelligible_follow_up_if_response / n_responses
-                ) / (n_intelligible_follow_up_if_no_response / n_no_responses)
+                ) - (n_intelligible_follow_up_if_no_response / n_no_responses)
 
                 print(f"Child contingency: {contingency_children:.4f}")
 
