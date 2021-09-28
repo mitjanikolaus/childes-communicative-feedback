@@ -224,10 +224,8 @@ if __name__ == "__main__":
         remove_babbling
     )
 
-    feedback["intelligible"] = ~(feedback.utt_child == EMPTY_UTTERANCE)
-    feedback["intelligible_follow_up"] = ~(
-        feedback.utt_child_follow_up == EMPTY_UTTERANCE
-    )
+    feedback["intelligible"] = feedback.utt_child != EMPTY_UTTERANCE
+    feedback["intelligible_follow_up"] = feedback.utt_child_follow_up != EMPTY_UTTERANCE
 
     for age in AGE_BINS:
         feedback_age = feedback[
@@ -254,7 +252,7 @@ if __name__ == "__main__":
             # Caregiver contingency:
             n_responses_clear = len(
                 feedback_age[
-                    (feedback_age.intelligible)
+                    feedback_age.intelligible
                     & (feedback_age.length <= RESPONSE_THRESHOLD)
                 ]
             )
@@ -287,16 +285,13 @@ if __name__ == "__main__":
                     & (feedback_age.length > 1)
                 ]
             )
-            n_no_respones = len(feedback_age[feedback_age.length > 1])
+            n_no_responses = len(feedback_age[feedback_age.length > 1])
 
-            if (
-                (n_responses > 0)
-                and (n_no_respones > 0)
-                and (n_intelligible_follow_up_if_no_response > 0)
-            ):
+            if (n_responses > 0) and (n_no_responses > 0):
                 contingency_children = (
                     n_intelligible_follow_up_if_response / n_responses
-                ) / (n_intelligible_follow_up_if_no_response / n_no_respones)
+                ) / (n_intelligible_follow_up_if_no_response / n_no_responses)
+
                 print(f"Child contingency: {contingency_children:.4f}")
 
             g = sns.FacetGrid(feedback_age, col="intelligible")
