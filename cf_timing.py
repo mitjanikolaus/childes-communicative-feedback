@@ -1,16 +1,10 @@
 import argparse
-import math
 import os
-from itertools import islice
-
-import numpy as np
-import pandas as pd
 
 import matplotlib.pyplot as plt
+import pandas as pd
 import pylangacq
-
 import seaborn as sns
-from tqdm import tqdm
 
 SPEAKER_CODE_CHILD = "CHI"
 
@@ -32,8 +26,8 @@ CODES_UNINTELLIGIBLE = [CODE_UNCLEAR, CODE_PHONETIC]
 EMPTY_UTTERANCE = "."
 CODE_BABBLING = "@b"
 CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION = "@u"
-
 CODE_PHONOLGICAL_CONSISTENT_FORM = "@p"
+
 CODE_CHILD_INVENTED_FORM = "@c"
 CODE_NEOLOGISM = "@n"
 
@@ -45,13 +39,13 @@ AGE_BINS = [24]
 AGE_BINS_WINDOW = 100
 
 # 1s response threshold
-RESPONSE_THRESHOLD = 1000 #ms
+RESPONSE_THRESHOLD = 1000   # ms
 
 # TODO check that pause is not too long: what is a reasonable value?
 # 10 seconds
 MAX_NEG_PAUSE_LENGTH = -10 * 1000
 
-DEFAULT_CORPORA = ["Bernstein", "Brent", "Nelson", "Tommerdahl", "Providence"]
+DEFAULT_CORPORA = ["Bloom", "Braunwald", "Soderstrom", "Weist", "NewmanRatner", "Snow", "Thomas", "Peters", "MacWhinney", "Sachs", "McCune", "Bernstein", "Brent", "Nelson", "Tommerdahl", "Providence"]
 
 
 def parse_args():
@@ -72,15 +66,22 @@ def find_feedback_occurrences(transcripts):
 
     ages = transcripts.age(months=True)
 
+    # Get target child names (prepend corpus name to make the names unique)
+    target_child_names = {file: participants[SPEAKER_CODE_CHILD]["corpus"] + "_" + participants[SPEAKER_CODE_CHILD]["participant_name"] for file, participants in transcripts.participants().items() if SPEAKER_CODE_CHILD in participants}
+
     utts_child = transcripts.utterances(by_files=True, clean=True, time_marker=True, raise_error_on_missing_time_marker=False)
 
     # Filter out empty transcripts and transcripts without age information
     utts_child = {file: utts for file, utts in utts_child.items() if (len(utts) > 0) and (ages[file] is not None)}
 
+    # Filter out transcripts without child information
+    utts_child = {file: utts for file, utts in utts_child.items() if file in target_child_names}
+
     for file, utts in utts_child.items():
         print(file)
         age = ages[file]
-        print("Child age: ", round(age))
+        child_name = target_child_names[file]
+        print(f"Child: {child_name} Age: ", round(age))
 
         # Make a dataframe
         utts = pd.DataFrame([{"speaker_code": speaker, "utt": utt, "start_time": timing[0], "end_time": timing[1]} for speaker, utt, timing
@@ -106,12 +107,12 @@ def find_feedback_occurrences(transcripts):
                 if pause_length > 0:
                     print(f"{utt1.speaker_code}: {utt1.utt}")
                     print(f"{utt2.speaker_code}: {utt2.utt}")
-                    print(f"{utt3.speaker_code}: {utt3.utt}")
                     print(f"Pause: {pause_length}\n")
+                    print(f"{utt3.speaker_code}: {utt3.utt}")
                 feedback_occ.append({
                     "length": pause_length,
                     "age": round(age),
-                    # "child_name": child_name,
+                    "child_name": child_name,
                     "utt_child": utt1.utt,
                     "utt_car": utt2.utt,
                     "utt_child_follow_up": utt3.utt,
@@ -126,7 +127,9 @@ def remove_babbling(utterance):
     words = utterance.split(" ")
     filtered_utterance = []
     for word in words:
-        if not (word.endswith(CODE_BABBLING) or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)):
+        #TODO:  word.endswith(CODE_CHILD_INVENTED_FORM)?
+        if not (word.endswith(CODE_BABBLING) or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION) or
+                word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM)):
             filtered_utterance.append(word)
 
     return " ".join(filtered_utterance)
@@ -137,12 +140,9 @@ def preprocess_transcripts(corpora):
     for corpus in corpora:
         print(f"Reading transcripts of {corpus} corpus.. ", end="")
         transcripts = pylangacq.read_chat(
-            os.path.expanduser(f"~/data/CHILDES/{corpus}/*.cha")
+            os.path.expanduser(f"~/data/CHILDES/{corpus}/*.cha"), parse_morphology_information=False
         )
         print("done.")
-        # child_names = [header['Participants'][SPEAKER_CODE_CHILD]["participant_name"] for header in
-        #                transcripts.headers().values()]
-        # print(f"Children: {child_names}")
         feedback_transcript = find_feedback_occurrences(transcripts)
 
         feedback = feedback.append(feedback_transcript, ignore_index=True)
@@ -203,4 +203,3 @@ if __name__ == "__main__":
             g = sns.FacetGrid(feedback_age, col="intelligible")
             g.map(sns.histplot, "length", bins=30, log_scale=(False, True))
             plt.show()
-
