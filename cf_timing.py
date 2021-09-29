@@ -283,7 +283,7 @@ if __name__ == "__main__":
             n_clear = len(feedback_age[feedback_age.intelligible])
 
             n_responses_unclear = len(
-                feedback_age[~feedback_age.intelligible & (feedback_age.length <= 1)]
+                feedback_age[~feedback_age.intelligible & (feedback_age.length <= RESPONSE_THRESHOLD)]
             )
             n_unclear = len(feedback_age[~feedback_age.intelligible])
 
