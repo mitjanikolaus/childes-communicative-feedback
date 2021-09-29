@@ -28,6 +28,8 @@ EMPTY_UTTERANCE = "."
 CODE_BABBLING = "@b"
 CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION = "@u"
 CODE_PHONOLGICAL_CONSISTENT_FORM = "@p"
+CODE_PHONOLOGICAL_FRAGMENT = "&"
+CODE_FILLED_PAUSE = "&-"
 
 CODE_CHILD_INVENTED_FORM = "@c"
 CODE_NEOLOGISM = "@n"
@@ -42,9 +44,14 @@ AGE_BINS_WINDOW = 100
 # 1s response threshold
 RESPONSE_THRESHOLD = 1000  # ms
 
+# Label for partially intelligible utterances
+# Set to True to count as intelligible, False to count as unintelligible or None to exclude these utterances from
+# the analysis
+LABEL_PARTIALLY_INTELLIGIBLE = None
+
 # TODO check that pause is not too long: what is a reasonable value?
-# 10 seconds
-MAX_NEG_PAUSE_LENGTH = -10 * 1000
+# 1 second
+MAX_NEG_PAUSE_LENGTH = -1 * 1000    # ms
 
 DEFAULT_CORPORA = [
     "Bloom",
@@ -183,6 +190,8 @@ def remove_babbling(utterance):
             word.endswith(CODE_BABBLING)
             or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
             or word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM)
+            or word.startswith(CODE_PHONOLOGICAL_FRAGMENT)
+            or word.startswith(CODE_FILLED_PAUSE)
             or word == CODE_UNCLEAR
             or word == CODE_PHONETIC
         ):
@@ -191,19 +200,20 @@ def remove_babbling(utterance):
     return " ".join(filtered_utterance)
 
 
-def is_partially_intelligible(utterance):
+def is_intelligible(utterance):
     utt_without_babbling = remove_babbling(utterance)
 
     if len(utt_without_babbling) == 0:
         raise ValueError("Empty utterance!")
 
-    if len(utt_without_babbling) == 1:
+    if utt_without_babbling == EMPTY_UTTERANCE:
         return False
 
-    if len(utt_without_babbling) != len(utterance):
-        return True
+    is_partly_intelligible = len(utt_without_babbling) != len(utterance)
+    if is_partly_intelligible:
+        return LABEL_PARTIALLY_INTELLIGIBLE
 
-    return False
+    return True
 
 
 def preprocess_transcripts(corpora):
@@ -235,21 +245,14 @@ if __name__ == "__main__":
     feedback = pd.read_csv(file_name, index_col=None)
 
     # Remove feedback with too long negative pauses
-    feedback = feedback[(feedback.length > MAX_NEG_PAUSE_LENGTH)]
+    feedback = feedback[(feedback.length >= MAX_NEG_PAUSE_LENGTH)]
 
-    # Remove utterances that are partially intelligible
-    feedback["partially_intelligible"] = feedback.utt_child.apply(is_partially_intelligible)
-    feedback["follow_up_partially_intelligible"] = feedback.utt_child_follow_up.apply(is_partially_intelligible)
-    feedback = feedback[~(feedback.partially_intelligible | feedback.follow_up_partially_intelligible)]
+    # Label utterances as intelligible or unintelligible
+    feedback["intelligible"] = feedback.utt_child.apply(is_intelligible)
+    feedback["intelligible_follow_up"] = feedback.utt_child_follow_up.apply(is_intelligible)
 
-    # Remove babbling
-    feedback["utt_child"] = feedback.utt_child.apply(remove_babbling)
-    feedback["utt_child_follow_up"] = feedback.utt_child_follow_up.apply(
-        remove_babbling
-    )
-
-    feedback["intelligible"] = feedback.utt_child != EMPTY_UTTERANCE
-    feedback["intelligible_follow_up"] = feedback.utt_child_follow_up != EMPTY_UTTERANCE
+    # Remove NaNs
+    feedback = feedback.dropna(subset=("intelligible", "intelligible_follow_up"))
 
     for age in AGE_BINS:
         feedback_age = feedback[
@@ -264,10 +267,10 @@ if __name__ == "__main__":
                 feedback_age.intelligible
             ].length.mean()
             print(
-                f"Mean pause length after intellgible utts: {mean_length_intelligible:.3f}ms"
+                f"Mean pause length after intelligible utts: {mean_length_intelligible:.3f}ms"
             )
             mean_length_unintelligible = feedback_age[
-                ~feedback_age.intelligible
+                feedback_age.intelligible == False
             ].length.mean()
             print(
                 f"Mean pause length after unintelligible utts: {mean_length_unintelligible:.3f}ms"
@@ -283,9 +286,9 @@ if __name__ == "__main__":
             n_clear = len(feedback_age[feedback_age.intelligible])
 
             n_responses_unclear = len(
-                feedback_age[~feedback_age.intelligible & (feedback_age.length <= RESPONSE_THRESHOLD)]
+                feedback_age[(feedback_age.intelligible == False) & (feedback_age.length <= RESPONSE_THRESHOLD)]
             )
-            n_unclear = len(feedback_age[~feedback_age.intelligible])
+            n_unclear = len(feedback_age[feedback_age.intelligible == False])
 
             contingency_caregiver = (n_responses_clear / n_clear) - (
                 n_responses_unclear / n_unclear
@@ -324,6 +327,8 @@ if __name__ == "__main__":
                 contingency_children = (
                     n_intelligible_follow_up_if_response / n_responses
                 ) - (n_intelligible_follow_up_if_no_response / n_no_responses)
+
+                # contingency_children_negative_case = n_unintelligible_follow_up_if_respons
 
                 n_total = n_responses + n_no_responses
                 n_successes = n_total * ((n_intelligible_follow_up_if_response / n_responses) + (1 - n_intelligible_follow_up_if_no_response / n_no_responses))/2
