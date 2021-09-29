@@ -51,7 +51,7 @@ LABEL_PARTIALLY_INTELLIGIBLE = None
 
 # TODO check that pause is not too long: what is a reasonable value?
 # 1 second
-MAX_NEG_PAUSE_LENGTH = -1 * 1000    # ms
+MAX_NEG_PAUSE_LENGTH = -1 * 1000  # ms
 
 DEFAULT_CORPORA = [
     "Bloom",
@@ -105,7 +105,7 @@ def find_feedback_occurrences(transcripts):
         clean=True,
         time_marker=True,
         raise_error_on_missing_time_marker=False,
-        phon=True # Setting phon to true to keep "xxx" and "yyy" in utterances
+        phon=True,  # Setting phon to true to keep "xxx" and "yyy" in utterances
     )
 
     # Filter out empty transcripts and transcripts without age information
@@ -232,6 +232,15 @@ def preprocess_transcripts(corpora):
     return feedback
 
 
+def calc_p_value(n_success_if_good, n_success_if_bad, n_good, n_bad):
+    n_total = n_good + n_bad
+    n_successes = (
+        n_total * ((n_success_if_good / n_good) + (1 - n_success_if_bad / n_bad)) / 2
+    )
+    p_value = binom_test(n_successes, n_total, p=0.5, alternative="two-sided")
+    return p_value
+
+
 if __name__ == "__main__":
     args = parse_args()
 
@@ -248,11 +257,15 @@ if __name__ == "__main__":
     feedback = feedback[(feedback.length >= MAX_NEG_PAUSE_LENGTH)]
 
     # Label utterances as intelligible or unintelligible
-    feedback["intelligible"] = feedback.utt_child.apply(is_intelligible)
-    feedback["intelligible_follow_up"] = feedback.utt_child_follow_up.apply(is_intelligible)
+    feedback["utt_child_intelligible"] = feedback.utt_child.apply(is_intelligible)
+    feedback["follow_up_intelligible"] = feedback.utt_child_follow_up.apply(
+        is_intelligible
+    )
 
     # Remove NaNs
-    feedback = feedback.dropna(subset=("intelligible", "intelligible_follow_up"))
+    feedback = feedback.dropna(
+        subset=("utt_child_intelligible", "follow_up_intelligible")
+    )
 
     for age in AGE_BINS:
         feedback_age = feedback[
@@ -264,13 +277,13 @@ if __name__ == "__main__":
         )
         if len(feedback_age) > 0:
             mean_length_intelligible = feedback_age[
-                feedback_age.intelligible
+                feedback_age.utt_child_intelligible
             ].length.mean()
             print(
                 f"Mean pause length after intelligible utts: {mean_length_intelligible:.3f}ms"
             )
             mean_length_unintelligible = feedback_age[
-                feedback_age.intelligible == False
+                feedback_age.utt_child_intelligible == False
             ].length.mean()
             print(
                 f"Mean pause length after unintelligible utts: {mean_length_unintelligible:.3f}ms"
@@ -279,63 +292,162 @@ if __name__ == "__main__":
             # Caregiver contingency:
             n_responses_clear = len(
                 feedback_age[
-                    feedback_age.intelligible
+                    feedback_age.utt_child_intelligible
                     & (feedback_age.length <= RESPONSE_THRESHOLD)
                 ]
             )
-            n_clear = len(feedback_age[feedback_age.intelligible])
+            n_clear = len(feedback_age[feedback_age.utt_child_intelligible])
 
             n_responses_unclear = len(
-                feedback_age[(feedback_age.intelligible == False) & (feedback_age.length <= RESPONSE_THRESHOLD)]
+                feedback_age[
+                    (feedback_age.utt_child_intelligible == False)
+                    & (feedback_age.length <= RESPONSE_THRESHOLD)
+                ]
             )
-            n_unclear = len(feedback_age[feedback_age.intelligible == False])
+            n_unclear = len(feedback_age[feedback_age.utt_child_intelligible == False])
 
             contingency_caregiver = (n_responses_clear / n_clear) - (
                 n_responses_unclear / n_unclear
             )
-            n_total = n_clear + n_unclear
-            n_successes = n_total * ((n_responses_clear / n_clear) + (
-                        1 - n_responses_unclear / n_unclear)) / 2
-            p_value = binom_test(n_successes, n_total, p=0.5, alternative="two-sided")
-
+            p_value = calc_p_value(
+                n_responses_clear, n_responses_unclear, n_clear, n_unclear
+            )
             print(f"Caregiver contingency: {contingency_caregiver:.4f} (p={p_value})")
 
-            # Contingency of child speech-related vocalization on previous adult response:
-            n_intelligible_follow_up_if_response = len(
+            # Contingency of child speech-related vocalization on previous adult response (positive case):
+            n_follow_up_intelligible_if_response_to_intelligible = len(
                 feedback_age[
-                    feedback_age.intelligible_follow_up
-                    & feedback_age.intelligible
+                    feedback_age.follow_up_intelligible
+                    & feedback_age.utt_child_intelligible
                     & (feedback_age.length <= RESPONSE_THRESHOLD)
                 ]
             )
-            n_responses = len(
-                feedback_age[feedback_age.intelligible & (feedback_age.length <= RESPONSE_THRESHOLD)]
+            n_responses_to_intelligible = len(
+                feedback_age[
+                    feedback_age.utt_child_intelligible
+                    & (feedback_age.length <= RESPONSE_THRESHOLD)
+                ]
             )
 
-            n_intelligible_follow_up_if_no_response = len(
+            n_follow_up_intelligible_if_no_response_to_intelligible = len(
                 feedback_age[
-                    feedback_age.intelligible_follow_up
-                    & feedback_age.intelligible
+                    feedback_age.follow_up_intelligible
+                    & feedback_age.utt_child_intelligible
                     & (feedback_age.length > RESPONSE_THRESHOLD)
                 ]
             )
-            n_no_responses = len(
-                feedback_age[feedback_age.intelligible & (feedback_age.length > RESPONSE_THRESHOLD)]
+            n_no_responses_to_intelligible = len(
+                feedback_age[
+                    feedback_age.utt_child_intelligible
+                    & (feedback_age.length > RESPONSE_THRESHOLD)
+                ]
             )
 
-            if (n_responses > 0) and (n_no_responses > 0):
-                contingency_children = (
-                    n_intelligible_follow_up_if_response / n_responses
-                ) - (n_intelligible_follow_up_if_no_response / n_no_responses)
+            # Contingency of child speech-related vocalization on previous adult response (negative case):
+            n_follow_up_intelligible_if_no_response_to_unintelligible = len(
+                feedback_age[
+                    feedback_age.follow_up_intelligible
+                    & (feedback_age.utt_child_intelligible == False)
+                    & (feedback_age.length > RESPONSE_THRESHOLD)
+                ]
+            )
+            n_no_responses_to_unintelligible = len(
+                feedback_age[
+                    (feedback_age.utt_child_intelligible == False)
+                    & (feedback_age.length > RESPONSE_THRESHOLD)
+                ]
+            )
 
-                # contingency_children_negative_case = n_unintelligible_follow_up_if_respons
+            n_follow_up_intelligible_if_response_to_unintelligible = len(
+                feedback_age[
+                    feedback_age.follow_up_intelligible
+                    & (feedback_age.utt_child_intelligible == False)
+                    & (feedback_age.length <= RESPONSE_THRESHOLD)
+                ]
+            )
+            n_responses_to_unintelligible = len(
+                feedback_age[
+                    (feedback_age.utt_child_intelligible == False)
+                    & (feedback_age.length <= RESPONSE_THRESHOLD)
+                ]
+            )
 
-                n_total = n_responses + n_no_responses
-                n_successes = n_total * ((n_intelligible_follow_up_if_response / n_responses) + (1 - n_intelligible_follow_up_if_no_response / n_no_responses))/2
-                p_value = binom_test(n_successes, n_total, p=0.5, alternative="two-sided")
+            if (
+                (n_no_responses_to_unintelligible > 0)
+                and (n_responses_to_unintelligible > 0)
+                and (n_responses_to_intelligible > 0)
+                and (n_no_responses_to_intelligible > 0)
+            ):
+                ratio_follow_up_intelligible_if_response_to_intelligible = (
+                    n_follow_up_intelligible_if_response_to_intelligible
+                    / n_responses_to_intelligible
+                )
+                ratio_follow_up_intelligible_if_no_response_to_intelligible = (
+                    n_follow_up_intelligible_if_no_response_to_intelligible
+                    / n_no_responses_to_intelligible
+                )
+                contingency_children_pos_case = (
+                    ratio_follow_up_intelligible_if_response_to_intelligible
+                    - ratio_follow_up_intelligible_if_no_response_to_intelligible
+                )
 
-                print(f"Child contingency: {contingency_children:.4f} (p={p_value})")
+                p_value = calc_p_value(
+                    n_follow_up_intelligible_if_response_to_intelligible,
+                    n_follow_up_intelligible_if_no_response_to_intelligible,
+                    n_responses_to_intelligible,
+                    n_no_responses_to_intelligible,
+                )
+                print(
+                    f"Child contingency (positive case): {contingency_children_pos_case:.4f} (p={p_value})"
+                )
 
-            g = sns.FacetGrid(feedback_age, col="intelligible")
+                ratio_follow_up_intelligible_if_no_response_to_unintelligible = (
+                    n_follow_up_intelligible_if_no_response_to_unintelligible
+                    / n_no_responses_to_unintelligible
+                )
+                ratio_follow_up_intelligible_if_response_to_unintelligible = (
+                    n_follow_up_intelligible_if_response_to_unintelligible
+                    / n_responses_to_unintelligible
+                )
+                contingency_children_neg_case = (
+                    ratio_follow_up_intelligible_if_no_response_to_unintelligible
+                    - ratio_follow_up_intelligible_if_response_to_unintelligible
+                )
+
+                p_value = calc_p_value(
+                    n_follow_up_intelligible_if_no_response_to_unintelligible,
+                    n_follow_up_intelligible_if_response_to_unintelligible,
+                    n_no_responses_to_unintelligible,
+                    n_responses_to_unintelligible,
+                )
+                print(
+                    f"Child contingency (negative case): {contingency_children_neg_case:.4f} (p={p_value})"
+                )
+
+                ratio_contingent_follow_ups = (
+                    n_follow_up_intelligible_if_response_to_intelligible
+                    + n_follow_up_intelligible_if_no_response_to_unintelligible
+                ) / (n_responses_to_intelligible + n_no_responses_to_unintelligible)
+                ratio_incontingent_follow_ups = (
+                    n_follow_up_intelligible_if_no_response_to_intelligible
+                    + n_follow_up_intelligible_if_response_to_unintelligible
+                ) / (n_no_responses_to_intelligible + n_responses_to_unintelligible)
+
+                child_contingency_both_cases = (
+                    ratio_contingent_follow_ups - ratio_incontingent_follow_ups
+                )
+                p_value = calc_p_value(
+                    n_follow_up_intelligible_if_response_to_intelligible
+                    + n_follow_up_intelligible_if_no_response_to_unintelligible,
+                    n_follow_up_intelligible_if_no_response_to_intelligible
+                    + n_follow_up_intelligible_if_response_to_unintelligible,
+                    n_responses_to_intelligible + n_no_responses_to_unintelligible,
+                    n_no_responses_to_intelligible + n_responses_to_unintelligible,
+                )
+                print(
+                    f"Child contingency (both cases): {child_contingency_both_cases:.4f} (p={p_value})"
+                )
+
+            g = sns.FacetGrid(feedback_age, col="utt_child_intelligible")
             g.map(sns.histplot, "length", bins=30, log_scale=(False, True))
             plt.show()
