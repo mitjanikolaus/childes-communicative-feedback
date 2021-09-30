@@ -14,8 +14,7 @@ nltk.download("words")
 
 SPEAKER_CODE_CHILD = "CHI"
 
-# TODO: check grandparents?
-SPEAKER_CODES_CAREGIVER = ["MOT", "FAT"]
+SPEAKER_CODES_CAREGIVER = ["MOT", "FAT", "DAD", "MOM", "GRA", "GRF", "GRM", "CAR"]
 
 TOKENS_PUNCTUATION = [".", "?", "!"]
 
