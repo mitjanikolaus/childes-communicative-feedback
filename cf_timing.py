@@ -17,8 +17,7 @@ SPEAKER_CODE_CHILD = "CHI"
 # TODO: check grandparents?
 SPEAKER_CODES_CAREGIVER = ["MOT", "FAT"]
 
-# minimum distance for longitudinal study (in months)
-MIN_DISTANCE_LONGITUDINAL = 3
+TOKENS_PUNCTUATION = [".", "?", "!"]
 
 # Unintelligible words with an unclear phonetic shape should be transcribed as
 CODE_UNINTELLIGIBLE = "xxx"
@@ -70,6 +69,9 @@ LABEL_PARTIALLY_INTELLIGIBLE = None
 # 1 second
 MAX_NEG_PAUSE_LENGTH = -1 * 1000  # ms
 
+# Minimal response time variance for a corpus to be included in the analysis
+CORPUS_INCLUSION_RESPONSE_TIME_VARIANCE_THRESHOLD = 1000  # ms
+
 CANDIDATE_CORPORA = [
     "Braunwald",
     "Soderstrom",
@@ -86,24 +88,6 @@ CANDIDATE_CORPORA = [
     "Providence",
 ]
 
-DEFAULT_SELECTED_CORPORA = [
-    "Braunwald",
-    "Soderstrom",
-    # "Weist",    # TODO not much variance?
-    # "NewmanRatner", # TODO not much variance?
-    # "Snow", # TODO not much variance?
-    "Thomas",
-    "Peters", #decent variance
-    "MacWhinney", # decent variance
-    "Sachs",  # decent variance
-    # "Bernstein", #short corpus
-    "Brent",
-    # "Nelson",  #short corpus
-    # "Providence",# TODO not much variance?
-]
-
-
-
 
 def parse_args():
     argparser = argparse.ArgumentParser()
@@ -111,7 +95,9 @@ def parse_args():
         "--corpora",
         nargs="+",
         type=str,
-        default=DEFAULT_SELECTED_CORPORA,
+        required=False,
+        choices=CANDIDATE_CORPORA,
+        help="Corpora to analyze. If not given, corpora are selected based on a response time variance threshold.",
     )
     args = argparser.parse_args()
 
@@ -269,7 +255,9 @@ def remove_babbling(utterance):
 
 
 def remove_trailing_punctuation(utterance):
-    assert utterance[-1] in [".", "?", "!"], f"No trailing punctuation in utterance '{utterance}'!"
+    assert (
+        utterance[-1] in TOKENS_PUNCTUATION
+    ), f"No trailing punctuation in utterance '{utterance}'!"
     return utterance[:-1]
 
 
@@ -314,20 +302,30 @@ def calc_p_value(n_success_if_good, n_success_if_bad, n_good, n_bad):
 if __name__ == "__main__":
     args = parse_args()
 
-    file_name = os.path.expanduser(
-        f"~/data/communicative_feedback/feedback.csv"
-    )
+    file_name = os.path.expanduser(f"~/data/communicative_feedback/feedback.csv")
 
     # feedback = preprocess_transcripts(CANDIDATE_CORPORA)
     # feedback.to_csv(file_name, index=False)
 
     feedback = pd.read_csv(file_name, index_col=None)
 
-    # Filter corpora
-    feedback = feedback[feedback.corpus.isin(args.corpora)]
-
     # Remove feedback with too long negative pauses
     feedback = feedback[(feedback.length >= MAX_NEG_PAUSE_LENGTH)]
+
+    if not args.corpora:
+        print(
+            f"No corpora given, selecting based on response time variance "
+            f"(minimum {CORPUS_INCLUSION_RESPONSE_TIME_VARIANCE_THRESHOLD}ms standard deviation)"
+        )
+        args.corpora = []
+        for corpus in CANDIDATE_CORPORA:
+            stddev = feedback[feedback.corpus == corpus].length.values.std()
+            if stddev > CORPUS_INCLUSION_RESPONSE_TIME_VARIANCE_THRESHOLD:
+                args.corpora.append(corpus)
+    print(f"Corpora included in analysis: {args.corpora}")
+
+    # Filter corpora
+    feedback = feedback[feedback.corpus.isin(args.corpora)]
 
     # Clean utterances
     feedback["utt_child"] = feedback.utt_child.apply(clean_utterance_from_nonspeech)
@@ -393,13 +391,18 @@ if __name__ == "__main__":
                     & (feedback_age.length <= RESPONSE_THRESHOLD)
                 ]
             )
-            n_unintelligible = len(feedback_age[feedback_age.utt_child_intelligible == False])
+            n_unintelligible = len(
+                feedback_age[feedback_age.utt_child_intelligible == False]
+            )
 
             contingency_caregiver = (n_responses_intelligible / n_intelligible) - (
-                    n_responses_unintelligible / n_unintelligible
+                n_responses_unintelligible / n_unintelligible
             )
             p_value = calc_p_value(
-                n_responses_intelligible, n_responses_unintelligible, n_intelligible, n_unintelligible
+                n_responses_intelligible,
+                n_responses_unintelligible,
+                n_intelligible,
+                n_unintelligible,
             )
             print(f"Caregiver contingency: {contingency_caregiver:.4f} (p={p_value})")
 
