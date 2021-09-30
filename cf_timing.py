@@ -5,7 +5,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pylangacq
 import seaborn as sns
+import numpy as np
 from scipy.stats import binom_test
+
+import nltk
+
+nltk.download("words")
 
 SPEAKER_CODE_CHILD = "CHI"
 
@@ -16,21 +21,33 @@ SPEAKER_CODES_CAREGIVER = ["MOT", "FAT"]
 MIN_DISTANCE_LONGITUDINAL = 3
 
 # Unintelligible words with an unclear phonetic shape should be transcribed as
-CODE_UNCLEAR = "xxx"
+CODE_UNINTELLIGIBLE = "xxx"
 
 # Use the symbol yyy when you plan to code all material phonologically on a %pho line.
 # (usually used when utterance cannot be matched to particular words)
 CODE_PHONETIC = "yyy"
 
-CODES_UNINTELLIGIBLE = [CODE_UNCLEAR, CODE_PHONETIC]
+CODES_UNINTELLIGIBLE = [CODE_UNINTELLIGIBLE, CODE_PHONETIC]
 
-EMPTY_UTTERANCE = "."
 CODE_BABBLING = "@b"
 CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION = "@u"
+CODE_INTERJECTION = "@i"
 CODE_PHONOLGICAL_CONSISTENT_FORM = "@p"
 CODE_PHONOLOGICAL_FRAGMENT = "&"
 CODE_FILLED_PAUSE = "&-"
 
+# excluded from analysis
+EMPTY_UTTERANCE = ""
+CODE_SIMPLE_EVENT = "&="
+CODE_UNTRANSCRIBED = "www"
+CODE_INTERRUPTION = "+/"
+CODE_SELF_INTERRUPTION = "+//"
+CODE_TRAILING_OFF = "+..."
+CODE_TRAILING_OFF_2 = "+.."
+CODE_EXCLUDED_WORD = "@x:"
+
+
+# no special treatment at the moment:
 CODE_CHILD_INVENTED_FORM = "@c"
 CODE_NEOLOGISM = "@n"
 
@@ -86,7 +103,7 @@ def parse_args():
     return args
 
 
-def find_feedback_occurrences(transcripts):
+def find_feedback_occurrences(corpus, transcripts):
     feedback_occ = []
 
     ages = transcripts.age(months=True)
@@ -160,15 +177,17 @@ def find_feedback_occurrences(transcripts):
             if len(following_utts_child) > 0:
                 utt3 = following_utts_child.iloc[0]
                 pause_length = round(utt2.start_time - utt1.end_time, 3)
-                if pause_length > 0:
-                    print(f"{utt1.speaker_code}: {utt1.utt}")
-                    print(f"{utt2.speaker_code}: {utt2.utt}")
-                    print(f"Pause: {pause_length}\n")
-                    print(f"{utt3.speaker_code}: {utt3.utt}")
+
+                # if pause_length > RESPONSE_THRESHOLD:
+                #     print(f"{utt1.speaker_code}: {utt1.utt}")
+                #     print(f"Pause: {pause_length}")
+                #     print(f"{utt2.speaker_code}: {utt2.utt}")
+                #     print(f"{utt3.speaker_code}: {utt3.utt}\n")
                 feedback_occ.append(
                     {
                         "length": pause_length,
                         "age": round(age),
+                        "corpus": corpus,
                         "child_name": child_name,
                         "utt_child": utt1.utt,
                         "utt_car": utt2.utt,
@@ -181,30 +200,66 @@ def find_feedback_occurrences(transcripts):
     return feedback_occ
 
 
+def is_excluded_word(word):
+    if (
+        word.startswith(CODE_SIMPLE_EVENT)
+        or word == CODE_UNTRANSCRIBED
+        or word == CODE_INTERRUPTION
+        or word == CODE_SELF_INTERRUPTION
+        or word == CODE_TRAILING_OFF
+        or word == CODE_TRAILING_OFF_2
+        or CODE_EXCLUDED_WORD in word
+    ):
+        return True
+    return False
+
+
+def clean_utterance_from_nonspeech(utterance):
+    """Remove all non-speech-related vocalizations."""
+    utterance = remove_trailing_punctuation(utterance)
+    words = utterance.split(" ")
+    clean_utterance = []
+    for word in words:
+        # Remove brackets
+        word = word.replace("(", "").replace(")", "")
+
+        if not is_excluded_word(word):
+            clean_utterance.append(word)
+
+    clean_utterance = " ".join(clean_utterance)
+    return clean_utterance
+
+
+def is_babbling(word):
+    # TODO:  word.endswith(CODE_CHILD_INVENTED_FORM)?
+    if (
+        word.endswith(CODE_BABBLING)
+        or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
+        or word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM)
+        or word.endswith(CODE_INTERJECTION)
+        or word.startswith(CODE_PHONOLOGICAL_FRAGMENT)
+        or word.startswith(CODE_FILLED_PAUSE)
+        or word == CODE_UNINTELLIGIBLE
+        or word == CODE_PHONETIC
+    ):
+        return True
+    return False
+
+
 def remove_babbling(utterance):
     words = utterance.split(" ")
-    filtered_utterance = []
-    for word in words:
-        # TODO:  word.endswith(CODE_CHILD_INVENTED_FORM)?
-        if not (
-            word.endswith(CODE_BABBLING)
-            or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
-            or word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM)
-            or word.startswith(CODE_PHONOLOGICAL_FRAGMENT)
-            or word.startswith(CODE_FILLED_PAUSE)
-            or word == CODE_UNCLEAR
-            or word == CODE_PHONETIC
-        ):
-            filtered_utterance.append(word)
+    filtered_utterance = [word for word in words if not is_babbling(word)]
 
     return " ".join(filtered_utterance)
 
 
+def remove_trailing_punctuation(utterance):
+    assert utterance[-1] in [".", "?", "!"], f"No trailing punctuation in utterance '{utterance}'!"
+    return utterance[:-1]
+
+
 def is_intelligible(utterance):
     utt_without_babbling = remove_babbling(utterance)
-
-    if len(utt_without_babbling) == 0:
-        raise ValueError("Empty utterance!")
 
     if utt_without_babbling == EMPTY_UTTERANCE:
         return False
@@ -225,7 +280,7 @@ def preprocess_transcripts(corpora):
             parse_morphology_information=False,
         )
         print("done.")
-        feedback_transcript = find_feedback_occurrences(transcripts)
+        feedback_transcript = find_feedback_occurrences(corpus, transcripts)
 
         feedback = feedback.append(feedback_transcript, ignore_index=True)
 
@@ -248,13 +303,29 @@ if __name__ == "__main__":
         f"~/data/communicative_feedback/feedback{'_'.join(args.corpora)}.csv"
     )
 
-    # feedback = preprocess_transcripts(args.corpora)
-    # feedback.to_csv(file_name, index=False)
+    feedback = preprocess_transcripts(args.corpora)
+    feedback.to_csv(file_name, index=False)
 
     feedback = pd.read_csv(file_name, index_col=None)
 
     # Remove feedback with too long negative pauses
     feedback = feedback[(feedback.length >= MAX_NEG_PAUSE_LENGTH)]
+
+    # Clean utterances
+    feedback["utt_child"] = feedback.utt_child.apply(clean_utterance_from_nonspeech)
+    feedback["utt_car"] = feedback.utt_car.apply(clean_utterance_from_nonspeech)
+    feedback["utt_child_follow_up"] = feedback.utt_child_follow_up.apply(
+        clean_utterance_from_nonspeech
+    )
+
+    # Drop empty utterances (these are non-speech related)
+    feedback = feedback[
+        (
+            (feedback.utt_child != EMPTY_UTTERANCE)
+            & (feedback.utt_car != EMPTY_UTTERANCE)
+            & (feedback.utt_child_follow_up != EMPTY_UTTERANCE)
+        )
+    ]
 
     # Label utterances as intelligible or unintelligible
     feedback["utt_child_intelligible"] = feedback.utt_child.apply(is_intelligible)
@@ -290,27 +361,27 @@ if __name__ == "__main__":
             )
 
             # Caregiver contingency:
-            n_responses_clear = len(
+            n_responses_intelligible = len(
                 feedback_age[
                     feedback_age.utt_child_intelligible
                     & (feedback_age.length <= RESPONSE_THRESHOLD)
                 ]
             )
-            n_clear = len(feedback_age[feedback_age.utt_child_intelligible])
+            n_intelligible = len(feedback_age[feedback_age.utt_child_intelligible])
 
-            n_responses_unclear = len(
+            n_responses_unintelligible = len(
                 feedback_age[
                     (feedback_age.utt_child_intelligible == False)
                     & (feedback_age.length <= RESPONSE_THRESHOLD)
                 ]
             )
-            n_unclear = len(feedback_age[feedback_age.utt_child_intelligible == False])
+            n_unintelligible = len(feedback_age[feedback_age.utt_child_intelligible == False])
 
-            contingency_caregiver = (n_responses_clear / n_clear) - (
-                n_responses_unclear / n_unclear
+            contingency_caregiver = (n_responses_intelligible / n_intelligible) - (
+                    n_responses_unintelligible / n_unintelligible
             )
             p_value = calc_p_value(
-                n_responses_clear, n_responses_unclear, n_clear, n_unclear
+                n_responses_intelligible, n_responses_unintelligible, n_intelligible, n_unintelligible
             )
             print(f"Caregiver contingency: {contingency_caregiver:.4f} (p={p_value})")
 
@@ -446,6 +517,21 @@ if __name__ == "__main__":
                 )
                 print(
                     f"Child contingency (both cases): {child_contingency_both_cases:.4f} (p={p_value})"
+                )
+                child_contingency_both_cases_same_weighting = np.mean(
+                    [
+                        ratio_follow_up_intelligible_if_response_to_intelligible,
+                        ratio_follow_up_intelligible_if_no_response_to_unintelligible,
+                    ]
+                ) - np.mean(
+                    [
+                        ratio_follow_up_intelligible_if_no_response_to_intelligible,
+                        ratio_follow_up_intelligible_if_response_to_unintelligible,
+                    ]
+                )
+                print(
+                    f"Child contingency (both cases, same weighting of positive and negative cases): "
+                    f"{child_contingency_both_cases_same_weighting:.4f})"
                 )
 
             g = sns.FacetGrid(feedback_age, col="utt_child_intelligible")
