@@ -70,8 +70,7 @@ LABEL_PARTIALLY_INTELLIGIBLE = None
 # 1 second
 MAX_NEG_PAUSE_LENGTH = -1 * 1000  # ms
 
-DEFAULT_CORPORA = [
-    "Bloom",
+CANDIDATE_CORPORA = [
     "Braunwald",
     "Soderstrom",
     "Weist",
@@ -81,13 +80,29 @@ DEFAULT_CORPORA = [
     "Peters",
     "MacWhinney",
     "Sachs",
-    "McCune",
     "Bernstein",
     "Brent",
     "Nelson",
-    "Tommerdahl",
     "Providence",
 ]
+
+DEFAULT_SELECTED_CORPORA = [
+    "Braunwald",
+    "Soderstrom",
+    # "Weist",    # TODO not much variance?
+    # "NewmanRatner", # TODO not much variance?
+    # "Snow", # TODO not much variance?
+    "Thomas",
+    "Peters", #decent variance
+    "MacWhinney", # decent variance
+    "Sachs",  # decent variance
+    # "Bernstein", #short corpus
+    "Brent",
+    # "Nelson",  #short corpus
+    # "Providence",# TODO not much variance?
+]
+
+
 
 
 def parse_args():
@@ -96,7 +111,7 @@ def parse_args():
         "--corpora",
         nargs="+",
         type=str,
-        default=DEFAULT_CORPORA,
+        default=DEFAULT_SELECTED_CORPORA,
     )
     args = argparser.parse_args()
 
@@ -300,13 +315,16 @@ if __name__ == "__main__":
     args = parse_args()
 
     file_name = os.path.expanduser(
-        f"~/data/communicative_feedback/feedback{'_'.join(args.corpora)}.csv"
+        f"~/data/communicative_feedback/feedback.csv"
     )
 
-    feedback = preprocess_transcripts(args.corpora)
-    feedback.to_csv(file_name, index=False)
+    # feedback = preprocess_transcripts(CANDIDATE_CORPORA)
+    # feedback.to_csv(file_name, index=False)
 
     feedback = pd.read_csv(file_name, index_col=None)
+
+    # Filter corpora
+    feedback = feedback[feedback.corpus.isin(args.corpora)]
 
     # Remove feedback with too long negative pauses
     feedback = feedback[(feedback.length >= MAX_NEG_PAUSE_LENGTH)]
