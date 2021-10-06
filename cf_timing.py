@@ -8,10 +8,6 @@ import seaborn as sns
 import numpy as np
 from scipy.stats import binom_test
 
-import nltk
-
-nltk.download("words")
-
 SPEAKER_CODE_CHILD = "CHI"
 
 SPEAKER_CODES_CAREGIVER = ["MOT", "FAT", "DAD", "MOM", "GRA", "GRF", "GRM", "CAR"]
@@ -25,8 +21,6 @@ CODE_UNINTELLIGIBLE = "xxx"
 # (usually used when utterance cannot be matched to particular words)
 CODE_PHONETIC = "yyy"
 
-CODES_UNINTELLIGIBLE = [CODE_UNINTELLIGIBLE, CODE_PHONETIC]
-
 CODE_BABBLING = "@b"
 CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION = "@u"
 CODE_INTERJECTION = "@i"
@@ -34,7 +28,7 @@ CODE_PHONOLGICAL_CONSISTENT_FORM = "@p"
 CODE_PHONOLOGICAL_FRAGMENT = "&"
 CODE_FILLED_PAUSE = "&-"
 
-# excluded from analysis
+# codes that will be excluded from analysis
 EMPTY_UTTERANCE = ""
 CODE_SIMPLE_EVENT = "&="
 CODE_UNTRANSCRIBED = "www"
@@ -44,11 +38,11 @@ CODE_TRAILING_OFF = "+..."
 CODE_TRAILING_OFF_2 = "+.."
 CODE_EXCLUDED_WORD = "@x:"
 
-
 # no special treatment at the moment:
 CODE_CHILD_INVENTED_FORM = "@c"
 CODE_NEOLOGISM = "@n"
 
+# Separate analysis for children of different age groups
 # AGE_BINS = [6, 12, 18, 24, 30, 36, 42, 48, 54, 60]
 # AGE_BINS_WINDOW = 3
 
@@ -538,17 +532,8 @@ if __name__ == "__main__":
                 print(
                     f"Child contingency (both cases): {child_contingency_both_cases:.4f} (p={p_value})"
                 )
-                child_contingency_both_cases_same_weighting = np.mean(
-                    [
-                        ratio_follow_up_intelligible_if_response_to_intelligible,
-                        ratio_follow_up_intelligible_if_no_response_to_unintelligible,
-                    ]
-                ) - np.mean(
-                    [
-                        ratio_follow_up_intelligible_if_no_response_to_intelligible,
-                        ratio_follow_up_intelligible_if_response_to_unintelligible,
-                    ]
-                )
+                child_contingency_both_cases_same_weighting = np.mean([contingency_children_pos_case, contingency_children_neg_case])
+
                 print(
                     f"Child contingency (both cases, same weighting of positive and negative cases): "
                     f"{child_contingency_both_cases_same_weighting:.4f})"
