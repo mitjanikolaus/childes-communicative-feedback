@@ -8,6 +8,9 @@ import seaborn as sns
 import numpy as np
 from scipy.stats import binom_test
 
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
 SPEAKER_CODE_CHILD = "CHI"
 
 SPEAKER_CODES_CAREGIVER = ["MOT", "FAT", "DAD", "MOM", "GRA", "GRF", "GRM", "CAR"]
@@ -292,6 +295,14 @@ def calc_p_value(n_success_if_good, n_success_if_bad, n_good, n_bad):
     return p_value
 
 
+def caregiver_response_contingent(row):
+    return (
+        (row["utt_child_intelligible"] == True) & (row["caregiver_response"] == True)
+    ) | (
+        (row["utt_child_intelligible"] == False) & (row["caregiver_response"] == False)
+    )
+
+
 if __name__ == "__main__":
     args = parse_args()
 
@@ -352,6 +363,11 @@ if __name__ == "__main__":
         subset=("utt_child_intelligible", "follow_up_intelligible")
     )
 
+    # Label caregiver responses as contingent on child utterance or not
+    feedback["caregiver_response_contingent"] = feedback[
+        ["utt_child_intelligible", "caregiver_response"]
+    ].apply(caregiver_response_contingent, axis=1)
+
     for age in AGE_BINS:
         feedback_age = feedback[
             (feedback.age > age - AGE_BINS_WINDOW)
@@ -361,18 +377,18 @@ if __name__ == "__main__":
             f"\nFound {len(feedback_age)} turns for age {age} (+/- {AGE_BINS_WINDOW} months)"
         )
         if len(feedback_age) > 0:
-            mean_length_intelligible = feedback_age[
-                feedback_age.utt_child_intelligible
-            ].length.mean()
-            print(
-                f"Mean pause length after intelligible utts: {mean_length_intelligible:.3f}ms"
-            )
-            mean_length_unintelligible = feedback_age[
-                feedback_age.utt_child_intelligible == False
-            ].length.mean()
-            print(
-                f"Mean pause length after unintelligible utts: {mean_length_unintelligible:.3f}ms"
-            )
+            # mean_length_intelligible = feedback_age[
+            #     feedback_age.utt_child_intelligible
+            # ].length.mean()
+            # print(
+            #     f"Mean pause length after intelligible utts: {mean_length_intelligible:.3f}ms"
+            # )
+            # mean_length_unintelligible = feedback_age[
+            #     feedback_age.utt_child_intelligible == False
+            # ].length.mean()
+            # print(
+            #     f"Mean pause length after unintelligible utts: {mean_length_unintelligible:.3f}ms"
+            # )
 
             # Caregiver contingency:
             n_responses_intelligible = len(
@@ -546,10 +562,41 @@ if __name__ == "__main__":
                     f"{child_contingency_both_cases_same_weighting:.4f})"
                 )
 
+        # Statsmodels prefers 1 and 0 over True and False:
+        feedback.replace({False: 0, True: 1}, inplace=True)
+
+        mod = smf.glm(
+            "follow_up_intelligible ~ utt_child_intelligible * caregiver_response",
+            family=sm.families.Binomial(),
+            data=feedback,
+        ).fit()
+        print(mod.summary())
+
+        mod = smf.glm(
+            "follow_up_intelligible ~ utt_child_intelligible * caregiver_response_contingent",
+            family=sm.families.Binomial(),
+            data=feedback,
+        ).fit()
+        print(mod.summary())
+
+        mod = smf.glm(
+            "follow_up_intelligible ~ caregiver_response_contingent",
+            family=sm.families.Binomial(),
+            data=feedback,
+        ).fit()
+        print(mod.summary())
+
+        mod = smf.glm(
+            "caregiver_response ~ utt_child_intelligible",
+            family=sm.families.Binomial(),
+            data=feedback,
+        ).fit()
+        print(mod.summary())
+
         sns.barplot(
             data=feedback,
             x="utt_child_intelligible",
             y="follow_up_intelligible",
-            hue="caregiver_response",
+            hue="caregiver_response_contingent",
         )
         plt.show()
