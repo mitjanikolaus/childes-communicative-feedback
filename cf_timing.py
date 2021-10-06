@@ -342,6 +342,11 @@ if __name__ == "__main__":
         is_intelligible
     )
 
+    # Label caregiver responses as present or not
+    feedback["caregiver_response"] = feedback.length.apply(
+        lambda x: x <= RESPONSE_THRESHOLD
+    )
+
     # Remove NaNs
     feedback = feedback.dropna(
         subset=("utt_child_intelligible", "follow_up_intelligible")
@@ -373,7 +378,7 @@ if __name__ == "__main__":
             n_responses_intelligible = len(
                 feedback_age[
                     feedback_age.utt_child_intelligible
-                    & (feedback_age.length <= RESPONSE_THRESHOLD)
+                    & feedback_age.caregiver_response
                 ]
             )
             n_intelligible = len(feedback_age[feedback_age.utt_child_intelligible])
@@ -381,7 +386,7 @@ if __name__ == "__main__":
             n_responses_unintelligible = len(
                 feedback_age[
                     (feedback_age.utt_child_intelligible == False)
-                    & (feedback_age.length <= RESPONSE_THRESHOLD)
+                    & feedback_age.caregiver_response
                 ]
             )
             n_unintelligible = len(
@@ -404,13 +409,13 @@ if __name__ == "__main__":
                 feedback_age[
                     feedback_age.follow_up_intelligible
                     & feedback_age.utt_child_intelligible
-                    & (feedback_age.length <= RESPONSE_THRESHOLD)
+                    & feedback_age.caregiver_response
                 ]
             )
             n_responses_to_intelligible = len(
                 feedback_age[
                     feedback_age.utt_child_intelligible
-                    & (feedback_age.length <= RESPONSE_THRESHOLD)
+                    & feedback_age.caregiver_response
                 ]
             )
 
@@ -418,13 +423,13 @@ if __name__ == "__main__":
                 feedback_age[
                     feedback_age.follow_up_intelligible
                     & feedback_age.utt_child_intelligible
-                    & (feedback_age.length > RESPONSE_THRESHOLD)
+                    & (feedback_age.caregiver_response == False)
                 ]
             )
             n_no_responses_to_intelligible = len(
                 feedback_age[
                     feedback_age.utt_child_intelligible
-                    & (feedback_age.length > RESPONSE_THRESHOLD)
+                    & (feedback_age.caregiver_response == False)
                 ]
             )
 
@@ -433,13 +438,13 @@ if __name__ == "__main__":
                 feedback_age[
                     feedback_age.follow_up_intelligible
                     & (feedback_age.utt_child_intelligible == False)
-                    & (feedback_age.length > RESPONSE_THRESHOLD)
+                    & (feedback_age.caregiver_response == False)
                 ]
             )
             n_no_responses_to_unintelligible = len(
                 feedback_age[
                     (feedback_age.utt_child_intelligible == False)
-                    & (feedback_age.length > RESPONSE_THRESHOLD)
+                    & (feedback_age.caregiver_response == False)
                 ]
             )
 
@@ -447,13 +452,13 @@ if __name__ == "__main__":
                 feedback_age[
                     feedback_age.follow_up_intelligible
                     & (feedback_age.utt_child_intelligible == False)
-                    & (feedback_age.length <= RESPONSE_THRESHOLD)
+                    & feedback_age.caregiver_response
                 ]
             )
             n_responses_to_unintelligible = len(
                 feedback_age[
                     (feedback_age.utt_child_intelligible == False)
-                    & (feedback_age.length <= RESPONSE_THRESHOLD)
+                    & feedback_age.caregiver_response
                 ]
             )
 
@@ -532,13 +537,19 @@ if __name__ == "__main__":
                 print(
                     f"Child contingency (both cases): {child_contingency_both_cases:.4f} (p={p_value})"
                 )
-                child_contingency_both_cases_same_weighting = np.mean([contingency_children_pos_case, contingency_children_neg_case])
+                child_contingency_both_cases_same_weighting = np.mean(
+                    [contingency_children_pos_case, contingency_children_neg_case]
+                )
 
                 print(
                     f"Child contingency (both cases, same weighting of positive and negative cases): "
                     f"{child_contingency_both_cases_same_weighting:.4f})"
                 )
 
-            g = sns.FacetGrid(feedback_age, col="utt_child_intelligible")
-            g.map(sns.histplot, "length", bins=30, log_scale=(False, True))
-            plt.show()
+        sns.barplot(
+            data=feedback,
+            x="utt_child_intelligible",
+            y="follow_up_intelligible",
+            hue="caregiver_response",
+        )
+        plt.show()
