@@ -566,14 +566,7 @@ if __name__ == "__main__":
         feedback.replace({False: 0, True: 1}, inplace=True)
 
         mod = smf.glm(
-            "follow_up_intelligible ~ utt_child_intelligible * caregiver_response",
-            family=sm.families.Binomial(),
-            data=feedback,
-        ).fit()
-        print(mod.summary())
-
-        mod = smf.glm(
-            "follow_up_intelligible ~ utt_child_intelligible * caregiver_response_contingent",
+            "caregiver_response ~ utt_child_intelligible",
             family=sm.families.Binomial(),
             data=feedback,
         ).fit()
@@ -587,7 +580,7 @@ if __name__ == "__main__":
         print(mod.summary())
 
         mod = smf.glm(
-            "caregiver_response ~ utt_child_intelligible",
+            "follow_up_intelligible ~ utt_child_intelligible * caregiver_response_contingent",
             family=sm.families.Binomial(),
             data=feedback,
         ).fit()
