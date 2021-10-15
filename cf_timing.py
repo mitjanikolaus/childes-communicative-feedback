@@ -6,7 +6,6 @@ import pandas as pd
 import pylangacq
 import seaborn as sns
 import numpy as np
-from scipy.stats import binom_test
 
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
@@ -70,6 +69,9 @@ CORPUS_INCLUSION_RESPONSE_TIME_VARIANCE_THRESHOLD = 1000  # ms
 
 CANDIDATE_CORPORA = [
     "Braunwald",
+    "Bloom",
+    "McCune",
+    "Tommerdahl",
     "Soderstrom",
     "Weist",
     "NewmanRatner",
@@ -126,7 +128,7 @@ def find_feedback_occurrences(corpus, transcripts):
     utts_child = {
         file: utts
         for file, utts in utts_child.items()
-        if (len(utts) > 0) and (ages[file] is not None)
+        if (len(utts) > 0) and (ages[file] is not None) and (ages[file] != 0)
     }
 
     # Filter out transcripts without child information
@@ -135,10 +137,9 @@ def find_feedback_occurrences(corpus, transcripts):
     }
 
     for file, utts in utts_child.items():
-        print(file)
         age = ages[file]
         child_name = target_child_names[file]
-        print(f"Child: {child_name} Age: ", round(age))
+        # print(f"Child: {child_name} Age: ", round(age))
 
         # Make a dataframe
         utts = pd.DataFrame(
@@ -228,7 +229,6 @@ def clean_utterance_from_nonspeech(utterance):
 
 
 def is_babbling(word):
-    # TODO:  word.endswith(CODE_CHILD_INVENTED_FORM)?
     if (
         word.endswith(CODE_BABBLING)
         or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
@@ -286,21 +286,42 @@ def preprocess_transcripts(corpora):
     return feedback
 
 
-def calc_p_value(n_success_if_good, n_success_if_bad, n_good, n_bad):
-    n_total = n_good + n_bad
-    n_successes = (
-        n_total * ((n_success_if_good / n_good) + (1 - n_success_if_bad / n_bad)) / 2
-    )
-    p_value = binom_test(n_successes, n_total, p=0.5, alternative="two-sided")
-    return p_value
-
-
 def caregiver_response_contingent(row):
     return (
         (row["utt_child_intelligible"] == True) & (row["caregiver_response"] == True)
     ) | (
         (row["utt_child_intelligible"] == False) & (row["caregiver_response"] == False)
     )
+
+
+def filter_corporance_based_on_response_latency_length(corpora):
+    # Calculate mean and stddev of response latency using data from Nguyen, Versyp, Cox, Fusaroli (2021)
+    latency_data = pd.read_csv("data/MA turn-taking.csv")
+
+    # Use only non-clinical data:
+    latency_data = latency_data[latency_data["clinical group"] == "Healthy"]
+
+    mean_latency = latency_data.adult_response_latency.mean()
+    std_mean_latency = latency_data.adult_response_latency.std()
+    print(
+        f"Mean of response latency in meta-analysis: {mean_latency:.1f} +/- {std_mean_latency:.1f}"
+    )
+
+    min_age = latency_data.mean_age_infants_months.min()
+    max_age = latency_data.mean_age_infants_months.max()
+    mean_age = latency_data.mean_age_infants_months.max()
+    print(
+        f"Mean of child age in meta-analysis: {mean_age:.1f} (min: {min_age} max: {max_age})"
+    )
+
+    # Filter corpora to be in range of mean +/- 1 standard deviation
+    filtered = []
+    for corpus in corpora:
+        mean = feedback[feedback.corpus == corpus].length.values.mean()
+        if mean_latency - std_mean_latency < mean < mean_latency + std_mean_latency:
+            filtered.append(corpus)
+
+    return filtered
 
 
 if __name__ == "__main__":
@@ -317,16 +338,19 @@ if __name__ == "__main__":
     feedback = feedback[(feedback.length >= MAX_NEG_PAUSE_LENGTH)]
 
     if not args.corpora:
-        print(
-            f"No corpora given, selecting based on response time variance "
-            f"(minimum {CORPUS_INCLUSION_RESPONSE_TIME_VARIANCE_THRESHOLD}ms standard deviation)"
+        print(f"No corpora given, selecting based on average response time")
+        args.corpora = filter_corporance_based_on_response_latency_length(
+            CANDIDATE_CORPORA
         )
-        args.corpora = []
-        for corpus in CANDIDATE_CORPORA:
-            stddev = feedback[feedback.corpus == corpus].length.values.std()
-            if stddev > CORPUS_INCLUSION_RESPONSE_TIME_VARIANCE_THRESHOLD:
-                args.corpora.append(corpus)
+
     print(f"Corpora included in analysis: {args.corpora}")
+
+    min_age = feedback.age.min()
+    max_age = feedback.age.max()
+    mean_age = feedback.age.mean()
+    print(
+        f"Mean of child age selected corpora: {mean_age:.1f} (min: {min_age} max: {max_age})"
+    )
 
     # Filter corpora
     feedback = feedback[feedback.corpus.isin(args.corpora)]
@@ -412,13 +436,7 @@ if __name__ == "__main__":
             contingency_caregiver = (n_responses_intelligible / n_intelligible) - (
                 n_responses_unintelligible / n_unintelligible
             )
-            p_value = calc_p_value(
-                n_responses_intelligible,
-                n_responses_unintelligible,
-                n_intelligible,
-                n_unintelligible,
-            )
-            print(f"Caregiver contingency: {contingency_caregiver:.4f} (p={p_value})")
+            print(f"Caregiver contingency: {contingency_caregiver:.4f}")
 
             # Contingency of child speech-related vocalization on previous adult response (positive case):
             n_follow_up_intelligible_if_response_to_intelligible = len(
@@ -497,14 +515,8 @@ if __name__ == "__main__":
                     - ratio_follow_up_intelligible_if_no_response_to_intelligible
                 )
 
-                p_value = calc_p_value(
-                    n_follow_up_intelligible_if_response_to_intelligible,
-                    n_follow_up_intelligible_if_no_response_to_intelligible,
-                    n_responses_to_intelligible,
-                    n_no_responses_to_intelligible,
-                )
                 print(
-                    f"Child contingency (positive case): {contingency_children_pos_case:.4f} (p={p_value})"
+                    f"Child contingency (positive case): {contingency_children_pos_case:.4f}"
                 )
 
                 ratio_follow_up_intelligible_if_no_response_to_unintelligible = (
@@ -520,14 +532,8 @@ if __name__ == "__main__":
                     - ratio_follow_up_intelligible_if_response_to_unintelligible
                 )
 
-                p_value = calc_p_value(
-                    n_follow_up_intelligible_if_no_response_to_unintelligible,
-                    n_follow_up_intelligible_if_response_to_unintelligible,
-                    n_no_responses_to_unintelligible,
-                    n_responses_to_unintelligible,
-                )
                 print(
-                    f"Child contingency (negative case): {contingency_children_neg_case:.4f} (p={p_value})"
+                    f"Child contingency (negative case): {contingency_children_neg_case:.4f}"
                 )
 
                 ratio_contingent_follow_ups = (
@@ -542,16 +548,8 @@ if __name__ == "__main__":
                 child_contingency_both_cases = (
                     ratio_contingent_follow_ups - ratio_incontingent_follow_ups
                 )
-                p_value = calc_p_value(
-                    n_follow_up_intelligible_if_response_to_intelligible
-                    + n_follow_up_intelligible_if_no_response_to_unintelligible,
-                    n_follow_up_intelligible_if_no_response_to_intelligible
-                    + n_follow_up_intelligible_if_response_to_unintelligible,
-                    n_responses_to_intelligible + n_no_responses_to_unintelligible,
-                    n_no_responses_to_intelligible + n_responses_to_unintelligible,
-                )
                 print(
-                    f"Child contingency (both cases): {child_contingency_both_cases:.4f} (p={p_value})"
+                    f"Child contingency (both cases): {child_contingency_both_cases:.4f}"
                 )
                 child_contingency_both_cases_same_weighting = np.mean(
                     [contingency_children_pos_case, contingency_children_neg_case]
@@ -559,7 +557,7 @@ if __name__ == "__main__":
 
                 print(
                     f"Child contingency (both cases, same weighting of positive and negative cases): "
-                    f"{child_contingency_both_cases_same_weighting:.4f})"
+                    f"{child_contingency_both_cases_same_weighting:.4f}"
                 )
 
         # Statsmodels prefers 1 and 0 over True and False:
