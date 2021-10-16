@@ -1,5 +1,6 @@
 import argparse
 import os
+from collections import Counter
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -10,39 +11,17 @@ import numpy as np
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 
+from utils import (
+    remove_babbling,
+    EMPTY_UTTERANCE,
+    clean_utterance,
+    remove_nonspeech_events,
+)
+
+
 SPEAKER_CODE_CHILD = "CHI"
 
 SPEAKER_CODES_CAREGIVER = ["MOT", "FAT", "DAD", "MOM", "GRA", "GRF", "GRM", "CAR"]
-
-TOKENS_PUNCTUATION = [".", "?", "!"]
-
-# Unintelligible words with an unclear phonetic shape should be transcribed as
-CODE_UNINTELLIGIBLE = "xxx"
-
-# Use the symbol yyy when you plan to code all material phonologically on a %pho line.
-# (usually used when utterance cannot be matched to particular words)
-CODE_PHONETIC = "yyy"
-
-CODE_BABBLING = "@b"
-CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION = "@u"
-CODE_INTERJECTION = "@i"
-CODE_PHONOLGICAL_CONSISTENT_FORM = "@p"
-CODE_PHONOLOGICAL_FRAGMENT = "&"
-CODE_FILLED_PAUSE = "&-"
-
-# codes that will be excluded from analysis
-EMPTY_UTTERANCE = ""
-CODE_SIMPLE_EVENT = "&="
-CODE_UNTRANSCRIBED = "www"
-CODE_INTERRUPTION = "+/"
-CODE_SELF_INTERRUPTION = "+//"
-CODE_TRAILING_OFF = "+..."
-CODE_TRAILING_OFF_2 = "+.."
-CODE_EXCLUDED_WORD = "@x:"
-
-# no special treatment at the moment:
-CODE_CHILD_INVENTED_FORM = "@c"
-CODE_NEOLOGISM = "@n"
 
 # Separate analysis for children of different age groups
 # AGE_BINS = [6, 12, 18, 24, 30, 36, 42, 48, 54, 60]
@@ -59,13 +38,14 @@ RESPONSE_THRESHOLD = 1000  # ms
 # Set to True to count as intelligible, False to count as unintelligible or None to exclude these utterances from
 # the analysis
 LABEL_PARTIALLY_INTELLIGIBLE = None
+# same as above for speech-relatedness
+LABEL_PARTIALLY_SPEECH_RELATED = True
 
-# TODO check that pause is not too long: what is a reasonable value?
+# TODO check that pause is not too long (neg): what is a reasonable value?
 # 1 second
 MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
-# Minimal response time variance for a corpus to be included in the analysis
-CORPUS_INCLUSION_RESPONSE_TIME_VARIANCE_THRESHOLD = 1000  # ms
+MIN_RATIO_NONSPEECH = 0.001
 
 CANDIDATE_CORPORA = [
     "Braunwald",
@@ -186,6 +166,7 @@ def find_child_caregiver_adjacent_utterances(corpus, transcripts):
                         "response_latency": response_latency,
                         "age": round(age),
                         "corpus": corpus,
+                        "transcript_file": file,
                         "child_name": child_name,
                         "utt_child": utt1.utt,
                         "utt_car": utt2.utt,
@@ -198,78 +179,6 @@ def find_child_caregiver_adjacent_utterances(corpus, transcripts):
     return adjacent_utterances
 
 
-def is_excluded_word(word):
-    if (
-        word.startswith(CODE_SIMPLE_EVENT)
-        or word == CODE_UNTRANSCRIBED
-        or word == CODE_INTERRUPTION
-        or word == CODE_SELF_INTERRUPTION
-        or word == CODE_TRAILING_OFF
-        or word == CODE_TRAILING_OFF_2
-        or CODE_EXCLUDED_WORD in word
-    ):
-        return True
-    return False
-
-
-def clean_utterance_from_nonspeech(utterance):
-    """Remove all non-speech-related vocalizations."""
-    utterance = remove_trailing_punctuation(utterance)
-    words = utterance.split(" ")
-    clean_utterance = []
-    for word in words:
-        # Remove brackets
-        word = word.replace("(", "").replace(")", "")
-
-        if not is_excluded_word(word):
-            clean_utterance.append(word)
-
-    clean_utterance = " ".join(clean_utterance)
-    return clean_utterance
-
-
-def is_babbling(word):
-    if (
-        word.endswith(CODE_BABBLING)
-        or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
-        or word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM)
-        or word.endswith(CODE_INTERJECTION)
-        or word.startswith(CODE_PHONOLOGICAL_FRAGMENT)
-        or word.startswith(CODE_FILLED_PAUSE)
-        or word == CODE_UNINTELLIGIBLE
-        or word == CODE_PHONETIC
-    ):
-        return True
-    return False
-
-
-def remove_babbling(utterance):
-    words = utterance.split(" ")
-    filtered_utterance = [word for word in words if not is_babbling(word)]
-
-    return " ".join(filtered_utterance)
-
-
-def remove_trailing_punctuation(utterance):
-    assert (
-        utterance[-1] in TOKENS_PUNCTUATION
-    ), f"No trailing punctuation in utterance '{utterance}'!"
-    return utterance[:-1]
-
-
-def is_intelligible(utterance):
-    utt_without_babbling = remove_babbling(utterance)
-
-    if utt_without_babbling == EMPTY_UTTERANCE:
-        return False
-
-    is_partly_intelligible = len(utt_without_babbling) != len(utterance)
-    if is_partly_intelligible:
-        return LABEL_PARTIALLY_INTELLIGIBLE
-
-    return True
-
-
 def preprocess_transcripts(corpora):
     adjacent_utterances = pd.DataFrame()
     for corpus in corpora:
@@ -277,16 +186,44 @@ def preprocess_transcripts(corpora):
         transcripts = pylangacq.read_chat(
             os.path.expanduser(f"~/data/CHILDES/{corpus}/*.cha"),
             parse_morphology_information=False,
+            clean=False,
         )
         print("done.")
-        adj_utterances_transcript = find_child_caregiver_adjacent_utterances(corpus, transcripts)
+        adj_utterances_transcript = find_child_caregiver_adjacent_utterances(
+            corpus, transcripts
+        )
 
-        adjacent_utterances = adjacent_utterances.append(adj_utterances_transcript, ignore_index=True)
+        adjacent_utterances = adjacent_utterances.append(
+            adj_utterances_transcript, ignore_index=True
+        )
 
     return adjacent_utterances
 
 
-def caregiver_response_contingent(row):
+def is_intelligible(
+    utterance, label_partially_intelligible=LABEL_PARTIALLY_INTELLIGIBLE
+):
+    utt_without_babbling = remove_babbling(utterance)
+
+    if utt_without_babbling == EMPTY_UTTERANCE:
+        return False
+
+    is_partly_intelligible = len(utt_without_babbling) != len(utterance)
+    if is_partly_intelligible:
+        return label_partially_intelligible
+
+    return True
+
+
+def caregiver_intelligible_response(row):
+    return row["response_latency"] <= RESPONSE_THRESHOLD
+
+
+def caregiver_speech_related_response(row):
+    return (row["response_latency"] <= RESPONSE_THRESHOLD) #& is_speech_related(row["utt_car"], label_partially_speech_related=True)
+
+
+def caregiver_response_contingent_on_intelligibility(row):
     return (
         (row["utt_child_intelligible"] == True) & (row["caregiver_response"] == True)
     ) | (
@@ -294,7 +231,31 @@ def caregiver_response_contingent(row):
     )
 
 
-def filter_corporance_based_on_response_latency_length(corpora, adj_utterances):
+def is_speech_related(
+    utterance, label_partially_speech_related=LABEL_PARTIALLY_SPEECH_RELATED
+):
+    utt_without_nonspeech = remove_nonspeech_events(utterance)
+
+    if utt_without_nonspeech == EMPTY_UTTERANCE:
+        return False
+
+    is_partly_speech_related = len(utt_without_nonspeech) != len(utterance)
+    if is_partly_speech_related:
+        return label_partially_speech_related
+
+    return True
+
+
+def caregiver_response_contingent_on_speech_relatedness(row):
+    return (
+        (row["utt_child_speech_related"] == True) & (row["caregiver_response"] == True)
+    ) | (
+        (row["utt_child_speech_related"] == False)
+        & (row["caregiver_response"] == False)
+    )
+
+
+def filter_corpora_based_on_response_latency_length(corpora, adj_utterances):
     # Calculate mean and stddev of response latency using data from Nguyen, Versyp, Cox, Fusaroli (2021)
     latency_data = pd.read_csv("data/MA turn-taking.csv")
 
@@ -317,49 +278,30 @@ def filter_corporance_based_on_response_latency_length(corpora, adj_utterances):
     # Filter corpora to be in range of mean +/- 1 standard deviation
     filtered = []
     for corpus in corpora:
-        mean = adj_utterances[adj_utterances.corpus == corpus].response_latency.values.mean()
+        mean = adj_utterances[
+            adj_utterances.corpus == corpus
+        ].response_latency.values.mean()
         if mean_latency - std_mean_latency < mean < mean_latency + std_mean_latency:
             filtered.append(corpus)
 
     return filtered
 
 
-if __name__ == "__main__":
-    args = parse_args()
-
-    file_name = os.path.expanduser(f"~/data/communicative_feedback/chi_car_adjacent_utterances.csv")
-
-    adj_utterances = preprocess_transcripts(CANDIDATE_CORPORA)
-    adj_utterances.to_csv(file_name, index=False)
-
-    adj_utterances = pd.read_csv(file_name, index_col=None)
-
-    # Remove adj_utterances with too long negative pauses
-    adj_utterances = adj_utterances[(adj_utterances.response_latency >= MAX_NEG_RESPONSE_LATENCY)]
-
-    if not args.corpora:
-        print(f"No corpora given, selecting based on average response time")
-        args.corpora = filter_corporance_based_on_response_latency_length(
-            CANDIDATE_CORPORA, adj_utterances
-        )
-
-    print(f"Corpora included in analysis: {args.corpora}")
-
-    min_age = adj_utterances.age.min()
-    max_age = adj_utterances.age.max()
-    mean_age = adj_utterances.age.mean()
-    print(
-        f"Mean of child age selected corpora: {mean_age:.1f} (min: {min_age} max: {max_age})"
+def perform_analysis_intelligibility(adj_utterances):
+    # Clean utterances
+    adj_utterances["utt_child"] = adj_utterances.utt_child.apply(clean_utterance)
+    adj_utterances["utt_car"] = adj_utterances.utt_car.apply(clean_utterance)
+    adj_utterances["utt_child_follow_up"] = adj_utterances.utt_child_follow_up.apply(
+        clean_utterance
     )
 
-    # Filter corpora
-    adj_utterances = adj_utterances[adj_utterances.corpus.isin(args.corpora)]
-
-    # Clean utterances
-    adj_utterances["utt_child"] = adj_utterances.utt_child.apply(clean_utterance_from_nonspeech)
-    adj_utterances["utt_car"] = adj_utterances.utt_car.apply(clean_utterance_from_nonspeech)
+    # Remove nonspeech events
+    adj_utterances["utt_child"] = adj_utterances.utt_child.apply(
+        remove_nonspeech_events
+    )
+    adj_utterances["utt_car"] = adj_utterances.utt_car.apply(remove_nonspeech_events)
     adj_utterances["utt_child_follow_up"] = adj_utterances.utt_child_follow_up.apply(
-        clean_utterance_from_nonspeech
+        remove_nonspeech_events
     )
 
     # Drop empty utterances (these are non-speech related)
@@ -372,14 +314,16 @@ if __name__ == "__main__":
     ]
 
     # Label utterances as intelligible or unintelligible
-    adj_utterances["utt_child_intelligible"] = adj_utterances.utt_child.apply(is_intelligible)
-    adj_utterances["follow_up_intelligible"] = adj_utterances.utt_child_follow_up.apply(
-        is_intelligible
+    adj_utterances = adj_utterances.assign(
+        utt_child_intelligible=adj_utterances.utt_child.apply(is_intelligible)
+    )
+    adj_utterances = adj_utterances.assign(
+        follow_up_intelligible=adj_utterances.utt_child_follow_up.apply(is_intelligible)
     )
 
     # Label caregiver responses as present or not
-    adj_utterances["caregiver_response"] = adj_utterances.response_latency.apply(
-        lambda x: x <= RESPONSE_THRESHOLD
+    adj_utterances = adj_utterances.assign(
+        caregiver_response=adj_utterances.apply(caregiver_intelligible_response, axis=1)
     )
 
     # Remove NaNs
@@ -388,9 +332,11 @@ if __name__ == "__main__":
     )
 
     # Label caregiver responses as contingent on child utterance or not
-    adj_utterances["caregiver_response_contingent"] = adj_utterances[
-        ["utt_child_intelligible", "caregiver_response"]
-    ].apply(caregiver_response_contingent, axis=1)
+    adj_utterances = adj_utterances.assign(
+        caregiver_response_contingent=adj_utterances[
+            ["utt_child_intelligible", "caregiver_response"]
+        ].apply(caregiver_response_contingent_on_intelligibility, axis=1)
+    )
 
     for age in AGE_BINS:
         adj_utterances_age = adj_utterances[
@@ -406,15 +352,17 @@ if __name__ == "__main__":
                 adj_utterances_age[
                     adj_utterances_age.utt_child_intelligible
                     & adj_utterances_age.caregiver_response
-                    ]
+                ]
             )
-            n_intelligible = len(adj_utterances_age[adj_utterances_age.utt_child_intelligible])
+            n_intelligible = len(
+                adj_utterances_age[adj_utterances_age.utt_child_intelligible]
+            )
 
             n_responses_unintelligible = len(
                 adj_utterances_age[
                     (adj_utterances_age.utt_child_intelligible == False)
                     & adj_utterances_age.caregiver_response
-                    ]
+                ]
             )
             n_unintelligible = len(
                 adj_utterances_age[adj_utterances_age.utt_child_intelligible == False]
@@ -425,19 +373,19 @@ if __name__ == "__main__":
             )
             print(f"Caregiver contingency: {contingency_caregiver:.4f}")
 
-            # Contingency of child speech-related vocalization on previous adult response (positive case):
+            # Contingency of child vocalization on previous adult response (positive case):
             n_follow_up_intelligible_if_response_to_intelligible = len(
                 adj_utterances_age[
                     adj_utterances_age.follow_up_intelligible
                     & adj_utterances_age.utt_child_intelligible
                     & adj_utterances_age.caregiver_response
-                    ]
+                ]
             )
             n_responses_to_intelligible = len(
                 adj_utterances_age[
                     adj_utterances_age.utt_child_intelligible
                     & adj_utterances_age.caregiver_response
-                    ]
+                ]
             )
 
             n_follow_up_intelligible_if_no_response_to_intelligible = len(
@@ -445,22 +393,22 @@ if __name__ == "__main__":
                     adj_utterances_age.follow_up_intelligible
                     & adj_utterances_age.utt_child_intelligible
                     & (adj_utterances_age.caregiver_response == False)
-                    ]
+                ]
             )
             n_no_responses_to_intelligible = len(
                 adj_utterances_age[
                     adj_utterances_age.utt_child_intelligible
                     & (adj_utterances_age.caregiver_response == False)
-                    ]
+                ]
             )
 
-            # Contingency of child speech-related vocalization on previous adult response (negative case):
+            # Contingency of child vocalization on previous adult response (negative case):
             n_follow_up_intelligible_if_no_response_to_unintelligible = len(
                 adj_utterances_age[
                     adj_utterances_age.follow_up_intelligible
                     & (adj_utterances_age.utt_child_intelligible == False)
                     & (adj_utterances_age.caregiver_response == False)
-                    ]
+                ]
             )
             n_no_responses_to_unintelligible = len(
                 adj_utterances_age[
@@ -474,13 +422,13 @@ if __name__ == "__main__":
                     adj_utterances_age.follow_up_intelligible
                     & (adj_utterances_age.utt_child_intelligible == False)
                     & adj_utterances_age.caregiver_response
-                    ]
+                ]
             )
             n_responses_to_unintelligible = len(
                 adj_utterances_age[
                     (adj_utterances_age.utt_child_intelligible == False)
                     & adj_utterances_age.caregiver_response
-                    ]
+                ]
             )
 
             if (
@@ -578,3 +526,187 @@ if __name__ == "__main__":
             hue="caregiver_response_contingent",
         )
         plt.show()
+
+
+def perform_analysis_speech_relatedness(adj_utterances):
+    # Clean utterances
+    adj_utterances["utt_child"] = adj_utterances.utt_child.apply(clean_utterance)
+    adj_utterances["utt_car"] = adj_utterances.utt_car.apply(clean_utterance)
+    adj_utterances["utt_child_follow_up"] = adj_utterances.utt_child_follow_up.apply(
+        clean_utterance
+    )
+
+    # Drop empty utterances
+    adj_utterances = adj_utterances[
+        (
+            (adj_utterances.utt_child != EMPTY_UTTERANCE)
+            & (adj_utterances.utt_car != EMPTY_UTTERANCE)
+            & (adj_utterances.utt_child_follow_up != EMPTY_UTTERANCE)
+        )
+    ]
+
+    # Label utterances as speech or non-speech
+    adj_utterances = adj_utterances.assign(
+        utt_child_speech_related=adj_utterances.utt_child.apply(is_speech_related)
+    )
+    adj_utterances = adj_utterances.assign(
+        follow_up_speech_related=adj_utterances.utt_child_follow_up.apply(
+            is_speech_related
+        )
+    )
+
+    # Label caregiver responses as present or not
+    adj_utterances = adj_utterances.assign(
+        caregiver_response=adj_utterances.apply(
+            caregiver_speech_related_response, axis=1
+        )
+    )
+
+    # Remove NaNs
+    adj_utterances = adj_utterances.dropna(
+        subset=("utt_child_speech_related", "follow_up_speech_related")
+    )
+
+    counter_non_speech = Counter(adj_utterances[adj_utterances.utt_child_speech_related == False].utt_child.values)
+    print("Most common non-speech related sounds: ")
+    print(counter_non_speech.most_common())
+
+    # Filter for corpora that actually annotate non-speech-related sounds
+    good_corpora = []
+    for corpus in adj_utterances.corpus.unique():
+        d_corpus = adj_utterances[adj_utterances.corpus == corpus]
+        ratio = len(d_corpus[d_corpus.utt_child_speech_related == False]) / len(
+            d_corpus[d_corpus.utt_child_speech_related == True]
+        )
+        if ratio > MIN_RATIO_NONSPEECH:
+            good_corpora.append(corpus)
+    print("Filtered corpora: ", good_corpora)
+    adj_utterances = adj_utterances[adj_utterances.corpus.isin(good_corpora)]
+
+    # Label caregiver responses as contingent on child utterance or not
+    adj_utterances = adj_utterances.assign(
+        caregiver_response_contingent=adj_utterances[
+            ["utt_child_speech_related", "caregiver_response"]
+        ].apply(caregiver_response_contingent_on_speech_relatedness, axis=1)
+    )
+
+    n_responses_to_speech = len(
+        adj_utterances[
+            adj_utterances.utt_child_speech_related & adj_utterances.caregiver_response
+        ]
+    )
+    n_speech = len(adj_utterances[adj_utterances.utt_child_speech_related])
+
+    n_responses_to_non_speech = len(
+        adj_utterances[
+            (adj_utterances.utt_child_speech_related == False)
+            & adj_utterances.caregiver_response
+        ]
+    )
+    n_non_speech = len(adj_utterances[adj_utterances.utt_child_speech_related == False])
+
+    contingency_caregiver = (n_responses_to_speech / n_speech) - (
+        n_responses_to_non_speech / n_non_speech
+    )
+    print(f"Caregiver contingency: {contingency_caregiver:.4f}")
+
+    # Contingency of child vocalization on previous adult response (positive case):
+    n_follow_up_speech_related_if_response_to_speech_related = len(
+        adj_utterances[
+            adj_utterances.follow_up_speech_related
+            & adj_utterances.utt_child_speech_related
+            & adj_utterances.caregiver_response
+        ]
+    )
+    n_responses_to_speech_related = len(
+        adj_utterances[
+            adj_utterances.utt_child_speech_related & adj_utterances.caregiver_response
+        ]
+    )
+
+    n_follow_up_speech_related_if_no_response_to_speech_related = len(
+        adj_utterances[
+            adj_utterances.follow_up_speech_related
+            & adj_utterances.utt_child_speech_related
+            & (adj_utterances.caregiver_response == False)
+        ]
+    )
+    n_no_responses_to_speech_related = len(
+        adj_utterances[
+            adj_utterances.utt_child_speech_related
+            & (adj_utterances.caregiver_response == False)
+        ]
+    )
+
+    ratio_follow_up_speech_related_if_response_to_speech_related = (
+        n_follow_up_speech_related_if_response_to_speech_related
+        / n_responses_to_speech_related
+    )
+    ratio_follow_up_speech_related_if_no_response_to_speech_related = (
+        n_follow_up_speech_related_if_no_response_to_speech_related
+        / n_no_responses_to_speech_related
+    )
+    contingency_children_pos_case = (
+        ratio_follow_up_speech_related_if_response_to_speech_related
+        - ratio_follow_up_speech_related_if_no_response_to_speech_related
+    )
+    print(f"Child contingency (positive case): {contingency_children_pos_case:.4f}")
+
+    # Statsmodels prefers 1 and 0 over True and False:
+    adj_utterances.replace({False: 0, True: 1}, inplace=True)
+
+    mod = smf.glm(
+        "caregiver_response ~ utt_child_speech_related",
+        family=sm.families.Binomial(),
+        data=adj_utterances,
+    ).fit()
+    print(mod.summary())
+
+    mod = smf.glm(
+        "follow_up_speech_related ~ caregiver_response_contingent",
+        family=sm.families.Binomial(),
+        data=adj_utterances[adj_utterances.utt_child_speech_related == True],
+    ).fit()
+    print(mod.summary())
+
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    file_name = os.path.expanduser(
+        f"~/data/communicative_feedback/chi_car_adjacent_utterances.csv"
+    )
+
+    adjacent_utterances = preprocess_transcripts(CANDIDATE_CORPORA)
+    adjacent_utterances.to_csv(file_name, index=False)
+
+    adjacent_utterances = pd.read_csv(file_name, index_col=None)
+
+    # Remove adjacent_utterances with too long negative pauses
+    adjacent_utterances = adjacent_utterances[
+        (adjacent_utterances.response_latency >= MAX_NEG_RESPONSE_LATENCY)
+    ]
+
+    if not args.corpora:
+        print(f"No corpora given, selecting based on average response time")
+        args.corpora = filter_corpora_based_on_response_latency_length(
+            CANDIDATE_CORPORA, adjacent_utterances
+        )
+
+    print(f"Corpora included in analysis: {args.corpora}")
+
+    min_age = adjacent_utterances.age.min()
+    max_age = adjacent_utterances.age.max()
+    mean_age = adjacent_utterances.age.mean()
+    print(
+        f"Mean of child age selected corpora: {mean_age:.1f} (min: {min_age} max: {max_age})"
+    )
+
+    # Filter corpora
+    adjacent_utterances = adjacent_utterances[
+        adjacent_utterances.corpus.isin(args.corpora)
+    ]
+
+    # perform_analysis_intelligibility(adjacent_utterances.copy())
+    #
+    perform_analysis_speech_relatedness(adjacent_utterances.copy())
