@@ -98,7 +98,7 @@ def find_child_caregiver_adjacent_utterances(corpus, transcripts):
 
     utts_child = transcripts.utterances(
         by_files=True,
-        clean=True,
+        clean=False,
         time_marker=True,
         raise_error_on_missing_time_marker=False,
         phon=True,  # Setting phon to true to keep "xxx" and "yyy" in utterances
@@ -186,7 +186,6 @@ def preprocess_transcripts(corpora):
         transcripts = pylangacq.read_chat(
             os.path.expanduser(f"~/data/CHILDES/{corpus}/*.cha"),
             parse_morphology_information=False,
-            clean=False,
         )
         print("done.")
         adj_utterances_transcript = find_child_caregiver_adjacent_utterances(
@@ -677,8 +676,8 @@ if __name__ == "__main__":
         f"~/data/communicative_feedback/chi_car_adjacent_utterances.csv"
     )
 
-    adjacent_utterances = preprocess_transcripts(CANDIDATE_CORPORA)
-    adjacent_utterances.to_csv(file_name, index=False)
+    # adjacent_utterances = preprocess_transcripts(CANDIDATE_CORPORA)
+    # adjacent_utterances.to_csv(file_name, index=False)
 
     adjacent_utterances = pd.read_csv(file_name, index_col=None)
 
@@ -699,7 +698,7 @@ if __name__ == "__main__":
     max_age = adjacent_utterances.age.max()
     mean_age = adjacent_utterances.age.mean()
     print(
-        f"Mean of child age selected corpora: {mean_age:.1f} (min: {min_age} max: {max_age})"
+        f"Mean of child age in selected corpora: {mean_age:.1f} (min: {min_age} max: {max_age})"
     )
 
     # Filter corpora
