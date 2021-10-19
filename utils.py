@@ -90,6 +90,7 @@ def remove_nonspeech_events(utterance):
     cleaned_utterance = [word for word in words if word_is_speech_related(word)]
 
     cleaned_utterance = " ".join(cleaned_utterance)
+    cleaned_utterance = remove_whitespace(cleaned_utterance)
     return cleaned_utterance
 
 
@@ -125,7 +126,7 @@ def clean_utterance(utterance):
     # remove best guess markers
     utterance = re.sub(r"\[\?[\S\s]*]", "", utterance)
     # remove alternative transcriptions
-    utterance = re.sub(r"\[=? [\S\s]*]", "", utterance)
+    utterance = re.sub(r"\[=\? [\S\s]*]", "", utterance)
     # remove stress markers
     utterance = re.sub(r"\[!+]", "", utterance)
     # Remove "complex local events"
@@ -247,4 +248,5 @@ def remove_babbling(utterance):
     filtered_utterance = [word for word in words if not is_babbling(word)]
 
     filtered_utterance = " ".join(filtered_utterance)
+    filtered_utterance = clean_utterance(filtered_utterance)
     return filtered_utterance
