@@ -101,6 +101,7 @@ def remove_whitespace(utterance):
     cleaned_utterance = re.sub(r"^\s+", "", cleaned_utterance)
     return cleaned_utterance
 
+
 def clean_utterance(utterance):
     """Remove all superfluous annotation information."""
     # Remove timing information:
