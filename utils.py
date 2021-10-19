@@ -93,6 +93,13 @@ def remove_nonspeech_events(utterance):
     return cleaned_utterance
 
 
+def remove_whitespace(utterance):
+    # Remove trailing whitespace
+    cleaned_utterance = re.sub(r"\s+$", "", utterance)
+    # Remove whitespace at beginning
+    cleaned_utterance = re.sub(r"^\s+", "", cleaned_utterance)
+    return cleaned_utterance
+
 def clean_utterance(utterance):
     """Remove all superfluous annotation information."""
     # Remove timing information:
@@ -127,7 +134,7 @@ def clean_utterance(utterance):
     words = utterance.split(" ")
     cleaned_utterance = []
     for word in words:
-        if not is_excluded_code(word):
+        if not word == EMPTY_UTTERANCE and not is_excluded_code(word):
             # remove other codes:
             word = re.sub(r"@z:\S*", "", word)
             # child invented forms, family forms, neologisms
@@ -175,11 +182,7 @@ def clean_utterance(utterance):
     cleaned_utterance = re.sub(r"''", "", cleaned_utterance)
     cleaned_utterance = re.sub(r"[\.!\?]+\s*$", "", cleaned_utterance)
 
-    # Remove trailing whitespace
-    cleaned_utterance = re.sub(r"\s+$", "", cleaned_utterance)
-    # Remove whitespace at beginning
-    cleaned_utterance = re.sub(r"^\s+", "", cleaned_utterance)
-
+    cleaned_utterance = remove_whitespace(cleaned_utterance)
     return cleaned_utterance
 
 
@@ -243,4 +246,5 @@ def remove_babbling(utterance):
     words = utterance.split(" ")
     filtered_utterance = [word for word in words if not is_babbling(word)]
 
-    return " ".join(filtered_utterance)
+    filtered_utterance = " ".join(filtered_utterance)
+    return filtered_utterance

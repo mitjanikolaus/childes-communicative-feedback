@@ -14,7 +14,7 @@ from utils import (
     remove_babbling,
     EMPTY_UTTERANCE,
     clean_utterance,
-    remove_nonspeech_events, PATH_ADJACENT_UTTERANCES, CODE_UNINTELLIGIBLE,
+    remove_nonspeech_events, PATH_ADJACENT_UTTERANCES, CODE_UNINTELLIGIBLE, remove_whitespace,
 )
 
 
@@ -66,6 +66,7 @@ def is_intelligible(
 ):
     utt_without_babbling = remove_babbling(utterance)
 
+    utt_without_babbling = remove_whitespace(utt_without_babbling)
     if utt_without_babbling == EMPTY_UTTERANCE:
         return False
 
@@ -97,6 +98,7 @@ def is_speech_related(
 ):
     utt_without_nonspeech = remove_nonspeech_events(utterance)
 
+    utt_without_nonspeech = remove_whitespace(utt_without_nonspeech)
     if utt_without_nonspeech == EMPTY_UTTERANCE:
         return False
 
@@ -445,7 +447,9 @@ def perform_analysis_speech_relatedness(adj_utterances):
         )
         if ratio > MIN_RATIO_NONSPEECH:
             good_corpora.append(corpus)
+        print(f"{corpus}: {ratio}")
     print("Filtered corpora: ", good_corpora)
+
     adj_utterances = adj_utterances[adj_utterances.corpus.isin(good_corpora)]
 
     # Label caregiver responses as contingent on child utterance or not
