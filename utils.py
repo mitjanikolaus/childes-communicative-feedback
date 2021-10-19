@@ -3,7 +3,9 @@ import re
 
 import pandas as pd
 
-PATH_ADJACENT_UTTERANCES = os.path.expanduser("~/data/communicative_feedback/chi_car_adjacent_utterances.csv")
+PATH_ADJACENT_UTTERANCES = os.path.expanduser(
+    "~/data/communicative_feedback/chi_car_adjacent_utterances.csv"
+)
 
 # codes that will be excluded from analysis
 IS_UNTRANSCRIBED = lambda word: "www" in word
@@ -15,7 +17,7 @@ IS_EXCLUDED_WORD = lambda word: "@x:" in word
 IS_PAUSE = lambda word: bool(re.match(r"\(\d*?\.*\d*?\)", word))
 IS_OMITTED_WORD = lambda word: word.startswith("0")
 IS_SATELLITE_MARKER = lambda word: word == "‡"
-IS_QUOTATION_MARKER = lambda word: word in ["+\"/", "+\"/.", "+\"", "+\"."]
+IS_QUOTATION_MARKER = lambda word: word in ['+"/', '+"/.', '+"', '+".']
 IS_UNKNOWN_CODE = lambda word: word == "zzz"
 
 
@@ -40,26 +42,49 @@ def is_excluded_code(word):
 EMPTY_UTTERANCE = ""
 
 # non-speech-related sounds
-IS_SIMPLE_EVENT_NON_SPEECH = (
-    lambda word: word.startswith("&=")
-    and word != CODE_EVENT_BABBLES
-    and word != CODE_EVENT_VOCALIZES
-)
+IS_SIMPLE_EVENT_NON_SPEECH = lambda word: word.startswith("&=") and word not in [
+    CODE_EVENT_BABBLES,
+    CODE_EVENT_VOCALIZES,
+    CODE_EVENT_WHISPERS,
+    CODE_EVENT_MUMBLES,
+]
 IS_OTHER_LAUGHTER = lambda word: word in ["ahhah", "haha", "hahaha", "hahahaha"]
 
 
 def word_is_speech_related(word):
-    if (
-        IS_SIMPLE_EVENT_NON_SPEECH(word)
-        or IS_OTHER_LAUGHTER(word)
-    ):
+    if IS_SIMPLE_EVENT_NON_SPEECH(word) or IS_OTHER_LAUGHTER(word):
         return False
     return True
 
 
+def get_paralinguistic_event(utterance):
+    match = re.search(r"\[=! [\S\s]*]", utterance)
+    if match:
+        pos = match.regs[0]
+        event = utterance[pos[0] : pos[1]]
+        return event
+
+    return None
+
+
+def paralinguistic_event_is_speech_related(event):
+    if (
+        "babbl" in event
+        or "hum" in event
+        or "sing" in event
+        or "whisper" in event
+        or "mumbl" in event
+    ):
+        return True
+    return False
+
+
 def remove_nonspeech_events(utterance):
-    # Remove paralinguistic material
-    utterance = re.sub(r"\[=! [\S\s]*]", "", utterance)
+    # Remove paralinguistic events
+    event = get_paralinguistic_event(utterance)
+    if event:
+        if not paralinguistic_event_is_speech_related(event):
+            utterance = utterance.replace(event, "")
 
     words = utterance.split(" ")
     cleaned_utterance = [word for word in words if word_is_speech_related(word)]
@@ -146,14 +171,14 @@ def clean_utterance(utterance):
     cleaned_utterance = " ".join(cleaned_utterance)
 
     # Remove punctuation
-    cleaned_utterance = re.sub(r"[,\"„”]", '', cleaned_utterance)
-    cleaned_utterance = re.sub(r"''", '', cleaned_utterance)
-    cleaned_utterance = re.sub(r"[\.!\?]+\s*$", '', cleaned_utterance)
+    cleaned_utterance = re.sub(r"[,\"„”]", "", cleaned_utterance)
+    cleaned_utterance = re.sub(r"''", "", cleaned_utterance)
+    cleaned_utterance = re.sub(r"[\.!\?]+\s*$", "", cleaned_utterance)
 
     # Remove trailing whitespace
-    cleaned_utterance = re.sub(r'\s+$', '', cleaned_utterance)
+    cleaned_utterance = re.sub(r"\s+$", "", cleaned_utterance)
     # Remove whitespace at beginning
-    cleaned_utterance = re.sub(r'^\s+', '', cleaned_utterance)
+    cleaned_utterance = re.sub(r"^\s+", "", cleaned_utterance)
 
     return cleaned_utterance
 
@@ -172,6 +197,9 @@ CODE_PHONOLGICAL_CONSISTENT_FORM = "@p"
 CODE_PHONOLOGICAL_FRAGMENT = "&"
 CODE_EVENT_BABBLES = "&=babbles"
 CODE_EVENT_VOCALIZES = "&=vocalizes"
+CODE_EVENT_WHISPERS = "&=whispers"
+CODE_EVENT_MUMBLES = "&=mumbles"
+
 OTHER_BABBLING = ["ba", "baa", "babaa", "ababa", "bada"]
 
 
@@ -189,10 +217,12 @@ def is_babbling(word):
         or word == CODE_PHONETIC
         or word.startswith(CODE_EVENT_BABBLES)
         or word.startswith(CODE_EVENT_VOCALIZES)
+        or word.startswith(CODE_EVENT_MUMBLES)
         or word in OTHER_BABBLING
         or (
             word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
-            and word.lower().replace(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION, "") not in VOCAB
+            and word.lower().replace(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION, "")
+            not in VOCAB
         )
         or (
             word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM)
