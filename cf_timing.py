@@ -452,6 +452,10 @@ def perform_analysis_speech_relatedness(adj_utterances):
 
     adj_utterances = adj_utterances[adj_utterances.corpus.isin(good_corpora)]
 
+    # Get the number of children in all corpora:
+    num_children = len(adj_utterances.child_name.unique())
+    print(f"Number of children in the analysis: {num_children}")
+
     # Label caregiver responses as contingent on child utterance or not
     adj_utterances = adj_utterances.assign(
         caregiver_response_contingent=adj_utterances[
@@ -569,6 +573,6 @@ if __name__ == "__main__":
         adjacent_utterances.corpus.isin(args.corpora)
     ]
 
-    perform_analysis_intelligibility(adjacent_utterances.copy())
-
-    # perform_analysis_speech_relatedness(adjacent_utterances.copy())
+    # perform_analysis_intelligibility(adjacent_utterances.copy())
+    #
+    perform_analysis_speech_relatedness(adjacent_utterances.copy())
