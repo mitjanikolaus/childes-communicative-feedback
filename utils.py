@@ -1,9 +1,9 @@
+import os
 import re
 
 import pandas as pd
 
-
-TOKENS_PUNCTUATION = [".", "?", "!", '"', "''", "„", "<", ">"]
+PATH_ADJACENT_UTTERANCES = os.path.expanduser("~/data/communicative_feedback/chi_car_adjacent_utterances.csv")
 
 # codes that will be excluded from analysis
 IS_UNTRANSCRIBED = lambda word: "www" in word
@@ -12,24 +12,10 @@ IS_SELF_INTERRUPTION = lambda word: word == "+//"
 IS_TRAILING_OFF = lambda word: word == "+..."
 IS_TRAILING_OFF_2 = lambda word: word == "+.."
 IS_EXCLUDED_WORD = lambda word: "@x:" in word
-IS_REPETITION = lambda word: word.startswith("[/")
 IS_PAUSE = lambda word: bool(re.match(r"\(\d*?\.*\d*?\)", word))
-IS_COLLAPSE = lambda word: word.startswith("[x")
-IS_POSTCODE = lambda word: word.startswith("[+")
-IS_ERROR_CODE = lambda word: word.startswith("[*")
-IS_ALTERNATIVE_TRANSCRIPTION = lambda word: word.startswith("[=?")
-IS_COMMENT = lambda word: word.startswith("[%")
-IS_LANGUAGE_PRECODE = lambda word: word.startswith("[-")
-IS_OVERLAP_MARKER = (
-    lambda word: word.startswith("[<") or word.startswith("[>") or word == "+<"
-)
-IS_BEST_GUESS_MARKER = lambda word: word == "[?]"
-IS_STRESS_MARKER = lambda word: word == "[!]"
-IS_REPLACEMENT = lambda word: word.startswith("[:")
 IS_OMITTED_WORD = lambda word: word.startswith("0")
-IS_PUNCTUATION = lambda word: word in TOKENS_PUNCTUATION
 IS_SATELLITE_MARKER = lambda word: word == "‡"
-IS_QUOTATION_MARKER = lambda word: '"/.' in word
+IS_QUOTATION_MARKER = lambda word: word in ["+\"/", "+\"/.", "+\"", "+\"."]
 IS_UNKNOWN_CODE = lambda word: word == "zzz"
 
 
@@ -41,20 +27,8 @@ def is_excluded_code(word):
         or IS_TRAILING_OFF(word)
         or IS_TRAILING_OFF_2(word)
         or IS_EXCLUDED_WORD(word)
-        or IS_REPETITION(word)
         or IS_PAUSE(word)
-        or IS_COLLAPSE(word)
-        or IS_POSTCODE(word)
-        or IS_ERROR_CODE(word)
-        or IS_ALTERNATIVE_TRANSCRIPTION(word)
-        or IS_COMMENT(word)
-        or IS_LANGUAGE_PRECODE(word)
-        or IS_OVERLAP_MARKER(word)
-        or IS_BEST_GUESS_MARKER(word)
-        or IS_STRESS_MARKER(word)
-        or IS_REPLACEMENT(word)
         or IS_OMITTED_WORD(word)
-        or IS_PUNCTUATION(word)
         or IS_SATELLITE_MARKER(word)
         or IS_QUOTATION_MARKER(word)
         or IS_UNKNOWN_CODE(word)
@@ -98,14 +72,32 @@ def clean_utterance(utterance):
     """Remove all superfluous annotation information."""
     # Remove timing information:
     utterance = re.sub(r"[^]+?", "", utterance)
-    # remove explanations:
+    # remove postcodes
     utterance = re.sub(r"\[\+[\S\s]*]", "", utterance)
+    # remove precodes
+    utterance = re.sub(r"\[-[\S\s]*]", "", utterance)
+    # remove comments
+    utterance = re.sub(r"\[%[\S\s]*]", "", utterance)
+    # remove explanations:
+    utterance = re.sub(r"\[= [\S\s]*]", "", utterance)
+    # remove replacements:
+    utterance = re.sub(r"\[:+ [\S\s]*]", "", utterance)
+    # remove error codes:
+    utterance = re.sub(r"\[\*[\S\s]*]", "", utterance)
+    # remove repetition markers / collapses:
+    utterance = re.sub(r"\[/[\S\s]*]", "", utterance)
+    utterance = re.sub(r"\[x[\S\s]*]", "", utterance)
+    # remove overlap markers
+    utterance = re.sub(r"\[<\d*]", "", utterance)
+    utterance = re.sub(r"\[>\d*]", "", utterance)
+    # remove best guess markers
+    utterance = re.sub(r"\[\?[\S\s]*]", "", utterance)
+    # remove alternative transcriptions
+    utterance = re.sub(r"\[=? [\S\s]*]", "", utterance)
+    # remove stress markers
+    utterance = re.sub(r"\[!+]", "", utterance)
     # Remove "complex local events"
     utterance = re.sub(r"\[\^\S*]", "", utterance)
-    # Remove trailing whitespace
-    utterance = re.sub(r'\s+$', '', utterance)
-    # Remove whitespace at beginning
-    utterance = re.sub(r'^\s+', '', utterance)
 
     words = utterance.split(" ")
     cleaned_utterance = []
@@ -152,6 +144,17 @@ def clean_utterance(utterance):
             cleaned_utterance.append(word)
 
     cleaned_utterance = " ".join(cleaned_utterance)
+
+    # Remove punctuation
+    cleaned_utterance = re.sub(r"[,\"„”]", '', cleaned_utterance)
+    cleaned_utterance = re.sub(r"''", '', cleaned_utterance)
+    cleaned_utterance = re.sub(r"[\.!\?]+\s*$", '', cleaned_utterance)
+
+    # Remove trailing whitespace
+    cleaned_utterance = re.sub(r'\s+$', '', cleaned_utterance)
+    # Remove whitespace at beginning
+    cleaned_utterance = re.sub(r'^\s+', '', cleaned_utterance)
+
     return cleaned_utterance
 
 

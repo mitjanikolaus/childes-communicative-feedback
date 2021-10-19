@@ -12,7 +12,8 @@ from cf_timing import (
     filter_corpora_based_on_response_latency_length,
     CANDIDATE_CORPORA,
 )
-from utils import is_babbling, VOCAB, CODE_PHONOLGICAL_CONSISTENT_FORM, CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION
+from utils import is_babbling, VOCAB, CODE_PHONOLGICAL_CONSISTENT_FORM, CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION, \
+    PATH_ADJACENT_UTTERANCES
 
 
 def check_vocab(adj_utterances):
@@ -51,8 +52,12 @@ def check_vocab(adj_utterances):
                 and not is_babbling(word)
                 and not word == EMPTY_UTTERANCE
             ):
-                if word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM) or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION):
-                    missing.append(word.replace(CODE_PHONOLGICAL_CONSISTENT_FORM, ""))
+                # if word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM) or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION):
+                # missing.append(word.replace(CODE_PHONOLGICAL_CONSISTENT_FORM, ""))
+                if word == ',':
+                    print(utt)
+                missing.append(word)
+
     print(Counter(missing).most_common())
     for word, freq in Counter(missing).most_common():
         if freq > 5:
@@ -60,11 +65,7 @@ def check_vocab(adj_utterances):
 
 
 if __name__ == "__main__":
-    file_name = os.path.expanduser(
-        f"~/data/communicative_feedback/chi_car_adjacent_utterances.csv"
-    )
-
-    adjacent_utterances = pd.read_csv(file_name, index_col=None)
+    adjacent_utterances = pd.read_csv(PATH_ADJACENT_UTTERANCES, index_col=None)
 
     corpora = filter_corpora_based_on_response_latency_length(
         CANDIDATE_CORPORA, adjacent_utterances
