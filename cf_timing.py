@@ -14,7 +14,7 @@ from utils import (
     remove_babbling,
     EMPTY_UTTERANCE,
     clean_utterance,
-    remove_nonspeech_events, PATH_ADJACENT_UTTERANCES,
+    remove_nonspeech_events, PATH_ADJACENT_UTTERANCES, CODE_UNINTELLIGIBLE,
 )
 
 
@@ -99,6 +99,10 @@ def is_speech_related(
 
     if utt_without_nonspeech == EMPTY_UTTERANCE:
         return False
+
+    # We exclude completely unintelligible utterances (we don't know whether it's speech-related or not)
+    if utterance == CODE_UNINTELLIGIBLE:
+        return None
 
     is_partly_speech_related = len(utt_without_nonspeech) != len(utterance)
     if is_partly_speech_related:
@@ -428,9 +432,9 @@ def perform_analysis_speech_relatedness(adj_utterances):
         subset=("utt_child_speech_related", "follow_up_speech_related")
     )
 
-    counter_non_speech = Counter(adj_utterances[adj_utterances.utt_child_speech_related == False].utt_child.values)
-    print("Most common non-speech related sounds: ")
-    print(counter_non_speech.most_common())
+    # counter_non_speech = Counter(adj_utterances[adj_utterances.utt_child_speech_related == False].utt_child.values)
+    # print("Most common non-speech related sounds: ")
+    # print(counter_non_speech.most_common())
 
     # Filter for corpora that actually annotate non-speech-related sounds
     good_corpora = []
@@ -561,6 +565,6 @@ if __name__ == "__main__":
         adjacent_utterances.corpus.isin(args.corpora)
     ]
 
-    # perform_analysis_intelligibility(adjacent_utterances.copy())
-    #
-    perform_analysis_speech_relatedness(adjacent_utterances.copy())
+    perform_analysis_intelligibility(adjacent_utterances.copy())
+
+    # perform_analysis_speech_relatedness(adjacent_utterances.copy())
