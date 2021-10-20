@@ -11,7 +11,6 @@ import statsmodels.formula.api as smf
 from utils import filter_corpora_based_on_response_latency_length
 from search_adjacent_utterances import CANDIDATE_CORPORA
 from utils import (
-    remove_babbling,
     EMPTY_UTTERANCE,
     clean_utterance,
     remove_nonspeech_events, PATH_ADJACENT_UTTERANCES, CODE_UNINTELLIGIBLE, remove_whitespace,
@@ -31,6 +30,10 @@ LABEL_PARTIALLY_SPEECH_RELATED = True
 MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
 MIN_RATIO_NONSPEECH = 0.000001
+
+# Ages aligned to study of Warlaumont et al.
+MIN_AGE = 8
+MAX_AGE = 48
 
 
 def parse_args():
@@ -126,6 +129,7 @@ def perform_analysis_speech_relatedness(adj_utterances):
 
     # Filter for corpora that actually annotate non-speech-related sounds
     good_corpora = []
+    print("Ratios nonspeech/speech for each corpus:")
     for corpus in adj_utterances.corpus.unique():
         d_corpus = adj_utterances[adj_utterances.corpus == corpus]
         ratio = len(d_corpus[d_corpus.utt_child_speech_related == False]) / len(
@@ -247,9 +251,14 @@ if __name__ == "__main__":
 
     print(f"Corpora included in analysis: {args.corpora}")
 
-    # Filter corpora
+    # Filter by corpora
     adjacent_utterances = adjacent_utterances[
         adjacent_utterances.corpus.isin(args.corpora)
+    ]
+
+    # Filter by age
+    adjacent_utterances = adjacent_utterances[
+        (MIN_AGE <= adjacent_utterances.age) & (adjacent_utterances.age <= MAX_AGE)
     ]
 
     min_age = adjacent_utterances.age.min()
