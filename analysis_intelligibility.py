@@ -21,7 +21,7 @@ from utils import (
 
 # TODO: define age range
 MIN_AGE = 10    # age of first words?
-MAX_AGE = 48
+MAX_AGE = 60
 
 # 1s response threshold
 RESPONSE_THRESHOLD = 1000  # ms
@@ -339,6 +339,8 @@ if __name__ == "__main__":
         args.corpora = filter_corpora_based_on_response_latency_length(
             CANDIDATE_CORPORA,
             adjacent_utterances,
+            MIN_AGE,
+            MAX_AGE,
             RESPONSE_LATENCY_STANDARD_DEVIATIONS_OFF,
         )
 

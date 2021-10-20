@@ -256,6 +256,8 @@ if __name__ == "__main__":
         args.corpora = filter_corpora_based_on_response_latency_length(
             CANDIDATE_CORPORA,
             adjacent_utterances,
+            MIN_AGE,
+            MAX_AGE,
             RESPONSE_LATENCY_STANDARD_DEVIATIONS_OFF,
         )
 

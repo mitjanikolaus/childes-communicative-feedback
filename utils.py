@@ -254,13 +254,16 @@ def remove_babbling(utterance):
 
 
 def filter_corpora_based_on_response_latency_length(
-    corpora, adj_utterances, standard_deviations_off
+    corpora, adj_utterances, min_age, max_age, standard_deviations_off
 ):
     # Calculate mean and stddev of response latency using data from Nguyen, Versyp, Cox, Fusaroli (2021)
     latency_data = pd.read_csv("data/MA turn-taking.csv")
 
     # Use only non-clinical data:
     latency_data = latency_data[latency_data["clinical group"] == "Healthy"]
+
+    # Use only data of the target age range:
+    latency_data = latency_data[(latency_data.mean_age_infants_months >= min_age) & (latency_data.mean_age_infants_months <= max_age)]
 
     mean_latency = latency_data.adult_response_latency.mean()
     std_mean_latency = latency_data.adult_response_latency.std()
@@ -270,7 +273,7 @@ def filter_corpora_based_on_response_latency_length(
 
     min_age = latency_data.mean_age_infants_months.min()
     max_age = latency_data.mean_age_infants_months.max()
-    mean_age = latency_data.mean_age_infants_months.max()
+    mean_age = latency_data.mean_age_infants_months.mean()
     print(
         f"Mean of child age in meta-analysis: {mean_age:.1f} (min: {min_age} max: {max_age})"
     )
