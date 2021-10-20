@@ -5,15 +5,10 @@ import pandas as pd
 
 import nltk
 
-from cf_timing import (
-    clean_utterance,
-    remove_nonspeech_events,
-    EMPTY_UTTERANCE,
-    filter_corpora_based_on_response_latency_length,
-    CANDIDATE_CORPORA,
-)
+from search_adjacent_utterances import CANDIDATE_CORPORA
 from utils import is_babbling, VOCAB, CODE_PHONOLGICAL_CONSISTENT_FORM, CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION, \
-    PATH_ADJACENT_UTTERANCES
+    PATH_ADJACENT_UTTERANCES, filter_corpora_based_on_response_latency_length, clean_utterance, remove_nonspeech_events, \
+    EMPTY_UTTERANCE
 
 
 def check_vocab(adj_utterances):

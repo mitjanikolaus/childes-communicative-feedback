@@ -251,3 +251,35 @@ def remove_babbling(utterance):
     filtered_utterance = " ".join(filtered_utterance)
     filtered_utterance = clean_utterance(filtered_utterance)
     return filtered_utterance
+
+
+def filter_corpora_based_on_response_latency_length(corpora, adj_utterances):
+    # Calculate mean and stddev of response latency using data from Nguyen, Versyp, Cox, Fusaroli (2021)
+    latency_data = pd.read_csv("data/MA turn-taking.csv")
+
+    # Use only non-clinical data:
+    latency_data = latency_data[latency_data["clinical group"] == "Healthy"]
+
+    mean_latency = latency_data.adult_response_latency.mean()
+    std_mean_latency = latency_data.adult_response_latency.std()
+    print(
+        f"Mean of response latency in meta-analysis: {mean_latency:.1f} +/- {std_mean_latency:.1f}"
+    )
+
+    min_age = latency_data.mean_age_infants_months.min()
+    max_age = latency_data.mean_age_infants_months.max()
+    mean_age = latency_data.mean_age_infants_months.max()
+    print(
+        f"Mean of child age in meta-analysis: {mean_age:.1f} (min: {min_age} max: {max_age})"
+    )
+
+    # Filter corpora to be in range of mean +/- 1 standard deviation
+    filtered = []
+    for corpus in corpora:
+        mean = adj_utterances[
+            adj_utterances.corpus == corpus
+        ].response_latency.values.mean()
+        if mean_latency - std_mean_latency < mean < mean_latency + std_mean_latency:
+            filtered.append(corpus)
+
+    return filtered
