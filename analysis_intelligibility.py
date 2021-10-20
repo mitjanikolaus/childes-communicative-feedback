@@ -14,20 +14,20 @@ from utils import (
     remove_babbling,
     EMPTY_UTTERANCE,
     clean_utterance,
-    remove_nonspeech_events, PATH_ADJACENT_UTTERANCES, CODE_UNINTELLIGIBLE, remove_whitespace,
+    remove_nonspeech_events,
+    PATH_ADJACENT_UTTERANCES,
+    remove_whitespace,
 )
 
-
-# Separate analysis for children of different age groups
-# AGE_BINS = [6, 12, 18, 24, 30, 36, 42, 48, 54, 60]
-# AGE_BINS_WINDOW = 3
-
-# Only one bin, use this setup if you do not want to control for age
-AGE_BINS = [24]
-AGE_BINS_WINDOW = 100
+# TODO: define age range
+MIN_AGE = 10    # age of first words?
+MAX_AGE = 48
 
 # 1s response threshold
 RESPONSE_THRESHOLD = 1000  # ms
+
+# Number of standard deviations that the mean response latency of a corpus can be off the reference mean
+RESPONSE_LATENCY_STANDARD_DEVIATIONS_OFF = 1
 
 # Label for partially intelligible utterances
 # Set to True to count as intelligible, False to count as unintelligible or None to exclude these utterances from
@@ -37,6 +37,12 @@ LABEL_PARTIALLY_INTELLIGIBLE = None
 # TODO check that pause is not too long (neg): what is a reasonable value?
 # 1 second
 MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
+
+# Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words
+EXCLUDED_CORPORA = ["Forrester"]
+
+# currently not used to exclude corpora, just stored for reference:
+CORPORA_NOT_LONGITUDINAL = ["Gleason", "Rollins"]
 
 
 def parse_args():
@@ -133,162 +139,157 @@ def perform_analysis_intelligibility(adj_utterances):
         ].apply(caregiver_response_contingent_on_intelligibility, axis=1)
     )
 
-    for age in AGE_BINS:
-        adj_utterances_age = adj_utterances[
-            (adj_utterances.age > age - AGE_BINS_WINDOW)
-            & (adj_utterances.age <= age + AGE_BINS_WINDOW)
-        ]
-        print(
-            f"\nFound {len(adj_utterances_age)} turns for age {age} (+/- {AGE_BINS_WINDOW} months)"
+    print(
+        f"\nFound {len(adj_utterances)} turns"
+    )
+    if len(adj_utterances) > 0:
+        # Caregiver contingency:
+        n_responses_intelligible = len(
+            adj_utterances[
+                adj_utterances.utt_child_intelligible
+                & adj_utterances.caregiver_response
+            ]
         )
-        if len(adj_utterances_age) > 0:
-            # Caregiver contingency:
-            n_responses_intelligible = len(
-                adj_utterances_age[
-                    adj_utterances_age.utt_child_intelligible
-                    & adj_utterances_age.caregiver_response
-                ]
+        n_intelligible = len(
+            adj_utterances[adj_utterances.utt_child_intelligible]
+        )
+
+        n_responses_unintelligible = len(
+            adj_utterances[
+                (adj_utterances.utt_child_intelligible == False)
+                & adj_utterances.caregiver_response
+            ]
+        )
+        n_unintelligible = len(
+            adj_utterances[adj_utterances.utt_child_intelligible == False]
+        )
+
+        contingency_caregiver = (n_responses_intelligible / n_intelligible) - (
+            n_responses_unintelligible / n_unintelligible
+        )
+        print(f"Caregiver contingency: {contingency_caregiver:.4f}")
+
+        # Contingency of child vocalization on previous adult response (positive case):
+        n_follow_up_intelligible_if_response_to_intelligible = len(
+            adj_utterances[
+                adj_utterances.follow_up_intelligible
+                & adj_utterances.utt_child_intelligible
+                & adj_utterances.caregiver_response
+            ]
+        )
+        n_responses_to_intelligible = len(
+            adj_utterances[
+                adj_utterances.utt_child_intelligible
+                & adj_utterances.caregiver_response
+            ]
+        )
+
+        n_follow_up_intelligible_if_no_response_to_intelligible = len(
+            adj_utterances[
+                adj_utterances.follow_up_intelligible
+                & adj_utterances.utt_child_intelligible
+                & (adj_utterances.caregiver_response == False)
+            ]
+        )
+        n_no_responses_to_intelligible = len(
+            adj_utterances[
+                adj_utterances.utt_child_intelligible
+                & (adj_utterances.caregiver_response == False)
+            ]
+        )
+
+        # Contingency of child vocalization on previous adult response (negative case):
+        n_follow_up_intelligible_if_no_response_to_unintelligible = len(
+            adj_utterances[
+                adj_utterances.follow_up_intelligible
+                & (adj_utterances.utt_child_intelligible == False)
+                & (adj_utterances.caregiver_response == False)
+            ]
+        )
+        n_no_responses_to_unintelligible = len(
+            adj_utterances[
+                (adj_utterances.utt_child_intelligible == False)
+                & (adj_utterances.caregiver_response == False)
+            ]
+        )
+
+        n_follow_up_intelligible_if_response_to_unintelligible = len(
+            adj_utterances[
+                adj_utterances.follow_up_intelligible
+                & (adj_utterances.utt_child_intelligible == False)
+                & adj_utterances.caregiver_response
+            ]
+        )
+        n_responses_to_unintelligible = len(
+            adj_utterances[
+                (adj_utterances.utt_child_intelligible == False)
+                & adj_utterances.caregiver_response
+            ]
+        )
+
+        if (
+            (n_no_responses_to_unintelligible > 0)
+            and (n_responses_to_unintelligible > 0)
+            and (n_responses_to_intelligible > 0)
+            and (n_no_responses_to_intelligible > 0)
+        ):
+            ratio_follow_up_intelligible_if_response_to_intelligible = (
+                n_follow_up_intelligible_if_response_to_intelligible
+                / n_responses_to_intelligible
             )
-            n_intelligible = len(
-                adj_utterances_age[adj_utterances_age.utt_child_intelligible]
+            ratio_follow_up_intelligible_if_no_response_to_intelligible = (
+                n_follow_up_intelligible_if_no_response_to_intelligible
+                / n_no_responses_to_intelligible
+            )
+            contingency_children_pos_case = (
+                ratio_follow_up_intelligible_if_response_to_intelligible
+                - ratio_follow_up_intelligible_if_no_response_to_intelligible
             )
 
-            n_responses_unintelligible = len(
-                adj_utterances_age[
-                    (adj_utterances_age.utt_child_intelligible == False)
-                    & adj_utterances_age.caregiver_response
-                ]
-            )
-            n_unintelligible = len(
-                adj_utterances_age[adj_utterances_age.utt_child_intelligible == False]
+            print(
+                f"Child contingency (positive case): {contingency_children_pos_case:.4f}"
             )
 
-            contingency_caregiver = (n_responses_intelligible / n_intelligible) - (
-                n_responses_unintelligible / n_unintelligible
+            ratio_follow_up_intelligible_if_no_response_to_unintelligible = (
+                n_follow_up_intelligible_if_no_response_to_unintelligible
+                / n_no_responses_to_unintelligible
             )
-            print(f"Caregiver contingency: {contingency_caregiver:.4f}")
-
-            # Contingency of child vocalization on previous adult response (positive case):
-            n_follow_up_intelligible_if_response_to_intelligible = len(
-                adj_utterances_age[
-                    adj_utterances_age.follow_up_intelligible
-                    & adj_utterances_age.utt_child_intelligible
-                    & adj_utterances_age.caregiver_response
-                ]
+            ratio_follow_up_intelligible_if_response_to_unintelligible = (
+                n_follow_up_intelligible_if_response_to_unintelligible
+                / n_responses_to_unintelligible
             )
-            n_responses_to_intelligible = len(
-                adj_utterances_age[
-                    adj_utterances_age.utt_child_intelligible
-                    & adj_utterances_age.caregiver_response
-                ]
+            contingency_children_neg_case = (
+                ratio_follow_up_intelligible_if_no_response_to_unintelligible
+                - ratio_follow_up_intelligible_if_response_to_unintelligible
             )
 
-            n_follow_up_intelligible_if_no_response_to_intelligible = len(
-                adj_utterances_age[
-                    adj_utterances_age.follow_up_intelligible
-                    & adj_utterances_age.utt_child_intelligible
-                    & (adj_utterances_age.caregiver_response == False)
-                ]
-            )
-            n_no_responses_to_intelligible = len(
-                adj_utterances_age[
-                    adj_utterances_age.utt_child_intelligible
-                    & (adj_utterances_age.caregiver_response == False)
-                ]
+            print(
+                f"Child contingency (negative case): {contingency_children_neg_case:.4f}"
             )
 
-            # Contingency of child vocalization on previous adult response (negative case):
-            n_follow_up_intelligible_if_no_response_to_unintelligible = len(
-                adj_utterances_age[
-                    adj_utterances_age.follow_up_intelligible
-                    & (adj_utterances_age.utt_child_intelligible == False)
-                    & (adj_utterances_age.caregiver_response == False)
-                ]
-            )
-            n_no_responses_to_unintelligible = len(
-                adj_utterances_age[
-                    (adj_utterances_age.utt_child_intelligible == False)
-                    & (adj_utterances_age.caregiver_response == False)
-                ]
-            )
+            ratio_contingent_follow_ups = (
+                n_follow_up_intelligible_if_response_to_intelligible
+                + n_follow_up_intelligible_if_no_response_to_unintelligible
+            ) / (n_responses_to_intelligible + n_no_responses_to_unintelligible)
+            ratio_incontingent_follow_ups = (
+                n_follow_up_intelligible_if_no_response_to_intelligible
+                + n_follow_up_intelligible_if_response_to_unintelligible
+            ) / (n_no_responses_to_intelligible + n_responses_to_unintelligible)
 
-            n_follow_up_intelligible_if_response_to_unintelligible = len(
-                adj_utterances_age[
-                    adj_utterances_age.follow_up_intelligible
-                    & (adj_utterances_age.utt_child_intelligible == False)
-                    & adj_utterances_age.caregiver_response
-                ]
+            child_contingency_both_cases = (
+                ratio_contingent_follow_ups - ratio_incontingent_follow_ups
             )
-            n_responses_to_unintelligible = len(
-                adj_utterances_age[
-                    (adj_utterances_age.utt_child_intelligible == False)
-                    & adj_utterances_age.caregiver_response
-                ]
+            print(
+                f"Child contingency (both cases): {child_contingency_both_cases:.4f}"
+            )
+            child_contingency_both_cases_same_weighting = np.mean(
+                [contingency_children_pos_case, contingency_children_neg_case]
             )
 
-            if (
-                (n_no_responses_to_unintelligible > 0)
-                and (n_responses_to_unintelligible > 0)
-                and (n_responses_to_intelligible > 0)
-                and (n_no_responses_to_intelligible > 0)
-            ):
-                ratio_follow_up_intelligible_if_response_to_intelligible = (
-                    n_follow_up_intelligible_if_response_to_intelligible
-                    / n_responses_to_intelligible
-                )
-                ratio_follow_up_intelligible_if_no_response_to_intelligible = (
-                    n_follow_up_intelligible_if_no_response_to_intelligible
-                    / n_no_responses_to_intelligible
-                )
-                contingency_children_pos_case = (
-                    ratio_follow_up_intelligible_if_response_to_intelligible
-                    - ratio_follow_up_intelligible_if_no_response_to_intelligible
-                )
-
-                print(
-                    f"Child contingency (positive case): {contingency_children_pos_case:.4f}"
-                )
-
-                ratio_follow_up_intelligible_if_no_response_to_unintelligible = (
-                    n_follow_up_intelligible_if_no_response_to_unintelligible
-                    / n_no_responses_to_unintelligible
-                )
-                ratio_follow_up_intelligible_if_response_to_unintelligible = (
-                    n_follow_up_intelligible_if_response_to_unintelligible
-                    / n_responses_to_unintelligible
-                )
-                contingency_children_neg_case = (
-                    ratio_follow_up_intelligible_if_no_response_to_unintelligible
-                    - ratio_follow_up_intelligible_if_response_to_unintelligible
-                )
-
-                print(
-                    f"Child contingency (negative case): {contingency_children_neg_case:.4f}"
-                )
-
-                ratio_contingent_follow_ups = (
-                    n_follow_up_intelligible_if_response_to_intelligible
-                    + n_follow_up_intelligible_if_no_response_to_unintelligible
-                ) / (n_responses_to_intelligible + n_no_responses_to_unintelligible)
-                ratio_incontingent_follow_ups = (
-                    n_follow_up_intelligible_if_no_response_to_intelligible
-                    + n_follow_up_intelligible_if_response_to_unintelligible
-                ) / (n_no_responses_to_intelligible + n_responses_to_unintelligible)
-
-                child_contingency_both_cases = (
-                    ratio_contingent_follow_ups - ratio_incontingent_follow_ups
-                )
-                print(
-                    f"Child contingency (both cases): {child_contingency_both_cases:.4f}"
-                )
-                child_contingency_both_cases_same_weighting = np.mean(
-                    [contingency_children_pos_case, contingency_children_neg_case]
-                )
-
-                print(
-                    f"Child contingency (both cases, same weighting of positive and negative cases): "
-                    f"{child_contingency_both_cases_same_weighting:.4f}"
-                )
+            print(
+                f"Child contingency (both cases, same weighting of positive and negative cases): "
+                f"{child_contingency_both_cases_same_weighting:.4f}"
+            )
 
         # Statsmodels prefers 1 and 0 over True and False:
         adj_utterances.replace({False: 0, True: 1}, inplace=True)
@@ -336,13 +337,25 @@ if __name__ == "__main__":
     if not args.corpora:
         print(f"No corpora given, selecting based on average response time")
         args.corpora = filter_corpora_based_on_response_latency_length(
-            CANDIDATE_CORPORA, adjacent_utterances
+            CANDIDATE_CORPORA,
+            adjacent_utterances,
+            RESPONSE_LATENCY_STANDARD_DEVIATIONS_OFF,
         )
 
+    print("Excluding corpora: ", EXCLUDED_CORPORA)
+    adjacent_utterances = adjacent_utterances[
+        ~adjacent_utterances.corpus.isin(EXCLUDED_CORPORA)
+    ]
+
     print(f"Corpora included in analysis: {args.corpora}")
-    # Filter corpora
+    # Filter by corpora
     adjacent_utterances = adjacent_utterances[
         adjacent_utterances.corpus.isin(args.corpora)
+    ]
+
+    # Filter by age
+    adjacent_utterances = adjacent_utterances[
+        (MIN_AGE <= adjacent_utterances.age) & (adjacent_utterances.age <= MAX_AGE)
     ]
 
     min_age = adjacent_utterances.age.min()

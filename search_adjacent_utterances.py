@@ -13,6 +13,12 @@ SPEAKER_CODE_CHILD = "CHI"
 SPEAKER_CODES_CAREGIVER = ["MOT", "FAT", "DAD", "MOM", "GRA", "GRF", "GRM", "CAR"]
 
 CANDIDATE_CORPORA = [
+    "VanHouten",
+    "MPI-EVA-Manchester",
+    "McMillan",
+    "Rollins",
+    "Gleason",
+    "Forrester",
     "Braunwald",
     "Bloom",
     "McCune",

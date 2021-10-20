@@ -13,12 +13,18 @@ from search_adjacent_utterances import CANDIDATE_CORPORA
 from utils import (
     EMPTY_UTTERANCE,
     clean_utterance,
-    remove_nonspeech_events, PATH_ADJACENT_UTTERANCES, CODE_UNINTELLIGIBLE, remove_whitespace,
+    remove_nonspeech_events,
+    PATH_ADJACENT_UTTERANCES,
+    CODE_UNINTELLIGIBLE,
+    remove_whitespace,
 )
 
 
 # 1s response threshold
 RESPONSE_THRESHOLD = 1000  # ms
+
+# Number of standard deviations that the mean response latency of a corpus can be off the reference mean
+RESPONSE_LATENCY_STANDARD_DEVIATIONS_OFF = 1
 
 # Label for partially speech-related utterances
 # Set to True to count as speech-related, False to count as not speech-related or None to exclude these utterances from
@@ -52,7 +58,9 @@ def parse_args():
 
 
 def caregiver_speech_related_response(row):
-    return (row["response_latency"] <= RESPONSE_THRESHOLD) #& is_speech_related(row["utt_car"], label_partially_speech_related=True)
+    return (
+        row["response_latency"] <= RESPONSE_THRESHOLD
+    )  # & is_speech_related(row["utt_car"], label_partially_speech_related=True)
 
 
 def is_speech_related(
@@ -137,7 +145,7 @@ def perform_analysis_speech_relatedness(adj_utterances):
         )
         if ratio > MIN_RATIO_NONSPEECH:
             good_corpora.append(corpus)
-        print(f"{corpus}: {ratio}")
+        print(f"{corpus}: {ratio:.5f}")
     print("Filtered corpora: ", good_corpora)
 
     adj_utterances = adj_utterances[adj_utterances.corpus.isin(good_corpora)]
@@ -246,7 +254,9 @@ if __name__ == "__main__":
     if not args.corpora:
         print(f"No corpora given, selecting based on average response time")
         args.corpora = filter_corpora_based_on_response_latency_length(
-            CANDIDATE_CORPORA, adjacent_utterances
+            CANDIDATE_CORPORA,
+            adjacent_utterances,
+            RESPONSE_LATENCY_STANDARD_DEVIATIONS_OFF,
         )
 
     print(f"Corpora included in analysis: {args.corpora}")
