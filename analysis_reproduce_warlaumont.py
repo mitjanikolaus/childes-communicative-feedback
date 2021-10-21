@@ -112,16 +112,12 @@ def perform_analysis_speech_relatedness(utterances):
         utt_child_speech_related=utterances.utt_child.apply(is_speech_related)
     )
     utterances = utterances.assign(
-        follow_up_speech_related=utterances.utt_child_follow_up.apply(
-            is_speech_related
-        )
+        follow_up_speech_related=utterances.utt_child_follow_up.apply(is_speech_related)
     )
 
     # Label caregiver responses as present or not
     utterances = utterances.assign(
-        caregiver_response=utterances.apply(
-            caregiver_speech_related_response, axis=1
-        )
+        caregiver_response=utterances.apply(caregiver_speech_related_response, axis=1)
     )
 
     # Remove NaNs
@@ -160,9 +156,7 @@ def perform_analysis_speech_relatedness(utterances):
     )
 
     n_responses_to_speech = len(
-        utterances[
-            utterances.utt_child_speech_related & utterances.caregiver_response
-            ]
+        utterances[utterances.utt_child_speech_related & utterances.caregiver_response]
     )
     n_speech = len(utterances[utterances.utt_child_speech_related])
 
@@ -170,7 +164,7 @@ def perform_analysis_speech_relatedness(utterances):
         utterances[
             (utterances.utt_child_speech_related == False)
             & utterances.caregiver_response
-            ]
+        ]
     )
     n_non_speech = len(utterances[utterances.utt_child_speech_related == False])
 
@@ -185,12 +179,10 @@ def perform_analysis_speech_relatedness(utterances):
             utterances.follow_up_speech_related
             & utterances.utt_child_speech_related
             & utterances.caregiver_response
-            ]
+        ]
     )
     n_responses_to_speech_related = len(
-        utterances[
-            utterances.utt_child_speech_related & utterances.caregiver_response
-            ]
+        utterances[utterances.utt_child_speech_related & utterances.caregiver_response]
     )
 
     n_follow_up_speech_related_if_no_response_to_speech_related = len(
@@ -198,13 +190,13 @@ def perform_analysis_speech_relatedness(utterances):
             utterances.follow_up_speech_related
             & utterances.utt_child_speech_related
             & (utterances.caregiver_response == False)
-            ]
+        ]
     )
     n_no_responses_to_speech_related = len(
         utterances[
             utterances.utt_child_speech_related
             & (utterances.caregiver_response == False)
-            ]
+        ]
     )
 
     ratio_follow_up_speech_related_if_response_to_speech_related = (
@@ -248,9 +240,7 @@ if __name__ == "__main__":
     utterances.utt_car.fillna("", inplace=True)
 
     # Remove utterances with too long negative pauses
-    utterances = utterances[
-        (utterances.response_latency >= MAX_NEG_RESPONSE_LATENCY)
-    ]
+    utterances = utterances[(utterances.response_latency >= MAX_NEG_RESPONSE_LATENCY)]
 
     if not args.corpora:
         print(f"No corpora given, selecting based on average response time")
@@ -265,14 +255,10 @@ if __name__ == "__main__":
     print(f"Corpora included in analysis: {args.corpora}")
 
     # Filter by corpora
-    utterances = utterances[
-        utterances.corpus.isin(args.corpora)
-    ]
+    utterances = utterances[utterances.corpus.isin(args.corpora)]
 
     # Filter by age
-    utterances = utterances[
-        (MIN_AGE <= utterances.age) & (utterances.age <= MAX_AGE)
-    ]
+    utterances = utterances[(MIN_AGE <= utterances.age) & (utterances.age <= MAX_AGE)]
 
     min_age = utterances.age.min()
     max_age = utterances.age.max()
@@ -280,8 +266,12 @@ if __name__ == "__main__":
     print(
         f"Mean of child age in analysis: {mean_age:.1f} (min: {min_age} max: {max_age})"
     )
-    mean_latency = utterances[utterances.response_latency < math.inf].response_latency.mean()
-    std_mean_latency = utterances[utterances.response_latency < math.inf].response_latency.std()
+    mean_latency = utterances[
+        utterances.response_latency < math.inf
+    ].response_latency.mean()
+    std_mean_latency = utterances[
+        utterances.response_latency < math.inf
+    ].response_latency.std()
     print(
         f"Mean of response latency in analysis: {mean_latency:.1f} +/- {std_mean_latency:.1f}"
     )

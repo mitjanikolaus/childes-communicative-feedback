@@ -21,7 +21,7 @@ from utils import (
 )
 
 # TODO: define age range
-MIN_AGE = 10    # age of first words?
+MIN_AGE = 10  # age of first words?
 MAX_AGE = 60
 
 
@@ -96,9 +96,7 @@ def perform_analysis_intelligibility(utterances):
     )
 
     # Remove nonspeech events
-    utterances["utt_child"] = utterances.utt_child.apply(
-        remove_nonspeech_events
-    )
+    utterances["utt_child"] = utterances.utt_child.apply(remove_nonspeech_events)
     utterances["utt_car"] = utterances.utt_car.apply(remove_nonspeech_events)
     utterances["utt_child_follow_up"] = utterances.utt_child_follow_up.apply(
         remove_nonspeech_events
@@ -138,30 +136,23 @@ def perform_analysis_intelligibility(utterances):
         ].apply(caregiver_response_contingent_on_intelligibility, axis=1)
     )
 
-    print(
-        f"\nFound {len(utterances)} turns"
-    )
+    print(f"\nFound {len(utterances)} turns")
     if len(utterances) > 0:
         # Caregiver contingency:
         n_responses_intelligible = len(
             utterances[
-                utterances.utt_child_intelligible
-                & utterances.caregiver_response
-                ]
+                utterances.utt_child_intelligible & utterances.caregiver_response
+            ]
         )
-        n_intelligible = len(
-            utterances[utterances.utt_child_intelligible]
-        )
+        n_intelligible = len(utterances[utterances.utt_child_intelligible])
 
         n_responses_unintelligible = len(
             utterances[
                 (utterances.utt_child_intelligible == False)
                 & utterances.caregiver_response
-                ]
+            ]
         )
-        n_unintelligible = len(
-            utterances[utterances.utt_child_intelligible == False]
-        )
+        n_unintelligible = len(utterances[utterances.utt_child_intelligible == False])
 
         contingency_caregiver = (n_responses_intelligible / n_intelligible) - (
             n_responses_unintelligible / n_unintelligible
@@ -174,13 +165,12 @@ def perform_analysis_intelligibility(utterances):
                 utterances.follow_up_intelligible
                 & utterances.utt_child_intelligible
                 & utterances.caregiver_response
-                ]
+            ]
         )
         n_responses_to_intelligible = len(
             utterances[
-                utterances.utt_child_intelligible
-                & utterances.caregiver_response
-                ]
+                utterances.utt_child_intelligible & utterances.caregiver_response
+            ]
         )
 
         n_follow_up_intelligible_if_no_response_to_intelligible = len(
@@ -188,13 +178,13 @@ def perform_analysis_intelligibility(utterances):
                 utterances.follow_up_intelligible
                 & utterances.utt_child_intelligible
                 & (utterances.caregiver_response == False)
-                ]
+            ]
         )
         n_no_responses_to_intelligible = len(
             utterances[
                 utterances.utt_child_intelligible
                 & (utterances.caregiver_response == False)
-                ]
+            ]
         )
 
         # Contingency of child vocalization on previous adult response (negative case):
@@ -203,7 +193,7 @@ def perform_analysis_intelligibility(utterances):
                 utterances.follow_up_intelligible
                 & (utterances.utt_child_intelligible == False)
                 & (utterances.caregiver_response == False)
-                ]
+            ]
         )
         n_no_responses_to_unintelligible = len(
             utterances[
@@ -217,13 +207,13 @@ def perform_analysis_intelligibility(utterances):
                 utterances.follow_up_intelligible
                 & (utterances.utt_child_intelligible == False)
                 & utterances.caregiver_response
-                ]
+            ]
         )
         n_responses_to_unintelligible = len(
             utterances[
                 (utterances.utt_child_intelligible == False)
                 & utterances.caregiver_response
-                ]
+            ]
         )
 
         if (
@@ -278,9 +268,7 @@ def perform_analysis_intelligibility(utterances):
             child_contingency_both_cases = (
                 ratio_contingent_follow_ups - ratio_incontingent_follow_ups
             )
-            print(
-                f"Child contingency (both cases): {child_contingency_both_cases:.4f}"
-            )
+            print(f"Child contingency (both cases): {child_contingency_both_cases:.4f}")
             child_contingency_both_cases_same_weighting = np.mean(
                 [contingency_children_pos_case, contingency_children_neg_case]
             )
@@ -332,9 +320,7 @@ if __name__ == "__main__":
     utterances.utt_car.fillna("", inplace=True)
 
     # Remove preprocessed_utterances with too long negative pauses
-    utterances = utterances[
-        (utterances.response_latency >= MAX_NEG_RESPONSE_LATENCY)
-    ]
+    utterances = utterances[(utterances.response_latency >= MAX_NEG_RESPONSE_LATENCY)]
 
     if not args.corpora:
         print(f"No corpora given, selecting based on average response time")
@@ -347,20 +333,14 @@ if __name__ == "__main__":
         )
 
     print("Excluding corpora: ", EXCLUDED_CORPORA)
-    utterances = utterances[
-        ~utterances.corpus.isin(EXCLUDED_CORPORA)
-    ]
+    utterances = utterances[~utterances.corpus.isin(EXCLUDED_CORPORA)]
 
     print(f"Corpora included in analysis: {args.corpora}")
     # Filter by corpora
-    utterances = utterances[
-        utterances.corpus.isin(args.corpora)
-    ]
+    utterances = utterances[utterances.corpus.isin(args.corpora)]
 
     # Filter by age
-    utterances = utterances[
-        (MIN_AGE <= utterances.age) & (utterances.age <= MAX_AGE)
-        ]
+    utterances = utterances[(MIN_AGE <= utterances.age) & (utterances.age <= MAX_AGE)]
 
     min_age = utterances.age.min()
     max_age = utterances.age.max()
@@ -368,8 +348,12 @@ if __name__ == "__main__":
     print(
         f"Mean of child age in analysis: {mean_age:.1f} (min: {min_age} max: {max_age})"
     )
-    mean_latency = utterances[utterances.response_latency < math.inf].response_latency.mean()
-    std_mean_latency = utterances[utterances.response_latency < math.inf].response_latency.std()
+    mean_latency = utterances[
+        utterances.response_latency < math.inf
+    ].response_latency.mean()
+    std_mean_latency = utterances[
+        utterances.response_latency < math.inf
+    ].response_latency.std()
     print(
         f"Mean of response latency in analysis: {mean_latency:.1f} +/- {std_mean_latency:.1f}"
     )
