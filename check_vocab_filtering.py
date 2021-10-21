@@ -5,10 +5,22 @@ import pandas as pd
 
 import nltk
 
-from search_adjacent_utterances import CANDIDATE_CORPORA
-from utils import is_babbling, VOCAB, CODE_PHONOLGICAL_CONSISTENT_FORM, CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION, \
-    PATH_ADJACENT_UTTERANCES, filter_corpora_based_on_response_latency_length, clean_utterance, remove_nonspeech_events, \
-    EMPTY_UTTERANCE
+from analysis_reproduce_warlaumont import (
+    MIN_AGE,
+    MAX_AGE,
+    RESPONSE_LATENCY_STANDARD_DEVIATIONS_OFF,
+)
+from search_child_utterances_and_responses import CANDIDATE_CORPORA
+from utils import (
+    is_babbling,
+    VOCAB,
+    CODE_PHONOLGICAL_CONSISTENT_FORM,
+    PATH_UTTERANCES_RESPONSES,
+    filter_corpora_based_on_response_latency_length,
+    clean_utterance,
+    remove_nonspeech_events,
+    EMPTY_UTTERANCE,
+)
 
 
 def check_vocab(adj_utterances):
@@ -49,7 +61,7 @@ def check_vocab(adj_utterances):
             ):
                 # if word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM) or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION):
                 # missing.append(word.replace(CODE_PHONOLGICAL_CONSISTENT_FORM, ""))
-                if word == ',':
+                if word == ",":
                     print(utt)
                 missing.append(word)
 
@@ -60,15 +72,22 @@ def check_vocab(adj_utterances):
 
 
 if __name__ == "__main__":
-    adjacent_utterances = pd.read_csv(PATH_ADJACENT_UTTERANCES, index_col=None)
+    utterances = pd.read_csv(PATH_UTTERANCES_RESPONSES, index_col=None)
+
+    # Fill in empty strings for dummy caregiver responses
+    utterances.utt_car.fillna("", inplace=True)
 
     corpora = filter_corpora_based_on_response_latency_length(
-        CANDIDATE_CORPORA, adjacent_utterances
+        CANDIDATE_CORPORA,
+        utterances,
+        MIN_AGE,
+        MAX_AGE,
+        RESPONSE_LATENCY_STANDARD_DEVIATIONS_OFF,
     )
 
     print(f"Corpora included in analysis: {corpora}")
 
     # Filter corpora
-    adjacent_utterances = adjacent_utterances[adjacent_utterances.corpus.isin(corpora)]
+    utterances = utterances[utterances.corpus.isin(corpora)]
 
-    check_vocab(adjacent_utterances.copy())
+    check_vocab(utterances.copy())

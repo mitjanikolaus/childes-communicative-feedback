@@ -1,10 +1,11 @@
+import math
 import os
 import re
 
 import pandas as pd
 
-PATH_ADJACENT_UTTERANCES = os.path.expanduser(
-    "~/data/communicative_feedback/chi_car_adjacent_utterances.csv"
+PATH_UTTERANCES_RESPONSES = os.path.expanduser(
+    "~/data/communicative_feedback/chi_utts_car_responses.csv"
 )
 
 # codes that will be excluded from analysis
@@ -254,7 +255,7 @@ def remove_babbling(utterance):
 
 
 def filter_corpora_based_on_response_latency_length(
-    corpora, adj_utterances, min_age, max_age, standard_deviations_off
+    corpora, utterances, min_age, max_age, standard_deviations_off
 ):
     # Calculate mean and stddev of response latency using data from Nguyen, Versyp, Cox, Fusaroli (2021)
     latency_data = pd.read_csv("data/MA turn-taking.csv")
@@ -282,9 +283,9 @@ def filter_corpora_based_on_response_latency_length(
     filtered = []
     print("Response latencies:")
     for corpus in corpora:
-        mean = adj_utterances[
-            adj_utterances.corpus == corpus
-        ].response_latency.values.mean()
+        mean = utterances[
+            (utterances.corpus == corpus) & (utterances.response_latency < math.inf)
+            ].response_latency.values.mean()
         print(f"{corpus}: {mean:.1f}")
         if (
             mean_latency - standard_deviations_off * std_mean_latency
