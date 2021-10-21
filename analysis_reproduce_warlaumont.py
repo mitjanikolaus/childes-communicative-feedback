@@ -98,11 +98,10 @@ def perform_analysis_speech_relatedness(utterances):
         clean_utterance
     )
 
-    # Drop empty utterances
+    # Drop empty children's utterances
     utterances = utterances[
         (
             (utterances.utt_child != EMPTY_UTTERANCE)
-            & (utterances.utt_car != EMPTY_UTTERANCE)
             & (utterances.utt_child_follow_up != EMPTY_UTTERANCE)
         )
     ]
@@ -243,7 +242,7 @@ if __name__ == "__main__":
     utterances = utterances[(utterances.response_latency >= MAX_NEG_RESPONSE_LATENCY)]
 
     if not args.corpora:
-        print(f"No corpora given, selecting based on average response time")
+        print(f"No corpora given, selecting based on average response latency")
         args.corpora = filter_corpora_based_on_response_latency_length(
             CANDIDATE_CORPORA,
             utterances,
