@@ -296,10 +296,19 @@ def perform_analysis_intelligibility(utterances):
         ).fit()
         print(mod.summary())
 
+        print("GLM - positive case")
         mod = smf.glm(
-            "follow_up_intelligible ~ utt_child_intelligible * caregiver_response_contingent",
+            "follow_up_intelligible ~ caregiver_response_contingent",
             family=sm.families.Binomial(),
-            data=utterances,
+            data=utterances[utterances.utt_child_intelligible == True],
+        ).fit()
+        print(mod.summary())
+
+        print("GLM - negative case")
+        mod = smf.glm(
+            "follow_up_intelligible ~ caregiver_response_contingent",
+            family=sm.families.Binomial(),
+            data=utterances[utterances.utt_child_intelligible == False],
         ).fit()
         print(mod.summary())
 

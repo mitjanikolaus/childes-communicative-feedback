@@ -1,4 +1,3 @@
-import os
 from collections import Counter
 
 import pandas as pd
@@ -48,6 +47,7 @@ def check_vocab(adj_utterances):
         + list(adj_utterances.utt_car.values)
         + list(adj_utterances.utt_child_follow_up.values)
     ):
+        utt = remove_nonspeech_events(utt)
         words = utt.split(" ")
         for word in words:
             word = word.lower()
@@ -61,8 +61,6 @@ def check_vocab(adj_utterances):
             ):
                 # if word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM) or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION):
                 # missing.append(word.replace(CODE_PHONOLGICAL_CONSISTENT_FORM, ""))
-                if word == ",":
-                    print(utt)
                 missing.append(word)
 
     print(Counter(missing).most_common())

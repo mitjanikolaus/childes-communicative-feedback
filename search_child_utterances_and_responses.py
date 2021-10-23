@@ -1,6 +1,8 @@
 import argparse
 import math
 import os
+import re
+
 import pandas as pd
 import pylangacq
 import numpy as np
@@ -176,11 +178,39 @@ def find_child_utterances_and_responses(corpus, transcripts):
                 utt3 = following_utts_child.iloc[0]
                 response_latency = round(utt2["start_time"] - utt1["end_time"], 3)
 
+                # Remove timing information from utterance
+                utt_child = re.sub(r"[^]+?", "", utt1["utt"])
+                utt_caregiver = re.sub(r"[^]+?", "", utt2["utt"])
+                utt_child_follow_up = re.sub(r"[^]+?", "", utt3["utt"])
+
+                # Prepend previous utterance of the child if it was uttered right before
+                if (candidate_id - 1) in utts.index:
+                    previous_utt_child = utts.loc[candidate_id - 1]
+                    if previous_utt_child.speaker_code == SPEAKER_CODE_CHILD and not np.isnan(previous_utt_child.end_time) and (utt1.start_time - previous_utt_child.end_time < RESPONSE_THRESHOLD):
+                        previous_utt_child = re.sub(r"[^]+?", "", previous_utt_child["utt"])
+                        utt_child = previous_utt_child + " " + utt_child
+
+                # Append subsequent utterance of the caregiver if it was uttered right after
+                if utt2["start_time"] < math.inf and (utt2.name + 1) in utts.index:
+                    subsequent_utt_caregiver = utts.loc[utt2.name + 1]
+                    if subsequent_utt_caregiver.speaker_code in SPEAKER_CODES_CAREGIVER and not np.isnan(subsequent_utt_caregiver.start_time) and (subsequent_utt_caregiver.start_time - utt2.end_time < RESPONSE_THRESHOLD):
+                        subsequent_utt_caregiver = re.sub(r"[^]+?", "", subsequent_utt_caregiver["utt"])
+                        utt_caregiver = utt_caregiver + " " + subsequent_utt_caregiver
+
+                # Append subsequent utterance of the child follow-up if it was uttered right after
+                if (utt3.name + 1) in utts.index:
+                    subsequent_utt_child_follow_up = utts.loc[utt3.name + 1]
+                    if subsequent_utt_child_follow_up.speaker_code ==SPEAKER_CODE_CHILD and not np.isnan(
+                            subsequent_utt_child_follow_up.start_time) and (
+                            subsequent_utt_child_follow_up.start_time - utt3.end_time < RESPONSE_THRESHOLD):
+                        subsequent_utt_child_follow_up = re.sub(r"[^]+?", "", subsequent_utt_child_follow_up["utt"])
+                        utt_child_follow_up = utt_child_follow_up + " " + subsequent_utt_child_follow_up
+
                 # if response_latency > RESPONSE_THRESHOLD:
-                #     print(f"{utt1.speaker_code}: {utt1.utt}")
+                #     print(f"{utt1.speaker_code}: {utt1["utt"]}")
                 #     print(f"pause: {response_latency}")
                 #     print(f"{utt2['speaker_code']}: {utt2['utt']}")
-                #     print(f"{utt3.speaker_code}: {utt3.utt}\n")
+                #     print(f"{utt3.speaker_code}: {utt3["utt"]}\n")
                 utterances.append(
                     {
                         "response_latency": response_latency,
@@ -188,9 +218,9 @@ def find_child_utterances_and_responses(corpus, transcripts):
                         "corpus": corpus,
                         "transcript_file": file,
                         "child_name": child_name,
-                        "utt_child": utt1["utt"],
-                        "utt_car": utt2["utt"],
-                        "utt_child_follow_up": utt3["utt"],
+                        "utt_child": utt_child,
+                        "utt_car": utt_caregiver,
+                        "utt_child_follow_up": utt_child_follow_up,
                     }
                 )
 

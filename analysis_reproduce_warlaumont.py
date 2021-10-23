@@ -4,7 +4,6 @@ import math
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import numpy as np
 
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
@@ -270,12 +269,37 @@ def perform_analysis_speech_relatedness(utterances):
     ).fit()
     print(mod.summary())
 
+    print("GLM - all cases")
+    mod = smf.glm(
+        "follow_up_speech_related ~ caregiver_response_contingent",
+        family=sm.families.Binomial(),
+        data=utterances,
+    ).fit()
+    print(mod.summary())
+
+    print("GLM - positive case")
     mod = smf.glm(
         "follow_up_speech_related ~ caregiver_response_contingent",
         family=sm.families.Binomial(),
         data=utterances[utterances.utt_child_speech_related == True],
     ).fit()
     print(mod.summary())
+
+    print("GLM - negative case")
+    mod = smf.glm(
+        "follow_up_speech_related ~ caregiver_response_contingent",
+        family=sm.families.Binomial(),
+        data=utterances[utterances.utt_child_speech_related == False],
+    ).fit()
+    print(mod.summary())
+
+    sns.barplot(
+        data=utterances,
+        x="utt_child_speech_related",
+        y="follow_up_speech_related",
+        hue="caregiver_response_contingent",
+    )
+    plt.show()
 
 
 if __name__ == "__main__":
