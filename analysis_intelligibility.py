@@ -37,11 +37,13 @@ LABEL_PARTIALLY_INTELLIGIBLE = None
 # 1 second
 MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
+COUNT_ONLY_INTELLIGIBLE_RESPONSES = False
+
 # Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words
 EXCLUDED_CORPORA = ["Forrester"]
 
 # currently not used to exclude corpora, just stored for reference:
-CORPORA_NOT_LONGITUDINAL = ["Gleason", "Rollins"]
+CORPORA_NOT_LONGITUDINAL = ["Gleason", "Rollins", "Edinburgh"]
 
 
 def parse_args():
@@ -76,7 +78,7 @@ def is_intelligible(
 
 
 def caregiver_intelligible_response(row):
-    return row["response_latency"] <= RESPONSE_THRESHOLD
+    return (row["response_latency"] <= RESPONSE_THRESHOLD) & ((not COUNT_ONLY_INTELLIGIBLE_RESPONSES) | is_intelligible(row["utt_car"], label_partially_intelligible=True))
 
 
 def caregiver_response_contingent_on_intelligibility(row):
