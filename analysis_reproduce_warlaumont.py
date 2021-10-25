@@ -57,13 +57,20 @@ def parse_args():
 
 
 def caregiver_speech_related_response(row):
-    return (
-        row["response_latency"] <= RESPONSE_THRESHOLD
-    ) & ((not COUNT_ONLY_SPEECH_RELATED_RESPONSES) | is_speech_related(row["utt_car"], label_partially_speech_related=True, label_unintelligible=True))
+    return (row["response_latency"] <= RESPONSE_THRESHOLD) & (
+        (not COUNT_ONLY_SPEECH_RELATED_RESPONSES)
+        | is_speech_related(
+            row["utt_car"],
+            label_partially_speech_related=True,
+            label_unintelligible=True,
+        )
+    )
 
 
 def is_speech_related(
-    utterance, label_partially_speech_related=LABEL_PARTIALLY_SPEECH_RELATED, label_unintelligible=None,
+    utterance,
+    label_partially_speech_related=LABEL_PARTIALLY_SPEECH_RELATED,
+    label_unintelligible=None,
 ):
     utt_without_nonspeech = remove_nonspeech_events(utterance)
 
@@ -219,13 +226,13 @@ def perform_analysis_speech_relatedness(utterances):
             utterances.follow_up_speech_related
             & (utterances.utt_child_speech_related == False)
             & (utterances.caregiver_response == False)
-            ]
+        ]
     )
     n_no_responses_to_non_speech_related = len(
         utterances[
             (utterances.utt_child_speech_related == False)
             & (utterances.caregiver_response == False)
-            ]
+        ]
     )
 
     n_follow_up_speech_related_if_response_to_non_speech_related = len(
@@ -233,31 +240,29 @@ def perform_analysis_speech_relatedness(utterances):
             utterances.follow_up_speech_related
             & (utterances.utt_child_speech_related == False)
             & utterances.caregiver_response
-            ]
+        ]
     )
     n_responses_to_non_speech_related = len(
         utterances[
             (utterances.utt_child_speech_related == False)
             & utterances.caregiver_response
-            ]
+        ]
     )
 
     ratio_follow_up_speech_related_if_no_response_to_non_speech_related = (
-            n_follow_up_speech_related_if_no_response_to_non_speech_related
-            / n_no_responses_to_non_speech_related
+        n_follow_up_speech_related_if_no_response_to_non_speech_related
+        / n_no_responses_to_non_speech_related
     )
     ratio_follow_up_speech_related_if_response_to_non_speech_related = (
-            n_follow_up_speech_related_if_response_to_non_speech_related
-            / n_responses_to_non_speech_related
+        n_follow_up_speech_related_if_response_to_non_speech_related
+        / n_responses_to_non_speech_related
     )
     contingency_children_neg_case = (
-            ratio_follow_up_speech_related_if_no_response_to_non_speech_related
-            - ratio_follow_up_speech_related_if_response_to_non_speech_related
+        ratio_follow_up_speech_related_if_no_response_to_non_speech_related
+        - ratio_follow_up_speech_related_if_response_to_non_speech_related
     )
 
-    print(
-        f"Child contingency (negative case): {contingency_children_neg_case:.4f}"
-    )
+    print(f"Child contingency (negative case): {contingency_children_neg_case:.4f}")
 
     # Statsmodels prefers 1 and 0 over True and False:
     utterances.replace({False: 0, True: 1}, inplace=True)

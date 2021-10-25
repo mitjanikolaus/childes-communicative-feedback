@@ -78,7 +78,10 @@ def is_intelligible(
 
 
 def caregiver_intelligible_response(row):
-    return (row["response_latency"] <= RESPONSE_THRESHOLD) & ((not COUNT_ONLY_INTELLIGIBLE_RESPONSES) | is_intelligible(row["utt_car"], label_partially_intelligible=True))
+    return (row["response_latency"] <= RESPONSE_THRESHOLD) & (
+        (not COUNT_ONLY_INTELLIGIBLE_RESPONSES)
+        | is_intelligible(row["utt_car"], label_partially_intelligible=True)
+    )
 
 
 def caregiver_response_contingent_on_intelligibility(row):
