@@ -8,13 +8,12 @@ import seaborn as sns
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 
-from utils import filter_corpora_based_on_response_latency_length
-from search_child_utterances_and_responses import CANDIDATE_CORPORA, RESPONSE_THRESHOLD
+from utils import filter_corpora_based_on_response_latency_length, get_path_of_utterances_file
+from search_child_utterances_and_responses import CANDIDATE_CORPORA, DEFAULT_RESPONSE_THRESHOLD
 from utils import (
     EMPTY_UTTERANCE,
     clean_utterance,
     remove_nonspeech_events,
-    PATH_UTTERANCES_RESPONSES,
     CODE_UNINTELLIGIBLE,
     remove_whitespace,
 )
@@ -51,20 +50,17 @@ def parse_args():
         choices=CANDIDATE_CORPORA,
         help="Corpora to analyze. If not given, corpora are selected based on a response time variance threshold.",
     )
+    argparser.add_argument(
+        "--response-latency",
+        type=int,
+        default=DEFAULT_RESPONSE_THRESHOLD,
+        help="Response latency in milliseconds",
+    )
     args = argparser.parse_args()
 
     return args
 
 
-def caregiver_speech_related_response(row):
-    return (row["response_latency"] <= RESPONSE_THRESHOLD) & (
-        (not COUNT_ONLY_SPEECH_RELATED_RESPONSES)
-        | is_speech_related(
-            row["utt_car"],
-            label_partially_speech_related=True,
-            label_unintelligible=True,
-        )
-    )
 
 
 def is_speech_related(
@@ -98,7 +94,7 @@ def caregiver_response_contingent_on_speech_relatedness(row):
     )
 
 
-def perform_analysis_speech_relatedness(utterances):
+def perform_analysis_speech_relatedness(utterances, response_latency):
     # Clean utterances
     utterances["utt_child"] = utterances.utt_child.apply(clean_utterance)
     utterances["utt_car"] = utterances.utt_car.apply(clean_utterance)
@@ -123,6 +119,15 @@ def perform_analysis_speech_relatedness(utterances):
     )
 
     # Label caregiver responses as present or not
+    def caregiver_speech_related_response(row):
+        return (row["response_latency"] <= response_latency) & (
+                (not COUNT_ONLY_SPEECH_RELATED_RESPONSES)
+                | is_speech_related(
+            row["utt_car"],
+            label_partially_speech_related=True,
+            label_unintelligible=True,
+        )
+    )
     utterances = utterances.assign(
         caregiver_response=utterances.apply(caregiver_speech_related_response, axis=1)
     )
@@ -312,7 +317,7 @@ def perform_analysis_speech_relatedness(utterances):
 if __name__ == "__main__":
     args = parse_args()
 
-    utterances = pd.read_csv(PATH_UTTERANCES_RESPONSES, index_col=None)
+    utterances = pd.read_csv(get_path_of_utterances_file(args.response_latency), index_col=None)
 
     # Fill in empty strings for dummy caregiver responses
     utterances.utt_car.fillna("", inplace=True)
@@ -354,4 +359,4 @@ if __name__ == "__main__":
         f"Mean of response latency in analysis: {mean_latency:.1f} +/- {std_mean_latency:.1f}"
     )
 
-    utterances = perform_analysis_speech_relatedness(utterances)
+    utterances = perform_analysis_speech_relatedness(utterances, args.response_latency)

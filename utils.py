@@ -1,12 +1,11 @@
 import math
-import os
 import re
 
 import pandas as pd
 
-PATH_UTTERANCES_RESPONSES = os.path.expanduser(
-    "~/data/communicative_feedback/chi_utts_car_responses.csv"
-)
+
+def get_path_of_utterances_file(response_latency):
+    return f"~/data/communicative_feedback/chi_utts_car_response_latency_{response_latency}.csv"
 
 # codes that will be excluded from analysis
 IS_UNTRANSCRIBED = lambda word: "www" in word
