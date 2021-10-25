@@ -320,6 +320,8 @@ def perform_analysis_intelligibility(utterances):
         )
         plt.show()
 
+    return utterances
+
 
 if __name__ == "__main__":
     args = parse_args()
@@ -368,4 +370,4 @@ if __name__ == "__main__":
         f"Mean of response latency in analysis: {mean_latency:.1f} +/- {std_mean_latency:.1f}"
     )
 
-    perform_analysis_intelligibility(utterances.copy())
+    utterances = perform_analysis_intelligibility(utterances)
