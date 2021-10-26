@@ -147,7 +147,7 @@ def caregiver_response_contingent_on_speech_relatedness(row):
     )
 
 
-def perform_warlaumont_analysis(utterances, analysis_function, label_positive_valence):
+def perform_warlaumont_analysis(utterances, args, analysis_function, label_positive_valence):
     print(f"\nFound {len(utterances)} turns")
     print("Overall analysis: ")
     (
@@ -451,7 +451,7 @@ def perform_analysis_speech_relatedness(utterances, args):
     )
 
     results_analysis = perform_warlaumont_analysis(
-        utterances, perform_contingency_analysis_speech_relatedness, "proportion_speech_related"
+        utterances, args, perform_contingency_analysis_speech_relatedness, "proportion_speech_related"
     )
 
     plt.figure()
