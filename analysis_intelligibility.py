@@ -29,7 +29,7 @@ DEFAULT_MAX_AGE = 60
 
 DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
 
-DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE = None
+DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE = True
 
 DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES = False
 
@@ -342,7 +342,7 @@ def perform_analysis_intelligibility(utterances, args):
     )
 
     results_analysis = perform_warlaumont_analysis(
-        utterances, perform_contingency_analysis_intelligibility, "proportion_intelligible"
+        utterances, args, perform_contingency_analysis_intelligibility, "proportion_intelligible"
     )
 
     plt.figure()
