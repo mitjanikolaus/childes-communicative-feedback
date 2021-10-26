@@ -165,7 +165,7 @@ def perform_warlaumont_analysis(utterances, analysis_function, label_positive_va
 
     for transcript in utterances.transcript_file.unique():
         utts_transcript = utterances[utterances.transcript_file == transcript]
-        if len(utts_transcript) > DEFAULT_MIN_TRANSCRIPT_LENGTH:
+        if len(utts_transcript) > args.min_transcript_length:
             (
                 contingency_caregiver,
                 contingency_children_pos_case,
@@ -432,7 +432,7 @@ def perform_analysis_speech_relatedness(utterances, args):
         ratio = len(d_corpus[d_corpus.utt_child_speech_related == False]) / len(
             d_corpus[d_corpus.utt_child_speech_related == True]
         )
-        if ratio > DEFAULT_MIN_RATIO_NONSPEECH:
+        if ratio > args.min_ratio_nonspeech:
             good_corpora.append(corpus)
         print(f"{corpus}: {ratio:.5f}")
     print("Filtered corpora: ", good_corpora)
