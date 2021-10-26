@@ -26,28 +26,42 @@ from utils import (
     remove_whitespace,
 )
 
-
 # Number of standard deviations that the mean response latency of a corpus can be off the reference mean
-RESPONSE_LATENCY_STANDARD_DEVIATIONS_OFF = 1
+DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
 
 # Label for partially speech-related utterances
 # Set to True to count as speech-related, False to count as not speech-related or None to exclude these utterances from
 # the analysis
-LABEL_PARTIALLY_SPEECH_RELATED = True
+DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED = True
 
 # TODO check that pause is not too long (neg): what is a reasonable value?
 # 1 second
-MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
+DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
-COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
+DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
 
-MIN_RATIO_NONSPEECH = 0.0
+DEFAULT_MIN_RATIO_NONSPEECH = 0.0
 
-MIN_TRANSCRIPT_LENGTH = 0
+DEFAULT_MIN_TRANSCRIPT_LENGTH = 0
 
 # Ages aligned to study of Warlaumont et al.
-MIN_AGE = 8
-MAX_AGE = 48
+DEFAULT_MIN_AGE = 8
+DEFAULT_MAX_AGE = 48
+
+DEFAULT_EXCLUDED_CORPORA = []
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    elif v.lower() in ("none", "nan"):
+        return None
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
 def parse_args():
@@ -61,40 +75,71 @@ def parse_args():
         help="Corpora to analyze. If not given, corpora are selected based on a response time variance threshold.",
     )
     argparser.add_argument(
+        "--excluded-corpora",
+        nargs="+",
+        type=str,
+        choices=CANDIDATE_CORPORA,
+        default=DEFAULT_EXCLUDED_CORPORA,
+        help="Corpora to exclude from analysis",
+    )
+    argparser.add_argument(
         "--response-latency",
         type=int,
         default=DEFAULT_RESPONSE_THRESHOLD,
         help="Response latency in milliseconds",
     )
+    argparser.add_argument(
+        "--min-age",
+        type=int,
+        default=DEFAULT_MIN_AGE,
+    )
+    argparser.add_argument(
+        "--max-age",
+        type=int,
+        default=DEFAULT_MAX_AGE,
+    )
+    argparser.add_argument(
+        "--min-transcript-length",
+        type=int,
+        default=DEFAULT_MIN_TRANSCRIPT_LENGTH,
+    )
+    argparser.add_argument(
+        "--min-ratio-nonspeech",
+        type=int,
+        default=DEFAULT_MIN_RATIO_NONSPEECH,
+    )
+
+    argparser.add_argument(
+        "--response-latency-max-standard-deviations-off",
+        type=int,
+        default=DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF,
+        help="Number of standard deviations that the mean response latency of a corpus can be off the reference mean",
+    )
+    argparser.add_argument(
+        "--max-neg-response-latency",
+        type=int,
+        default=DEFAULT_MAX_NEG_RESPONSE_LATENCY,
+        help="Maximum negative response latency in milliseconds",
+    )
+    argparser.add_argument(
+        "--count-only-speech_related_responses",
+        type=str2bool,
+        const=True,
+        nargs="?",
+        default=DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES,
+    )
+    argparser.add_argument(
+        "--label-partially-speech-related",
+        type=str2bool,
+        const=True,
+        nargs="?",
+        default=DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED,
+        help="Label for partially speech-related utterances: Set to True to count as speech-related, False to count as not speech-related or None to exclude these utterances from the analysis",
+    )
+
     args = argparser.parse_args()
 
     return args
-
-
-def is_speech_related(
-    utterance,
-    label_partially_speech_related=LABEL_PARTIALLY_SPEECH_RELATED,
-    label_unintelligible=None,
-):
-    utt_without_nonspeech = remove_nonspeech_events(utterance)
-
-    utt_without_nonspeech = remove_whitespace(utt_without_nonspeech)
-    if utt_without_nonspeech == EMPTY_UTTERANCE:
-        return False
-
-    # We exclude completely unintelligible utterances (we don't know whether it's speech-related or not)
-    is_completely_unintelligible = True
-    for word in utt_without_nonspeech.split(" "):
-        if word != CODE_UNINTELLIGIBLE and word != EMPTY_UTTERANCE:
-            is_completely_unintelligible = False
-    if is_completely_unintelligible:
-        return label_unintelligible
-
-    is_partly_speech_related = len(utt_without_nonspeech) != len(utterance)
-    if is_partly_speech_related:
-        return label_partially_speech_related
-
-    return True
 
 
 def caregiver_response_contingent_on_speech_relatedness(row):
@@ -106,7 +151,55 @@ def caregiver_response_contingent_on_speech_relatedness(row):
     )
 
 
-def perform_contingency_analysis(utterances):
+def perform_warlaumont_analysis(utterances, analysis_function):
+    print(f"\nFound {len(utterances)} turns")
+    print("Overall analysis: ")
+    (
+        contingency_caregiver,
+        contingency_children_pos_case,
+        contingency_children_neg_case,
+    ) = analysis_function(utterances)
+    print(f"Caregiver contingency: {contingency_caregiver:.4f}")
+    print(f"Child contingency (positive case): {contingency_children_pos_case:.4f}")
+    print(f"Child contingency (negative case): {contingency_children_neg_case:.4f}")
+
+    print("Per-transcript analysis: ")
+    (
+        contingencies_caregiver,
+        contingencies_children_pos_case,
+        contingencies_children_neg_case,
+    ) = ([], [], [])
+
+    for transcript in utterances.transcript_file.unique():
+        utts_transcript = utterances[utterances.transcript_file == transcript]
+        if len(utts_transcript) > DEFAULT_MIN_TRANSCRIPT_LENGTH:
+            (
+                contingency_caregiver,
+                contingency_children_pos_case,
+                contingency_children_neg_case,
+            ) = analysis_function(utts_transcript)
+            if not np.isnan(contingency_caregiver):
+                contingencies_caregiver.append(contingency_caregiver)
+            if not np.isnan(contingency_children_pos_case):
+                contingencies_children_pos_case.append(contingency_children_pos_case)
+            if not np.isnan(contingency_children_neg_case):
+                contingencies_children_neg_case.append(contingency_children_neg_case)
+    p_value = ztest(contingencies_caregiver, value=0.0, alternative="larger")[1]
+    print(
+        f"Caregiver contingency: {np.mean(contingencies_caregiver):.4f} +-{np.std(contingencies_caregiver):.4f} p-value:{p_value}"
+    )
+    p_value = ztest(contingencies_children_pos_case, value=0.0, alternative="larger")[1]
+    print(
+        f"Child contingency (positive case): {np.mean(contingencies_children_pos_case):.4f} +-{np.std(contingencies_children_pos_case):.4f} p-value:{p_value}"
+    )
+    p_value = ztest(contingencies_children_neg_case, value=0.0, alternative="larger")[1]
+    print(
+        f"Child contingency (negative case): {np.mean(contingencies_children_neg_case):.4f} +-{np.std(contingencies_children_neg_case):.4f} p-value:{p_value}"
+    )
+
+
+def perform_contingency_analysis_speech_relatedness(utterances):
+    # caregiver contingency
     n_responses_to_speech = len(
         utterances[utterances.utt_child_speech_related & utterances.caregiver_response]
     )
@@ -135,9 +228,6 @@ def perform_contingency_analysis(utterances):
             & utterances.caregiver_response
         ]
     )
-    n_responses_to_speech_related = len(
-        utterances[utterances.utt_child_speech_related & utterances.caregiver_response]
-    )
 
     n_follow_up_speech_related_if_no_response_to_speech_related = len(
         utterances[
@@ -153,10 +243,10 @@ def perform_contingency_analysis(utterances):
         ]
     )
 
-    if n_responses_to_speech_related > 0 and n_no_responses_to_speech_related > 0:
+    if n_responses_to_speech > 0 and n_no_responses_to_speech_related > 0:
         ratio_follow_up_speech_related_if_response_to_speech_related = (
             n_follow_up_speech_related_if_response_to_speech_related
-            / n_responses_to_speech_related
+            / n_responses_to_speech
         )
         ratio_follow_up_speech_related_if_no_response_to_speech_related = (
             n_follow_up_speech_related_if_no_response_to_speech_related
@@ -224,7 +314,47 @@ def perform_contingency_analysis(utterances):
     )
 
 
-def perform_analysis_speech_relatedness(utterances, response_latency):
+def perform_glm_analysis(
+    utterances, column_utt_child_valence, column_follow_up_child_valence
+):
+
+    # Statsmodels prefers 1 and 0 over True and False:
+    utterances.replace({False: 0, True: 1}, inplace=True)
+
+    print("GLM - caregiver contingency")
+    mod = smf.glm(
+        f"caregiver_response ~ {column_utt_child_valence}",
+        family=sm.families.Binomial(),
+        data=utterances,
+    ).fit()
+    print(mod.summary())
+
+    print("GLM - child contingency - all cases")
+    mod = smf.glm(
+        f"{column_follow_up_child_valence} ~ caregiver_response_contingent",
+        family=sm.families.Binomial(),
+        data=utterances,
+    ).fit()
+    print(mod.summary())
+
+    print("GLM - child contingency - positive case")
+    mod = smf.glm(
+        f"{column_follow_up_child_valence} ~ caregiver_response_contingent",
+        family=sm.families.Binomial(),
+        data=utterances[utterances[column_utt_child_valence] == True],
+    ).fit()
+    print(mod.summary())
+
+    print("GLM - child contingency - negative case")
+    mod = smf.glm(
+        f"{column_follow_up_child_valence} ~ caregiver_response_contingent",
+        family=sm.families.Binomial(),
+        data=utterances[utterances[column_utt_child_valence] == False],
+    ).fit()
+    print(mod.summary())
+
+
+def perform_analysis_speech_relatedness(utterances, args):
     # Clean utterances
     utterances["utt_child"] = utterances.utt_child.apply(clean_utterance)
     utterances["utt_car"] = utterances.utt_car.apply(clean_utterance)
@@ -241,6 +371,31 @@ def perform_analysis_speech_relatedness(utterances, response_latency):
     ]
 
     # Label utterances as speech or non-speech
+    def is_speech_related(
+        utterance,
+        label_partially_speech_related=args.label_partially_speech_related,
+        label_unintelligible=None,
+    ):
+        utt_without_nonspeech = remove_nonspeech_events(utterance)
+
+        utt_without_nonspeech = remove_whitespace(utt_without_nonspeech)
+        if utt_without_nonspeech == EMPTY_UTTERANCE:
+            return False
+
+        # We exclude completely unintelligible utterances (we don't know whether it's speech-related or not)
+        is_completely_unintelligible = True
+        for word in utt_without_nonspeech.split(" "):
+            if word != CODE_UNINTELLIGIBLE and word != EMPTY_UTTERANCE:
+                is_completely_unintelligible = False
+        if is_completely_unintelligible:
+            return label_unintelligible
+
+        is_partly_speech_related = len(utt_without_nonspeech) != len(utterance)
+        if is_partly_speech_related:
+            return label_partially_speech_related
+
+        return True
+
     utterances = utterances.assign(
         utt_child_speech_related=utterances.utt_child.apply(is_speech_related)
     )
@@ -250,8 +405,8 @@ def perform_analysis_speech_relatedness(utterances, response_latency):
 
     # Label caregiver responses as present or not
     def caregiver_speech_related_response(row):
-        return (row["response_latency"] <= response_latency) & (
-            (not COUNT_ONLY_SPEECH_RELATED_RESPONSES)
+        return (row["response_latency"] <= args.response_latency) & (
+            (not args.count_only_speech_related_responses)
             | is_speech_related(
                 row["utt_car"],
                 label_partially_speech_related=True,
@@ -280,7 +435,7 @@ def perform_analysis_speech_relatedness(utterances, response_latency):
         ratio = len(d_corpus[d_corpus.utt_child_speech_related == False]) / len(
             d_corpus[d_corpus.utt_child_speech_related == True]
         )
-        if ratio > MIN_RATIO_NONSPEECH:
+        if ratio > DEFAULT_MIN_RATIO_NONSPEECH:
             good_corpora.append(corpus)
         print(f"{corpus}: {ratio:.5f}")
     print("Filtered corpora: ", good_corpora)
@@ -298,83 +453,13 @@ def perform_analysis_speech_relatedness(utterances, response_latency):
         ].apply(caregiver_response_contingent_on_speech_relatedness, axis=1)
     )
 
-    print("Overall analysis: ")
-    (
-        contingency_caregiver,
-        contingency_children_pos_case,
-        contingency_children_neg_case,
-    ) = perform_contingency_analysis(utterances)
-    print(f"Caregiver contingency: {contingency_caregiver:.4f}")
-    print(f"Child contingency (positive case): {contingency_children_pos_case:.4f}")
-    print(f"Child contingency (negative case): {contingency_children_neg_case:.4f}")
-
-    print("Per-transcript analysis: ")
-    (
-        contingencies_caregiver,
-        contingencies_children_pos_case,
-        contingencies_children_neg_case,
-    ) = ([], [], [])
-
-    for transcript in utterances.transcript_file.unique():
-        utts_transcript = utterances[utterances.transcript_file == transcript]
-        if len(utts_transcript) > MIN_TRANSCRIPT_LENGTH:
-            (
-                contingency_caregiver,
-                contingency_children_pos_case,
-                contingency_children_neg_case,
-            ) = perform_contingency_analysis(utts_transcript)
-            if not np.isnan(contingency_caregiver):
-                contingencies_caregiver.append(contingency_caregiver)
-            if not np.isnan(contingency_children_pos_case):
-                contingencies_children_pos_case.append(contingency_children_pos_case)
-            if not np.isnan(contingency_children_neg_case):
-                contingencies_children_neg_case.append(contingency_children_neg_case)
-    p_value = ztest(contingencies_caregiver, value=0.0, alternative="larger")[1]
-    print(
-        f"Caregiver contingency: {np.mean(contingencies_caregiver):.4f} +-{np.std(contingencies_caregiver):.4f} p-value:{p_value}"
-    )
-    p_value = ztest(contingencies_children_pos_case, value=0.0, alternative="larger")[1]
-    print(
-        f"Child contingency (positive case): {np.mean(contingencies_children_pos_case):.4f} +-{np.std(contingencies_children_pos_case):.4f} p-value:{p_value}"
-    )
-    p_value = ztest(contingencies_children_neg_case, value=0.0, alternative="larger")[1]
-    print(
-        f"Child contingency (negative case): {np.mean(contingencies_children_neg_case):.4f} +-{np.std(contingencies_children_neg_case):.4f} p-value:{p_value}"
+    perform_warlaumont_analysis(
+        utterances, perform_contingency_analysis_speech_relatedness
     )
 
-    # Statsmodels prefers 1 and 0 over True and False:
-    utterances.replace({False: 0, True: 1}, inplace=True)
-
-    mod = smf.glm(
-        "caregiver_response ~ utt_child_speech_related",
-        family=sm.families.Binomial(),
-        data=utterances,
-    ).fit()
-    print(mod.summary())
-
-    print("GLM - all cases")
-    mod = smf.glm(
-        "follow_up_speech_related ~ caregiver_response_contingent",
-        family=sm.families.Binomial(),
-        data=utterances,
-    ).fit()
-    print(mod.summary())
-
-    print("GLM - positive case")
-    mod = smf.glm(
-        "follow_up_speech_related ~ caregiver_response_contingent",
-        family=sm.families.Binomial(),
-        data=utterances[utterances.utt_child_speech_related == True],
-    ).fit()
-    print(mod.summary())
-
-    print("GLM - negative case")
-    mod = smf.glm(
-        "follow_up_speech_related ~ caregiver_response_contingent",
-        family=sm.families.Binomial(),
-        data=utterances[utterances.utt_child_speech_related == False],
-    ).fit()
-    print(mod.summary())
+    perform_glm_analysis(
+        utterances, "utt_child_speech_related", "follow_up_speech_related"
+    )
 
     sns.barplot(
         data=utterances,
@@ -387,9 +472,7 @@ def perform_analysis_speech_relatedness(utterances, response_latency):
     return utterances
 
 
-if __name__ == "__main__":
-    args = parse_args()
-
+def perform_analyses(args, analysis_function):
     utterances = pd.read_csv(
         get_path_of_utterances_file(args.response_latency), index_col=None
     )
@@ -398,17 +481,24 @@ if __name__ == "__main__":
     utterances.utt_car.fillna("", inplace=True)
 
     # Remove utterances with too long negative pauses
-    utterances = utterances[(utterances.response_latency >= MAX_NEG_RESPONSE_LATENCY)]
+    utterances = utterances[
+        (utterances.response_latency >= args.max_neg_response_latency)
+    ]
 
     if not args.corpora:
         print(f"No corpora given, selecting based on average response latency")
         args.corpora = filter_corpora_based_on_response_latency_length(
             CANDIDATE_CORPORA,
             utterances,
-            MIN_AGE,
-            MAX_AGE,
-            RESPONSE_LATENCY_STANDARD_DEVIATIONS_OFF,
+            args.min_age,
+            args.max_age,
+            args.response_latency_max_standard_deviations_off,
         )
+
+    print(args)
+
+    print("Excluding corpora: ", args.excluded_corpora)
+    utterances = utterances[~utterances.corpus.isin(args.excluded_corpora)]
 
     print(f"Corpora included in analysis: {args.corpora}")
 
@@ -416,7 +506,9 @@ if __name__ == "__main__":
     utterances = utterances[utterances.corpus.isin(args.corpora)]
 
     # Filter by age
-    utterances = utterances[(MIN_AGE <= utterances.age) & (utterances.age <= MAX_AGE)]
+    utterances = utterances[
+        (args.min_age <= utterances.age) & (utterances.age <= args.max_age)
+    ]
 
     min_age = utterances.age.min()
     max_age = utterances.age.max()
@@ -434,4 +526,10 @@ if __name__ == "__main__":
         f"Mean of response latency in analysis: {mean_latency:.1f} +/- {std_mean_latency:.1f}"
     )
 
-    utterances = perform_analysis_speech_relatedness(utterances, args.response_latency)
+    return analysis_function(utterances, args)
+
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    utterances = perform_analyses(args, perform_analysis_speech_relatedness)

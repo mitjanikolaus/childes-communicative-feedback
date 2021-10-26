@@ -5,20 +5,19 @@ import pandas as pd
 import nltk
 
 from analysis_reproduce_warlaumont import (
-    MIN_AGE,
-    MAX_AGE,
-    RESPONSE_LATENCY_STANDARD_DEVIATIONS_OFF,
+    DEFAULT_MIN_AGE,
+    DEFAULT_MAX_AGE,
+    DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF,
 )
-from search_child_utterances_and_responses import CANDIDATE_CORPORA
+from search_child_utterances_and_responses import CANDIDATE_CORPORA, DEFAULT_RESPONSE_THRESHOLD
 from utils import (
     is_babbling,
     VOCAB,
     CODE_PHONOLGICAL_CONSISTENT_FORM,
-    PATH_UTTERANCES_RESPONSES,
     filter_corpora_based_on_response_latency_length,
     clean_utterance,
     remove_nonspeech_events,
-    EMPTY_UTTERANCE,
+    EMPTY_UTTERANCE, get_path_of_utterances_file,
 )
 
 
@@ -70,7 +69,7 @@ def check_vocab(adj_utterances):
 
 
 if __name__ == "__main__":
-    utterances = pd.read_csv(PATH_UTTERANCES_RESPONSES, index_col=None)
+    utterances = pd.read_csv(get_path_of_utterances_file(DEFAULT_RESPONSE_THRESHOLD), index_col=None)
 
     # Fill in empty strings for dummy caregiver responses
     utterances.utt_car.fillna("", inplace=True)
@@ -78,9 +77,9 @@ if __name__ == "__main__":
     corpora = filter_corpora_based_on_response_latency_length(
         CANDIDATE_CORPORA,
         utterances,
-        MIN_AGE,
-        MAX_AGE,
-        RESPONSE_LATENCY_STANDARD_DEVIATIONS_OFF,
+        DEFAULT_MIN_AGE,
+        DEFAULT_MAX_AGE,
+        DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF,
     )
 
     print(f"Corpora included in analysis: {corpora}")
