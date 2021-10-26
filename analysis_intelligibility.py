@@ -1,24 +1,15 @@
 import argparse
-import math
 
 import matplotlib.pyplot as plt
-import pandas as pd
 import seaborn as sns
 import numpy as np
 
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
-from statsmodels.stats.weightstats import ztest
 
 from analysis_reproduce_warlaumont import (
     perform_warlaumont_analysis,
     perform_glm_analysis,
     perform_analyses,
     str2bool,
-)
-from utils import (
-    filter_corpora_based_on_response_latency_length,
-    get_path_of_utterances_file,
 )
 from search_child_utterances_and_responses import (
     CANDIDATE_CORPORA,
@@ -36,12 +27,8 @@ from utils import (
 DEFAULT_MIN_AGE = 10  # age of first words?
 DEFAULT_MAX_AGE = 60
 
-# Number of standard deviations that the mean response latency of a corpus can be off the reference mean
 DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
 
-# Label for partially intelligible utterances
-# Set to True to count as intelligible, False to count as unintelligible or None to exclude these utterances from
-# the analysis
 DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE = None
 
 DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES = False
@@ -275,10 +262,13 @@ def perform_contingency_analysis_intelligibility(utterances):
     #     child_contingency_both_cases = np.nan
     #     child_contingency_both_cases_same_weighting = np.nan
 
+    proportion_intelligible = n_intelligible / (n_intelligible + n_unintelligible)
+
     return (
         contingency_caregiver,
         contingency_children_pos_case,
         contingency_children_neg_case,
+        proportion_intelligible,
     )
 
 
@@ -351,9 +341,21 @@ def perform_analysis_intelligibility(utterances, args):
         ].apply(caregiver_response_contingent_on_intelligibility, axis=1)
     )
 
-    perform_warlaumont_analysis(
-        utterances, perform_contingency_analysis_intelligibility
+    results_analysis = perform_warlaumont_analysis(
+        utterances, perform_contingency_analysis_intelligibility, "proportion_intelligible"
     )
+
+    plt.figure()
+    sns.scatterplot(data=results_analysis, x="age", y="contingency_caregiver")
+
+    plt.figure()
+    sns.scatterplot(data=results_analysis, x="age", y="contingency_children_pos_case")
+
+    plt.figure()
+    sns.scatterplot(data=results_analysis, x="age", y="contingency_children_neg_case")
+
+    plt.figure()
+    sns.scatterplot(data=results_analysis, x="age", y="proportion_intelligible")
 
     perform_glm_analysis(utterances, "utt_child_intelligible", "follow_up_intelligible")
 

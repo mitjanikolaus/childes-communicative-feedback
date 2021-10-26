@@ -26,17 +26,9 @@ from utils import (
     remove_whitespace,
 )
 
-# Number of standard deviations that the mean response latency of a corpus can be off the reference mean
 DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
 
-# Label for partially speech-related utterances
-# Set to True to count as speech-related, False to count as not speech-related or None to exclude these utterances from
-# the analysis
 DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED = True
-
-# TODO check that pause is not too long (neg): what is a reasonable value?
-# 1 second
-DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
 DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
 
@@ -47,6 +39,10 @@ DEFAULT_MIN_TRANSCRIPT_LENGTH = 0
 # Ages aligned to study of Warlaumont et al.
 DEFAULT_MIN_AGE = 8
 DEFAULT_MAX_AGE = 48
+
+# TODO check that pause is not too long (neg): what is a reasonable value?
+# 1 second
+DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
 DEFAULT_EXCLUDED_CORPORA = []
 
@@ -151,24 +147,21 @@ def caregiver_response_contingent_on_speech_relatedness(row):
     )
 
 
-def perform_warlaumont_analysis(utterances, analysis_function):
+def perform_warlaumont_analysis(utterances, analysis_function, label_positive_valence):
     print(f"\nFound {len(utterances)} turns")
     print("Overall analysis: ")
     (
         contingency_caregiver,
         contingency_children_pos_case,
         contingency_children_neg_case,
+        _
     ) = analysis_function(utterances)
     print(f"Caregiver contingency: {contingency_caregiver:.4f}")
     print(f"Child contingency (positive case): {contingency_children_pos_case:.4f}")
     print(f"Child contingency (negative case): {contingency_children_neg_case:.4f}")
 
     print("Per-transcript analysis: ")
-    (
-        contingencies_caregiver,
-        contingencies_children_pos_case,
-        contingencies_children_neg_case,
-    ) = ([], [], [])
+    results = []
 
     for transcript in utterances.transcript_file.unique():
         utts_transcript = utterances[utterances.transcript_file == transcript]
@@ -177,25 +170,25 @@ def perform_warlaumont_analysis(utterances, analysis_function):
                 contingency_caregiver,
                 contingency_children_pos_case,
                 contingency_children_neg_case,
+                proportion_positive_valence,
             ) = analysis_function(utts_transcript)
-            if not np.isnan(contingency_caregiver):
-                contingencies_caregiver.append(contingency_caregiver)
-            if not np.isnan(contingency_children_pos_case):
-                contingencies_children_pos_case.append(contingency_children_pos_case)
-            if not np.isnan(contingency_children_neg_case):
-                contingencies_children_neg_case.append(contingency_children_neg_case)
-    p_value = ztest(contingencies_caregiver, value=0.0, alternative="larger")[1]
+            results.append({"age": utts_transcript.age.values[0], "contingency_caregiver": contingency_caregiver, "contingency_children_pos_case": contingency_children_pos_case, "contingency_children_neg_case": contingency_children_neg_case, label_positive_valence: proportion_positive_valence})
+    results = pd.DataFrame(results)
+
+    p_value = ztest(results.contingency_caregiver.dropna(), value=0.0, alternative="larger")[1]
     print(
-        f"Caregiver contingency: {np.mean(contingencies_caregiver):.4f} +-{np.std(contingencies_caregiver):.4f} p-value:{p_value}"
+        f"Caregiver contingency: {results.contingency_caregiver.dropna().mean():.4f} +-{results.contingency_caregiver.dropna().std():.4f} p-value:{p_value}"
     )
-    p_value = ztest(contingencies_children_pos_case, value=0.0, alternative="larger")[1]
+    p_value = ztest(results.contingency_children_pos_case.dropna(), value=0.0, alternative="larger")[1]
     print(
-        f"Child contingency (positive case): {np.mean(contingencies_children_pos_case):.4f} +-{np.std(contingencies_children_pos_case):.4f} p-value:{p_value}"
+        f"Child contingency (positive case): {results.contingency_children_pos_case.dropna().mean():.4f} +-{results.contingency_children_pos_case.dropna().std():.4f} p-value:{p_value}"
     )
-    p_value = ztest(contingencies_children_neg_case, value=0.0, alternative="larger")[1]
+    p_value = ztest(results.contingency_children_neg_case.dropna(), value=0.0, alternative="larger")[1]
     print(
-        f"Child contingency (negative case): {np.mean(contingencies_children_neg_case):.4f} +-{np.std(contingencies_children_neg_case):.4f} p-value:{p_value}"
+        f"Child contingency (negative case): {results.contingency_children_neg_case.dropna().mean():.4f} +-{results.contingency_children_neg_case.dropna().std():.4f} p-value:{p_value}"
     )
+
+    return results
 
 
 def perform_contingency_analysis_speech_relatedness(utterances):
@@ -307,10 +300,13 @@ def perform_contingency_analysis_speech_relatedness(utterances):
     else:
         contingency_children_neg_case = np.nan
 
+    proportion_speech_related = n_speech / (n_speech + n_non_speech)
+
     return (
         contingency_caregiver,
         contingency_children_pos_case,
         contingency_children_neg_case,
+        proportion_speech_related,
     )
 
 
@@ -387,6 +383,7 @@ def perform_analysis_speech_relatedness(utterances, args):
         for word in utt_without_nonspeech.split(" "):
             if word != CODE_UNINTELLIGIBLE and word != EMPTY_UTTERANCE:
                 is_completely_unintelligible = False
+                break
         if is_completely_unintelligible:
             return label_unintelligible
 
@@ -453,14 +450,27 @@ def perform_analysis_speech_relatedness(utterances, args):
         ].apply(caregiver_response_contingent_on_speech_relatedness, axis=1)
     )
 
-    perform_warlaumont_analysis(
-        utterances, perform_contingency_analysis_speech_relatedness
+    results_analysis = perform_warlaumont_analysis(
+        utterances, perform_contingency_analysis_speech_relatedness, "proportion_speech_related"
     )
+
+    plt.figure()
+    sns.scatterplot(data=results_analysis, x="age", y="contingency_caregiver")
+
+    plt.figure()
+    sns.scatterplot(data=results_analysis, x="age", y="contingency_children_pos_case")
+
+    plt.figure()
+    sns.scatterplot(data=results_analysis, x="age", y="contingency_children_neg_case")
+
+    plt.figure()
+    sns.scatterplot(data=results_analysis, x="age", y="proportion_speech_related")
 
     perform_glm_analysis(
         utterances, "utt_child_speech_related", "follow_up_speech_related"
     )
 
+    plt.figure()
     sns.barplot(
         data=utterances,
         x="utt_child_speech_related",
