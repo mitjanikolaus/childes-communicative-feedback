@@ -48,7 +48,7 @@ IS_SIMPLE_EVENT_NON_SPEECH = lambda word: word.startswith("&=") and word not in 
     CODE_EVENT_WHISPERS,
     CODE_EVENT_MUMBLES,
 ]
-IS_OTHER_LAUGHTER = lambda word: word in ["ahhah", "haha", "hahaha", "hahahaha"]
+IS_OTHER_LAUGHTER = lambda word: word in ["haha", "hahaha", "hahahaha"]
 
 
 def word_is_speech_related(word):
@@ -57,14 +57,14 @@ def word_is_speech_related(word):
     return True
 
 
-def get_paralinguistic_event(utterance):
-    match = re.search(r"\[=! [\S\s]*]", utterance)
-    if match:
-        pos = match.regs[0]
+def get_paralinguistic_events(utterance):
+    matches = re.finditer(r"\[=! [^]]*]", utterance)
+    events = []
+    for match in matches:
+        pos = match.span()
         event = utterance[pos[0] : pos[1]]
-        return event
-
-    return None
+        events.append(event)
+    return events
 
 
 def paralinguistic_event_is_speech_related(event):
@@ -82,8 +82,8 @@ def paralinguistic_event_is_speech_related(event):
 
 def remove_nonspeech_events(utterance):
     # Remove paralinguistic events
-    event = get_paralinguistic_event(utterance)
-    if event:
+    events = get_paralinguistic_events(utterance)
+    for event in events:
         if not paralinguistic_event_is_speech_related(event):
             utterance = utterance.replace(event, "")
 
@@ -108,27 +108,27 @@ def clean_utterance(utterance):
     # Remove timing information:
     utterance = re.sub(r"[^]+?", "", utterance)
     # remove postcodes
-    utterance = re.sub(r"\[\+[\S\s]*]", "", utterance)
+    utterance = re.sub(r"\[\+[^]]*]", "", utterance)
     # remove precodes
-    utterance = re.sub(r"\[-[\S\s]*]", "", utterance)
+    utterance = re.sub(r"\[-[^]]*]", "", utterance)
     # remove comments
-    utterance = re.sub(r"\[%[\S\s]*]", "", utterance)
+    utterance = re.sub(r"\[%[^]]*]", "", utterance)
     # remove explanations:
-    utterance = re.sub(r"\[= [\S\s]*]", "", utterance)
+    utterance = re.sub(r"\[= [^]]*]", "", utterance)
     # remove replacements:
-    utterance = re.sub(r"\[:+ [\S\s]*]", "", utterance)
+    utterance = re.sub(r"\[:+ [^]]*]", "", utterance)
     # remove error codes:
-    utterance = re.sub(r"\[\*[\S\s]*]", "", utterance)
+    utterance = re.sub(r"\[\*[^]]*]", "", utterance)
     # remove repetition markers / collapses:
-    utterance = re.sub(r"\[/[\S\s]*]", "", utterance)
-    utterance = re.sub(r"\[x[\S\s]*]", "", utterance)
+    utterance = re.sub(r"\[/[^]]*]", "", utterance)
+    utterance = re.sub(r"\[x[^]]*]", "", utterance)
     # remove overlap markers
     utterance = re.sub(r"\[<\d*]", "", utterance)
     utterance = re.sub(r"\[>\d*]", "", utterance)
     # remove best guess markers
-    utterance = re.sub(r"\[\?[\S\s]*]", "", utterance)
+    utterance = re.sub(r"\[\?[^]]*]", "", utterance)
     # remove alternative transcriptions
-    utterance = re.sub(r"\[=\? [\S\s]*]", "", utterance)
+    utterance = re.sub(r"\[=\? [^]]*]", "", utterance)
     # remove stress markers
     utterance = re.sub(r"\[!+]", "", utterance)
     # Remove "complex local events"
@@ -241,8 +241,8 @@ def is_babbling(word):
 
 def remove_babbling(utterance):
     # Remove any paralinguistic events
-    event = get_paralinguistic_event(utterance)
-    if event:
+    events = get_paralinguistic_events(utterance)
+    for event in events:
         utterance = utterance.replace(event, "")
 
     words = utterance.split(" ")

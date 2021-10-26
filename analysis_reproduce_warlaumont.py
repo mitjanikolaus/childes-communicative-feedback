@@ -4,12 +4,20 @@ import math
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import numpy as np
 
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
+from statsmodels.stats.weightstats import ztest
 
-from utils import filter_corpora_based_on_response_latency_length, get_path_of_utterances_file
-from search_child_utterances_and_responses import CANDIDATE_CORPORA, DEFAULT_RESPONSE_THRESHOLD
+from utils import (
+    filter_corpora_based_on_response_latency_length,
+    get_path_of_utterances_file,
+)
+from search_child_utterances_and_responses import (
+    CANDIDATE_CORPORA,
+    DEFAULT_RESPONSE_THRESHOLD,
+)
 from utils import (
     EMPTY_UTTERANCE,
     clean_utterance,
@@ -31,9 +39,11 @@ LABEL_PARTIALLY_SPEECH_RELATED = True
 # 1 second
 MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
-COUNT_ONLY_SPEECH_RELATED_RESPONSES = False
+COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
 
-MIN_RATIO_NONSPEECH = 0.000001
+MIN_RATIO_NONSPEECH = 0.0
+
+MIN_TRANSCRIPT_LENGTH = 0
 
 # Ages aligned to study of Warlaumont et al.
 MIN_AGE = 8
@@ -61,8 +71,6 @@ def parse_args():
     return args
 
 
-
-
 def is_speech_related(
     utterance,
     label_partially_speech_related=LABEL_PARTIALLY_SPEECH_RELATED,
@@ -75,7 +83,11 @@ def is_speech_related(
         return False
 
     # We exclude completely unintelligible utterances (we don't know whether it's speech-related or not)
-    if utterance == CODE_UNINTELLIGIBLE:
+    is_completely_unintelligible = True
+    for word in utt_without_nonspeech.split(" "):
+        if word != CODE_UNINTELLIGIBLE and word != EMPTY_UTTERANCE:
+            is_completely_unintelligible = False
+    if is_completely_unintelligible:
         return label_unintelligible
 
     is_partly_speech_related = len(utt_without_nonspeech) != len(utterance)
@@ -91,6 +103,124 @@ def caregiver_response_contingent_on_speech_relatedness(row):
     ) | (
         (row["utt_child_speech_related"] == False)
         & (row["caregiver_response"] == False)
+    )
+
+
+def perform_contingency_analysis(utterances):
+    n_responses_to_speech = len(
+        utterances[utterances.utt_child_speech_related & utterances.caregiver_response]
+    )
+    n_speech = len(utterances[utterances.utt_child_speech_related])
+
+    n_responses_to_non_speech = len(
+        utterances[
+            (utterances.utt_child_speech_related == False)
+            & utterances.caregiver_response
+        ]
+    )
+    n_non_speech = len(utterances[utterances.utt_child_speech_related == False])
+
+    if n_non_speech > 0 and n_speech > 0:
+        contingency_caregiver = (n_responses_to_speech / n_speech) - (
+            n_responses_to_non_speech / n_non_speech
+        )
+    else:
+        contingency_caregiver = np.nan
+
+    # Contingency of child vocalization on previous adult response (positive case):
+    n_follow_up_speech_related_if_response_to_speech_related = len(
+        utterances[
+            utterances.follow_up_speech_related
+            & utterances.utt_child_speech_related
+            & utterances.caregiver_response
+        ]
+    )
+    n_responses_to_speech_related = len(
+        utterances[utterances.utt_child_speech_related & utterances.caregiver_response]
+    )
+
+    n_follow_up_speech_related_if_no_response_to_speech_related = len(
+        utterances[
+            utterances.follow_up_speech_related
+            & utterances.utt_child_speech_related
+            & (utterances.caregiver_response == False)
+        ]
+    )
+    n_no_responses_to_speech_related = len(
+        utterances[
+            utterances.utt_child_speech_related
+            & (utterances.caregiver_response == False)
+        ]
+    )
+
+    if n_responses_to_speech_related > 0 and n_no_responses_to_speech_related > 0:
+        ratio_follow_up_speech_related_if_response_to_speech_related = (
+            n_follow_up_speech_related_if_response_to_speech_related
+            / n_responses_to_speech_related
+        )
+        ratio_follow_up_speech_related_if_no_response_to_speech_related = (
+            n_follow_up_speech_related_if_no_response_to_speech_related
+            / n_no_responses_to_speech_related
+        )
+        contingency_children_pos_case = (
+            ratio_follow_up_speech_related_if_response_to_speech_related
+            - ratio_follow_up_speech_related_if_no_response_to_speech_related
+        )
+    else:
+        contingency_children_pos_case = np.nan
+
+    # Contingency of child vocalization on previous adult response (negative case):
+    n_follow_up_speech_related_if_no_response_to_non_speech_related = len(
+        utterances[
+            utterances.follow_up_speech_related
+            & (utterances.utt_child_speech_related == False)
+            & (utterances.caregiver_response == False)
+        ]
+    )
+    n_no_responses_to_non_speech_related = len(
+        utterances[
+            (utterances.utt_child_speech_related == False)
+            & (utterances.caregiver_response == False)
+        ]
+    )
+
+    n_follow_up_speech_related_if_response_to_non_speech_related = len(
+        utterances[
+            utterances.follow_up_speech_related
+            & (utterances.utt_child_speech_related == False)
+            & utterances.caregiver_response
+        ]
+    )
+    n_responses_to_non_speech_related = len(
+        utterances[
+            (utterances.utt_child_speech_related == False)
+            & utterances.caregiver_response
+        ]
+    )
+
+    if (
+        n_no_responses_to_non_speech_related > 0
+        and n_responses_to_non_speech_related > 0
+    ):
+        ratio_follow_up_speech_related_if_no_response_to_non_speech_related = (
+            n_follow_up_speech_related_if_no_response_to_non_speech_related
+            / n_no_responses_to_non_speech_related
+        )
+        ratio_follow_up_speech_related_if_response_to_non_speech_related = (
+            n_follow_up_speech_related_if_response_to_non_speech_related
+            / n_responses_to_non_speech_related
+        )
+        contingency_children_neg_case = (
+            ratio_follow_up_speech_related_if_no_response_to_non_speech_related
+            - ratio_follow_up_speech_related_if_response_to_non_speech_related
+        )
+    else:
+        contingency_children_neg_case = np.nan
+
+    return (
+        contingency_caregiver,
+        contingency_children_pos_case,
+        contingency_children_neg_case,
     )
 
 
@@ -121,13 +251,14 @@ def perform_analysis_speech_relatedness(utterances, response_latency):
     # Label caregiver responses as present or not
     def caregiver_speech_related_response(row):
         return (row["response_latency"] <= response_latency) & (
-                (not COUNT_ONLY_SPEECH_RELATED_RESPONSES)
-                | is_speech_related(
-            row["utt_car"],
-            label_partially_speech_related=True,
-            label_unintelligible=True,
+            (not COUNT_ONLY_SPEECH_RELATED_RESPONSES)
+            | is_speech_related(
+                row["utt_car"],
+                label_partially_speech_related=True,
+                label_unintelligible=True,
+            )
         )
-    )
+
     utterances = utterances.assign(
         caregiver_response=utterances.apply(caregiver_speech_related_response, axis=1)
     )
@@ -167,107 +298,49 @@ def perform_analysis_speech_relatedness(utterances, response_latency):
         ].apply(caregiver_response_contingent_on_speech_relatedness, axis=1)
     )
 
-    n_responses_to_speech = len(
-        utterances[utterances.utt_child_speech_related & utterances.caregiver_response]
-    )
-    n_speech = len(utterances[utterances.utt_child_speech_related])
-
-    n_responses_to_non_speech = len(
-        utterances[
-            (utterances.utt_child_speech_related == False)
-            & utterances.caregiver_response
-        ]
-    )
-    n_non_speech = len(utterances[utterances.utt_child_speech_related == False])
-
-    contingency_caregiver = (n_responses_to_speech / n_speech) - (
-        n_responses_to_non_speech / n_non_speech
-    )
+    print("Overall analysis: ")
+    (
+        contingency_caregiver,
+        contingency_children_pos_case,
+        contingency_children_neg_case,
+    ) = perform_contingency_analysis(utterances)
     print(f"Caregiver contingency: {contingency_caregiver:.4f}")
-
-    # Contingency of child vocalization on previous adult response (positive case):
-    n_follow_up_speech_related_if_response_to_speech_related = len(
-        utterances[
-            utterances.follow_up_speech_related
-            & utterances.utt_child_speech_related
-            & utterances.caregiver_response
-        ]
-    )
-    n_responses_to_speech_related = len(
-        utterances[utterances.utt_child_speech_related & utterances.caregiver_response]
-    )
-
-    n_follow_up_speech_related_if_no_response_to_speech_related = len(
-        utterances[
-            utterances.follow_up_speech_related
-            & utterances.utt_child_speech_related
-            & (utterances.caregiver_response == False)
-        ]
-    )
-    n_no_responses_to_speech_related = len(
-        utterances[
-            utterances.utt_child_speech_related
-            & (utterances.caregiver_response == False)
-        ]
-    )
-
-    ratio_follow_up_speech_related_if_response_to_speech_related = (
-        n_follow_up_speech_related_if_response_to_speech_related
-        / n_responses_to_speech_related
-    )
-    ratio_follow_up_speech_related_if_no_response_to_speech_related = (
-        n_follow_up_speech_related_if_no_response_to_speech_related
-        / n_no_responses_to_speech_related
-    )
-    contingency_children_pos_case = (
-        ratio_follow_up_speech_related_if_response_to_speech_related
-        - ratio_follow_up_speech_related_if_no_response_to_speech_related
-    )
     print(f"Child contingency (positive case): {contingency_children_pos_case:.4f}")
-
-    # Contingency of child vocalization on previous adult response (negative case):
-    n_follow_up_speech_related_if_no_response_to_non_speech_related = len(
-        utterances[
-            utterances.follow_up_speech_related
-            & (utterances.utt_child_speech_related == False)
-            & (utterances.caregiver_response == False)
-        ]
-    )
-    n_no_responses_to_non_speech_related = len(
-        utterances[
-            (utterances.utt_child_speech_related == False)
-            & (utterances.caregiver_response == False)
-        ]
-    )
-
-    n_follow_up_speech_related_if_response_to_non_speech_related = len(
-        utterances[
-            utterances.follow_up_speech_related
-            & (utterances.utt_child_speech_related == False)
-            & utterances.caregiver_response
-        ]
-    )
-    n_responses_to_non_speech_related = len(
-        utterances[
-            (utterances.utt_child_speech_related == False)
-            & utterances.caregiver_response
-        ]
-    )
-
-    ratio_follow_up_speech_related_if_no_response_to_non_speech_related = (
-        n_follow_up_speech_related_if_no_response_to_non_speech_related
-        / n_no_responses_to_non_speech_related
-    )
-    ratio_follow_up_speech_related_if_response_to_non_speech_related = (
-        n_follow_up_speech_related_if_response_to_non_speech_related
-        / n_responses_to_non_speech_related
-    )
-    contingency_children_neg_case = (
-        ratio_follow_up_speech_related_if_no_response_to_non_speech_related
-        - ratio_follow_up_speech_related_if_response_to_non_speech_related
-    )
-
     print(f"Child contingency (negative case): {contingency_children_neg_case:.4f}")
+
+    print("Per-transcript analysis: ")
+    (
+        contingencies_caregiver,
+        contingencies_children_pos_case,
+        contingencies_children_neg_case,
+    ) = ([], [], [])
+
+    for transcript in utterances.transcript_file.unique():
+        utts_transcript = utterances[utterances.transcript_file == transcript]
+        if len(utts_transcript) > MIN_TRANSCRIPT_LENGTH:
+            (
+                contingency_caregiver,
+                contingency_children_pos_case,
+                contingency_children_neg_case,
+            ) = perform_contingency_analysis(utts_transcript)
+            if not np.isnan(contingency_caregiver):
+                contingencies_caregiver.append(contingency_caregiver)
+            if not np.isnan(contingency_children_pos_case):
+                contingencies_children_pos_case.append(contingency_children_pos_case)
+            if not np.isnan(contingency_children_neg_case):
+                contingencies_children_neg_case.append(contingency_children_neg_case)
+    p_value = ztest(contingencies_caregiver, value=0.0, alternative="larger")[1]
+    print(
+        f"Caregiver contingency: {np.mean(contingencies_caregiver):.4f} +-{np.std(contingencies_caregiver):.4f} p-value:{p_value}"
+    )
+    p_value = ztest(contingencies_children_pos_case, value=0.0, alternative="larger")[1]
+    print(
+        f"Child contingency (positive case): {np.mean(contingencies_children_pos_case):.4f} +-{np.std(contingencies_children_pos_case):.4f} p-value:{p_value}"
+    )
+    p_value = ztest(contingencies_children_neg_case, value=0.0, alternative="larger")[1]
+    print(
+        f"Child contingency (negative case): {np.mean(contingencies_children_neg_case):.4f} +-{np.std(contingencies_children_neg_case):.4f} p-value:{p_value}"
+    )
 
     # Statsmodels prefers 1 and 0 over True and False:
     utterances.replace({False: 0, True: 1}, inplace=True)
@@ -317,7 +390,9 @@ def perform_analysis_speech_relatedness(utterances, response_latency):
 if __name__ == "__main__":
     args = parse_args()
 
-    utterances = pd.read_csv(get_path_of_utterances_file(args.response_latency), index_col=None)
+    utterances = pd.read_csv(
+        get_path_of_utterances_file(args.response_latency), index_col=None
+    )
 
     # Fill in empty strings for dummy caregiver responses
     utterances.utt_car.fillna("", inplace=True)

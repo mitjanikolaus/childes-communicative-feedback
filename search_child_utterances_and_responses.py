@@ -7,7 +7,7 @@ import pandas as pd
 import pylangacq
 import numpy as np
 
-from utils import get_path_of_utterances_file
+from utils import get_path_of_utterances_file, remove_whitespace
 
 SPEAKER_CODE_CHILD = "CHI"
 
@@ -67,7 +67,9 @@ def parse_args():
     return args
 
 
-def find_child_utterances_and_responses(corpus, transcripts, response_latency_threshold):
+def find_child_utterances_and_responses(
+    corpus, transcripts, response_latency_threshold
+):
     utterances = []
 
     ages = transcripts.age(months=True)
@@ -133,7 +135,10 @@ def find_child_utterances_and_responses(corpus, transcripts, response_latency_th
         utts_child_without_child_follow_up = utts_child[
             ~(
                 (utts_child.speaker_code_next == SPEAKER_CODE_CHILD)
-                & (utts_child.start_time_next < utts_child.end_time + response_latency_threshold)
+                & (
+                    utts_child.start_time_next
+                    < utts_child.end_time + response_latency_threshold
+                )
             )
         ]
 
@@ -187,6 +192,15 @@ def find_child_utterances_and_responses(corpus, transcripts, response_latency_th
                 utt_caregiver = re.sub(r"[^]+?", "", utt2["utt"])
                 utt_child_follow_up = re.sub(r"[^]+?", "", utt3["utt"])
 
+                # Remove punctuation and whitespace
+                utt_child = remove_whitespace(re.sub(r"[\.!\?]+\s*$", "", utt_child))
+                utt_caregiver = remove_whitespace(
+                    re.sub(r"[\.!\?]+\s*$", "", utt_caregiver)
+                )
+                utt_child_follow_up = remove_whitespace(
+                    re.sub(r"[\.!\?]+\s*$", "", utt_child_follow_up)
+                )
+
                 # Prepend previous utterance of the child if it was uttered right before
                 if (candidate_id - 1) in utts.index:
                     previous_utt_child = utts.loc[candidate_id - 1]
@@ -201,6 +215,10 @@ def find_child_utterances_and_responses(corpus, transcripts, response_latency_th
                         previous_utt_child = re.sub(
                             r"[^]+?", "", previous_utt_child["utt"]
                         )
+                        previous_utt_child = remove_whitespace(
+                            re.sub(r"[\.!\?]+\s*$", "", previous_utt_child)
+                        )
+
                         utt_child = previous_utt_child + " " + utt_child
 
                 # Append subsequent utterance of the caregiver if it was uttered right after
@@ -217,6 +235,10 @@ def find_child_utterances_and_responses(corpus, transcripts, response_latency_th
                         subsequent_utt_caregiver = re.sub(
                             r"[^]+?", "", subsequent_utt_caregiver["utt"]
                         )
+                        subsequent_utt_caregiver = remove_whitespace(
+                            re.sub(r"[\.!\?]+\s*$", "", subsequent_utt_caregiver)
+                        )
+
                         utt_caregiver = utt_caregiver + " " + subsequent_utt_caregiver
 
                 # Append subsequent utterance of the child follow-up if it was uttered right after
@@ -234,6 +256,10 @@ def find_child_utterances_and_responses(corpus, transcripts, response_latency_th
                         subsequent_utt_child_follow_up = re.sub(
                             r"[^]+?", "", subsequent_utt_child_follow_up["utt"]
                         )
+                        subsequent_utt_child_follow_up = remove_whitespace(
+                            re.sub(r"[\.!\?]+\s*$", "", subsequent_utt_child_follow_up)
+                        )
+
                         utt_child_follow_up = (
                             utt_child_follow_up + " " + subsequent_utt_child_follow_up
                         )
@@ -285,8 +311,6 @@ def preprocess_transcripts(response_latency):
 if __name__ == "__main__":
     args = parse_args()
 
-    preprocessed_utterances = preprocess_transcripts(
-        args.response_latency
-    )
+    preprocessed_utterances = preprocess_transcripts(args.response_latency)
     file_name = get_path_of_utterances_file(args.response_latency)
     preprocessed_utterances.to_csv(file_name, index=False)
