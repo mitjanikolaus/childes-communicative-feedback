@@ -526,12 +526,9 @@ def perform_analyses(args, analysis_function):
     print(
         f"Mean of child age in analysis: {mean_age:.1f} (min: {min_age} max: {max_age})"
     )
-    mean_latency = utterances[
-        utterances.response_latency < math.inf
-    ].response_latency.mean()
-    std_mean_latency = utterances[
-        utterances.response_latency < math.inf
-    ].response_latency.std()
+    # Compute mean latency over corpora (to compare to meta-analysis)
+    mean_latency = utterances[utterances.response_latency < math.inf].groupby("corpus")["response_latency"].mean().mean()
+    std_mean_latency = utterances[utterances.response_latency < math.inf].groupby("corpus")["response_latency"].mean().std()
     print(
         f"Mean of response latency in analysis: {mean_latency:.1f} +/- {std_mean_latency:.1f}"
     )
