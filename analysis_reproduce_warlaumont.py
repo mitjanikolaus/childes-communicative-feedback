@@ -1,5 +1,6 @@
 import argparse
 import math
+from collections import Counter
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -420,9 +421,9 @@ def perform_analysis_speech_relatedness(utterances, args):
         subset=("utt_child_speech_related", "follow_up_speech_related")
     )
 
-    # counter_non_speech = Counter(utterances[utterances.utt_child_speech_related == False].utt_child.values)
-    # print("Most common non-speech related sounds: ")
-    # print(counter_non_speech.most_common())
+    counter_non_speech = Counter(utterances[utterances.utt_child_speech_related == False].utt_child.values)
+    print("Most common non-speech related sounds: ")
+    print(counter_non_speech.most_common())
 
     # Filter for corpora that actually annotate non-speech-related sounds
     good_corpora = []

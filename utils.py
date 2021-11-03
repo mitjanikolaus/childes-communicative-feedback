@@ -42,12 +42,14 @@ def is_excluded_code(word):
 EMPTY_UTTERANCE = ""
 
 # non-speech-related sounds
-IS_SIMPLE_EVENT_NON_SPEECH = lambda word: word.startswith("&=") and word not in [
-    CODE_EVENT_BABBLES,
-    CODE_EVENT_VOCALIZES,
-    CODE_EVENT_WHISPERS,
-    CODE_EVENT_MUMBLES,
-]
+IS_SIMPLE_EVENT_NON_SPEECH = (
+    lambda word: word.startswith("&=")
+    and word
+    not in CODES_EVENT_WHISPERS
+    + CODES_EVENT_MUMBLES
+    + CODES_EVENT_BABBLES
+    + CODES_EVENT_VOCALIZES
+)
 IS_OTHER_LAUGHTER = lambda word: word in ["haha", "hahaha", "hahahaha"]
 
 
@@ -201,10 +203,10 @@ CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION = "@u"
 CODE_INTERJECTION = "@i"
 CODE_PHONOLGICAL_CONSISTENT_FORM = "@p"
 CODE_PHONOLOGICAL_FRAGMENT = "&"
-CODE_EVENT_BABBLES = "&=babbles"
-CODE_EVENT_VOCALIZES = "&=vocalizes"
-CODE_EVENT_WHISPERS = "&=whispers"
-CODE_EVENT_MUMBLES = "&=mumbles"
+CODES_EVENT_BABBLES = ["&=babbles", "&=babble"]
+CODES_EVENT_VOCALIZES = ["&=vocalizes", "&=vocalize"]
+CODES_EVENT_WHISPERS = ["&=whispers", "&=whisper"]
+CODES_EVENT_MUMBLES = ["&=mumbles", "&=mumble"]
 
 OTHER_BABBLING = ["ba", "baa", "babaa", "ababa", "bada"]
 
@@ -221,9 +223,9 @@ def is_babbling(word):
         or word.startswith(CODE_PHONOLOGICAL_FRAGMENT)
         or word == CODE_UNINTELLIGIBLE
         or word == CODE_PHONETIC
-        or word.startswith(CODE_EVENT_BABBLES)
-        or word.startswith(CODE_EVENT_VOCALIZES)
-        or word.startswith(CODE_EVENT_MUMBLES)
+        or word in CODES_EVENT_BABBLES
+        or word in CODES_EVENT_VOCALIZES
+        or word in CODES_EVENT_MUMBLES
         or word in OTHER_BABBLING
         or (
             word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
@@ -263,7 +265,10 @@ def filter_corpora_based_on_response_latency_length(
     latency_data = latency_data[latency_data["clinical group"] == "Healthy"]
 
     # Use only data of the target age range:
-    latency_data = latency_data[(latency_data.mean_age_infants_months >= min_age) & (latency_data.mean_age_infants_months <= max_age)]
+    latency_data = latency_data[
+        (latency_data.mean_age_infants_months >= min_age)
+        & (latency_data.mean_age_infants_months <= max_age)
+    ]
 
     mean_latency = latency_data.adult_response_latency.mean()
     std_mean_latency = latency_data.adult_response_latency.std()
@@ -284,7 +289,7 @@ def filter_corpora_based_on_response_latency_length(
     for corpus in corpora:
         mean = utterances[
             (utterances.corpus == corpus) & (utterances.response_latency < math.inf)
-            ].response_latency.values.mean()
+        ].response_latency.values.mean()
         print(f"{corpus}: {mean:.1f}")
         if (
             mean_latency - standard_deviations_off * std_mean_latency
