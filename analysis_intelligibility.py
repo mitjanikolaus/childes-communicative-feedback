@@ -359,11 +359,20 @@ def perform_analysis_intelligibility(utterances, args):
 
     perform_glm_analysis(utterances, "utt_child_intelligible", "follow_up_intelligible")
 
+    plt.figure()
+    plt.title("Caregiver contingency")
+    sns.barplot(
+        data=utterances,
+        x="utt_child_intelligible",
+        y="caregiver_response",
+    )
+
+    plt.figure()
     sns.barplot(
         data=utterances,
         x="utt_child_intelligible",
         y="follow_up_intelligible",
-        hue="caregiver_response_contingent",
+        hue="caregiver_response",
     )
     plt.show()
 

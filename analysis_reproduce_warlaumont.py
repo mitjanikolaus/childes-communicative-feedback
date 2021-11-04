@@ -13,7 +13,7 @@ from statsmodels.stats.weightstats import ztest
 
 from utils import (
     filter_corpora_based_on_response_latency_length,
-    get_path_of_utterances_file,
+    get_path_of_utterances_file, get_binomial_test_data,
 )
 from search_child_utterances_and_responses import (
     CANDIDATE_CORPORA,
@@ -328,15 +328,29 @@ def perform_glm_analysis(
 
     print("GLM - child contingency - all cases")
     mod = smf.glm(
-        f"{column_follow_up_child_valence} ~ caregiver_response_contingent",
+        f"{column_follow_up_child_valence} ~ caregiver_response * {column_utt_child_valence}",
         family=sm.families.Binomial(),
         data=utterances,
     ).fit()
     print(mod.summary())
 
+    test_data = get_binomial_test_data(column_utt_child_valence, "caregiver_response")
+    test_data["predicted"] = mod.predict(test_data)
+    print(test_data)
+
+    print("Mixed effects - child contingency")
+    mod = smf.glm(
+        f"{column_follow_up_child_valence} ~ caregiver_response * {column_utt_child_valence}",
+        family=sm.families.Binomial(),
+        data=utterances,
+        groups=utterances["child_name"]
+    ).fit()
+    print(mod.summary())
+
+
     print("GLM - child contingency - positive case")
     mod = smf.glm(
-        f"{column_follow_up_child_valence} ~ caregiver_response_contingent",
+        f"{column_follow_up_child_valence} ~ caregiver_response",
         family=sm.families.Binomial(),
         data=utterances[utterances[column_utt_child_valence] == True],
     ).fit()
@@ -344,11 +358,12 @@ def perform_glm_analysis(
 
     print("GLM - child contingency - negative case")
     mod = smf.glm(
-        f"{column_follow_up_child_valence} ~ caregiver_response_contingent",
+        f"{column_follow_up_child_valence} ~ caregiver_response",
         family=sm.families.Binomial(),
         data=utterances[utterances[column_utt_child_valence] == False],
     ).fit()
     print(mod.summary())
+
 
 
 def perform_analysis_speech_relatedness(utterances, args):

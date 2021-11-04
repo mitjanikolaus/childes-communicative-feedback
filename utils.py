@@ -299,3 +299,14 @@ def filter_corpora_based_on_response_latency_length(
             filtered.append(corpus)
 
     return filtered
+
+
+def get_binomial_test_data(column_name_1, column_name_2):
+    data = []
+
+    data.append({column_name_1: 0, column_name_2: 0})
+    data.append({column_name_1: 0, column_name_2: 1})
+    data.append({column_name_1: 1, column_name_2: 0})
+    data.append({column_name_1: 1, column_name_2: 1})
+
+    return pd.DataFrame(data)
