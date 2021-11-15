@@ -45,6 +45,10 @@ DEFAULT_MAX_AGE = 48
 # 1 second
 DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
+# 10 seconds
+DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
+
+
 DEFAULT_EXCLUDED_CORPORA = []
 
 
@@ -117,6 +121,12 @@ def parse_args():
         type=int,
         default=DEFAULT_MAX_NEG_RESPONSE_LATENCY,
         help="Maximum negative response latency in milliseconds",
+    )
+    argparser.add_argument(
+        "--max-response-latency-follow-up",
+        type=int,
+        default=DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP,
+        help="Maximum response latency for the child follow-up in milliseconds",
     )
     argparser.add_argument(
         "--count-only-speech_related_responses",
@@ -509,6 +519,11 @@ def perform_analyses(args, analysis_function):
     # Remove utterances with too long negative pauses
     utterances = utterances[
         (utterances.response_latency >= args.max_neg_response_latency)
+    ]
+
+    # Remove utterances with follow up too far in the future
+    utterances = utterances[
+        (utterances.response_latency_follow_up <= args.max_response_latency_follow_up)
     ]
 
     if not args.corpora:

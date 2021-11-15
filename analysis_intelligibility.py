@@ -39,6 +39,8 @@ DEFAULT_MIN_TRANSCRIPT_LENGTH = 0
 # 1 second
 DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
+# 10 seconds
+DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
 
 # Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words
 DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
@@ -99,6 +101,14 @@ def parse_args():
         default=DEFAULT_MAX_NEG_RESPONSE_LATENCY,
         help="Maximum negative response latency in milliseconds",
     )
+
+    argparser.add_argument(
+        "--max-response-latency-follow-up",
+        type=int,
+        default=DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP,
+        help="Maximum response latency for the child follow-up in milliseconds",
+    )
+
     argparser.add_argument(
         "--count-only-intelligible_responses",
         type=str2bool,

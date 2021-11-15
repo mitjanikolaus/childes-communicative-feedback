@@ -170,6 +170,7 @@ def find_child_utterances_and_responses(
                     utt2 = {
                         "utt": "",
                         "start_time": math.inf,
+                        "end_time": math.inf,
                         "speaker_code": SPEAKER_CODES_CAREGIVER[-1],
                     }
                 else:
@@ -186,6 +187,11 @@ def find_child_utterances_and_responses(
             if len(following_utts_child) > 0:
                 utt3 = following_utts_child.iloc[0]
                 response_latency = round(utt2["start_time"] - utt1["end_time"], 3)
+                if utt2["end_time"] == math.inf:
+                    # If there was not caregiver response, we calculate the response latency starting from the first utt
+                    response_latency_follow_up = round(utt3["start_time"] - utt1["end_time"], 3)
+                else:
+                    response_latency_follow_up = round(utt3["start_time"] - utt2["end_time"], 3)
 
                 # Remove timing information from utterance
                 utt_child = re.sub(r"[^]+?", "", utt1["utt"])
@@ -272,6 +278,7 @@ def find_child_utterances_and_responses(
                 utterances.append(
                     {
                         "response_latency": response_latency,
+                        "response_latency_follow_up": response_latency_follow_up,
                         "age": round(age),
                         "corpus": corpus,
                         "transcript_file": file,
