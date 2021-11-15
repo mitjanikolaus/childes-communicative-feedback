@@ -25,7 +25,7 @@ from utils import (
 
 # TODO: define age range
 DEFAULT_MIN_AGE = 10  # age of first words?
-DEFAULT_MAX_AGE = 60
+DEFAULT_MAX_AGE = 24
 
 DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
 
@@ -287,7 +287,7 @@ def perform_analysis_intelligibility(utterances, args):
         remove_nonspeech_events
     )
 
-    # Drop empty children's utterances (these are non-speech related)
+    # Drop empty children's utterances (these are non-speech-related)
     utterances = utterances[
         (
             (utterances.utt_child != EMPTY_UTTERANCE)
@@ -368,6 +368,7 @@ def perform_analysis_intelligibility(utterances, args):
     )
 
     plt.figure()
+    plt.title("Child contingency")
     sns.barplot(
         data=utterances,
         x="utt_child_intelligible",
