@@ -1,5 +1,6 @@
 import argparse
 import math
+import os
 from collections import Counter
 
 import matplotlib.pyplot as plt
@@ -463,30 +464,46 @@ def perform_analysis_speech_relatedness(utterances, args):
     results_analysis = perform_warlaumont_analysis(
         utterances, args, perform_contingency_analysis_speech_relatedness, "proportion_speech_related"
     )
+    results_dir = "results/reproduce_warlaumont/"
+    os.makedirs(results_dir, exist_ok=True)
 
     plt.figure()
     sns.scatterplot(data=results_analysis, x="age", y="contingency_caregiver")
+    plt.savefig(os.path.join(results_dir, "dev_contingency_caregivers.png"))
 
     plt.figure()
     sns.scatterplot(data=results_analysis, x="age", y="contingency_children_pos_case")
+    plt.savefig(os.path.join(results_dir, "dev_contingency_children.png"))
 
-    plt.figure()
-    sns.scatterplot(data=results_analysis, x="age", y="contingency_children_neg_case")
+    # plt.figure()
+    # sns.scatterplot(data=results_analysis, x="age", y="contingency_children_neg_case")
 
     plt.figure()
     sns.scatterplot(data=results_analysis, x="age", y="proportion_speech_related")
+    plt.savefig(os.path.join(results_dir, "dev_proportion_speech_related.png"))
 
     perform_glm_analysis(
         utterances, "utt_child_speech_related", "follow_up_speech_related"
     )
 
     plt.figure()
+    plt.title("Caregiver contingency")
     sns.barplot(
         data=utterances,
         x="utt_child_speech_related",
-        y="follow_up_speech_related",
-        hue="caregiver_response_contingent",
+        y="caregiver_response",
     )
+    plt.savefig(os.path.join(results_dir, "contingency_caregivers.png"))
+
+    plt.figure()
+    plt.title("Child contingency")
+    sns.barplot(
+        data=utterances[utterances.utt_child_speech_related == True],
+        x="caregiver_response",
+        y="follow_up_speech_related",
+    )
+    plt.savefig(os.path.join(results_dir, "contingency_children.png"))
+
     plt.show()
 
     return utterances

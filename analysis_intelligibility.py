@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -23,9 +24,8 @@ from utils import (
     remove_whitespace,
 )
 
-# TODO: define age range
 DEFAULT_MIN_AGE = 10  # age of first words?
-DEFAULT_MAX_AGE = 24
+DEFAULT_MAX_AGE = 48
 
 DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
 
@@ -35,7 +35,6 @@ DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES = True
 
 DEFAULT_MIN_TRANSCRIPT_LENGTH = 0
 
-# TODO check that pause is not too long (neg): what is a reasonable value?
 # 1 second
 DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
@@ -357,6 +356,8 @@ def perform_analysis_intelligibility(utterances, args):
     results_analysis = perform_warlaumont_analysis(
         utterances, args, perform_contingency_analysis_intelligibility, "proportion_intelligible"
     )
+    results_dir = "results/intelligibility/"
+    os.makedirs(results_dir, exist_ok=True)
 
     # plt.figure()
     # sns.scatterplot(data=results_analysis, x="age", y="contingency_caregiver")
@@ -379,6 +380,7 @@ def perform_analysis_intelligibility(utterances, args):
         x="utt_child_intelligible",
         y="caregiver_response",
     )
+    plt.savefig(os.path.join(results_dir, "contingency_caregivers.png"))
 
     plt.figure()
     plt.title("Child contingency")
@@ -387,6 +389,7 @@ def perform_analysis_intelligibility(utterances, args):
         x="caregiver_response",
         y="follow_up_intelligible",
     )
+    plt.savefig(os.path.join(results_dir, "contingency_children.png"))
 
     # plt.figure()
     # utt_neg_car_unint = utterances[(utterances.utt_child_intelligible == False) & (utterances.utt_car_intelligible == False) & (utterances.utt_car != EMPTY_UTTERANCE)]
