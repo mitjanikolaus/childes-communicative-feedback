@@ -325,6 +325,9 @@ def perform_analysis_intelligibility(utterances, args):
         utt_child_intelligible=utterances.utt_child.apply(is_intelligible)
     )
     utterances = utterances.assign(
+        utt_car_intelligible=utterances.utt_car.apply(is_intelligible)
+    )
+    utterances = utterances.assign(
         follow_up_intelligible=utterances.utt_child_follow_up.apply(is_intelligible)
     )
 
@@ -355,17 +358,17 @@ def perform_analysis_intelligibility(utterances, args):
         utterances, args, perform_contingency_analysis_intelligibility, "proportion_intelligible"
     )
 
-    plt.figure()
-    sns.scatterplot(data=results_analysis, x="age", y="contingency_caregiver")
-
-    plt.figure()
-    sns.scatterplot(data=results_analysis, x="age", y="contingency_children_pos_case")
-
-    plt.figure()
-    sns.scatterplot(data=results_analysis, x="age", y="contingency_children_neg_case")
-
-    plt.figure()
-    sns.scatterplot(data=results_analysis, x="age", y="proportion_intelligible")
+    # plt.figure()
+    # sns.scatterplot(data=results_analysis, x="age", y="contingency_caregiver")
+    #
+    # plt.figure()
+    # sns.scatterplot(data=results_analysis, x="age", y="contingency_children_pos_case")
+    #
+    # plt.figure()
+    # sns.scatterplot(data=results_analysis, x="age", y="contingency_children_neg_case")
+    #
+    # plt.figure()
+    # sns.scatterplot(data=results_analysis, x="age", y="proportion_intelligible")
 
     perform_glm_analysis(utterances, "utt_child_intelligible", "follow_up_intelligible")
 
@@ -380,11 +383,15 @@ def perform_analysis_intelligibility(utterances, args):
     plt.figure()
     plt.title("Child contingency")
     sns.barplot(
-        data=utterances,
-        x="utt_child_intelligible",
+        data=utterances[utterances.utt_child_intelligible == True],
+        x="caregiver_response",
         y="follow_up_intelligible",
-        hue="caregiver_response",
     )
+
+    # plt.figure()
+    # utt_neg_car_unint = utterances[(utterances.utt_child_intelligible == False) & (utterances.utt_car_intelligible == False) & (utterances.utt_car != EMPTY_UTTERANCE)]
+    # sns.barplot(data=utt_neg_car_unint, y="follow_up_intelligible")
+
     plt.show()
 
     return utterances

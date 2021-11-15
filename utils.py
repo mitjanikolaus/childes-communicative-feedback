@@ -285,12 +285,12 @@ def filter_corpora_based_on_response_latency_length(
 
     # Filter corpora to be in range of mean +/- 1 standard deviation
     filtered = []
-    print("Response latencies:")
+    # print("Response latencies:")
     for corpus in corpora:
         mean = utterances[
             (utterances.corpus == corpus) & (utterances.response_latency < math.inf)
         ].response_latency.values.mean()
-        print(f"{corpus}: {mean:.1f}")
+        # print(f"{corpus}: {mean:.1f}")
         if (
             mean_latency - standard_deviations_off * std_mean_latency
             < mean

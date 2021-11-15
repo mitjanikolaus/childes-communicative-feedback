@@ -169,7 +169,7 @@ def perform_warlaumont_analysis(utterances, args, analysis_function, label_posit
     ) = analysis_function(utterances)
     print(f"Caregiver contingency: {contingency_caregiver:.4f}")
     print(f"Child contingency (positive case): {contingency_children_pos_case:.4f}")
-    print(f"Child contingency (negative case): {contingency_children_neg_case:.4f}")
+    # print(f"Child contingency (negative case): {contingency_children_neg_case:.4f}")
 
     print("Per-transcript analysis: ")
     results = []
@@ -194,10 +194,10 @@ def perform_warlaumont_analysis(utterances, args, analysis_function, label_posit
     print(
         f"Child contingency (positive case): {results.contingency_children_pos_case.dropna().mean():.4f} +-{results.contingency_children_pos_case.dropna().std():.4f} p-value:{p_value}"
     )
-    p_value = ztest(results.contingency_children_neg_case.dropna(), value=0.0, alternative="larger")[1]
-    print(
-        f"Child contingency (negative case): {results.contingency_children_neg_case.dropna().mean():.4f} +-{results.contingency_children_neg_case.dropna().std():.4f} p-value:{p_value}"
-    )
+    # p_value = ztest(results.contingency_children_neg_case.dropna(), value=0.0, alternative="larger")[1]
+    # print(
+    #     f"Child contingency (negative case): {results.contingency_children_neg_case.dropna().mean():.4f} +-{results.contingency_children_neg_case.dropna().std():.4f} p-value:{p_value}"
+    # )
 
     return results
 
@@ -336,44 +336,28 @@ def perform_glm_analysis(
     ).fit()
     print(mod.summary())
 
-    print("GLM - child contingency - all cases")
+    utts_positive = utterances[utterances[column_utt_child_valence] == True]
+
+    print("GLM - child contingency")
     mod = smf.glm(
-        f"{column_follow_up_child_valence} ~ caregiver_response * {column_utt_child_valence}",
+        f"{column_follow_up_child_valence} ~ caregiver_response",
         family=sm.families.Binomial(),
-        data=utterances,
+        data=utts_positive,
     ).fit()
     print(mod.summary())
 
-    test_data = get_binomial_test_data(column_utt_child_valence, "caregiver_response")
-    test_data["predicted"] = mod.predict(test_data)
-    print(test_data)
+    # test_data = get_binomial_test_data(column_utt_child_valence, "caregiver_response")
+    # test_data["predicted"] = mod.predict(test_data)
+    # print(test_data)
 
     print("Mixed effects - child contingency")
     mod = smf.glm(
-        f"{column_follow_up_child_valence} ~ caregiver_response * {column_utt_child_valence}",
-        family=sm.families.Binomial(),
-        data=utterances,
-        groups=utterances["child_name"]
-    ).fit()
-    print(mod.summary())
-
-
-    print("GLM - child contingency - positive case")
-    mod = smf.glm(
         f"{column_follow_up_child_valence} ~ caregiver_response",
         family=sm.families.Binomial(),
-        data=utterances[utterances[column_utt_child_valence] == True],
+        data=utts_positive,
+        groups=utts_positive["child_name"]
     ).fit()
     print(mod.summary())
-
-    print("GLM - child contingency - negative case")
-    mod = smf.glm(
-        f"{column_follow_up_child_valence} ~ caregiver_response",
-        family=sm.families.Binomial(),
-        data=utterances[utterances[column_utt_child_valence] == False],
-    ).fit()
-    print(mod.summary())
-
 
 
 def perform_analysis_speech_relatedness(utterances, args):
