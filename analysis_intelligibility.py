@@ -369,7 +369,7 @@ def perform_analysis_intelligibility(utterances, args):
     # sns.scatterplot(data=results_analysis, x="age", y="contingency_children_neg_case")
     #
     # plt.figure()
-    # sns.scatterplot(data=results_analysis, x="age", y="proportion_intelligible")
+    # sns.regplot(data=results_analysis, x="age", y="proportion_intelligible")
 
     perform_glm_analysis(utterances, "utt_child_intelligible", "follow_up_intelligible")
 
@@ -390,6 +390,17 @@ def perform_analysis_intelligibility(utterances, args):
         y="follow_up_intelligible",
     )
     plt.savefig(os.path.join(results_dir, "contingency_children.png"))
+
+    plt.figure()
+    plt.title("Child contingency - per corpus")
+    sns.barplot(
+        data=utterances[utterances.utt_child_intelligible == True],
+        x="corpus",
+        y="follow_up_intelligible",
+        hue="caregiver_response"
+    )
+    plt.savefig(os.path.join(results_dir, "contingency_children_per_corpus.png"))
+
 
     # plt.figure()
     # utt_neg_car_unint = utterances[(utterances.utt_child_intelligible == False) & (utterances.utt_car_intelligible == False) & (utterances.utt_car != EMPTY_UTTERANCE)]

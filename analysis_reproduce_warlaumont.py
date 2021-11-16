@@ -351,10 +351,10 @@ def perform_glm_analysis(
     # test_data["predicted"] = mod.predict(test_data)
     # print(test_data)
 
-    print("Mixed effects - child contingency")
-    mod = smf.glm(
+    print("Mixed effects - child contingency | Groups: child_name")
+    # TODO: make binomial!
+    mod = smf.mixedlm(
         f"{column_follow_up_child_valence} ~ caregiver_response",
-        family=sm.families.Binomial(),
         data=utts_positive,
         groups=utts_positive["child_name"]
     ).fit()
@@ -479,7 +479,7 @@ def perform_analysis_speech_relatedness(utterances, args):
     # sns.scatterplot(data=results_analysis, x="age", y="contingency_children_neg_case")
 
     plt.figure()
-    sns.scatterplot(data=results_analysis, x="age", y="proportion_speech_related")
+    sns.regplot(data=results_analysis, x="age", y="proportion_speech_related", marker=".", ci=None)
     plt.savefig(os.path.join(results_dir, "dev_proportion_speech_related.png"))
 
     perform_glm_analysis(
