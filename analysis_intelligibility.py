@@ -8,7 +8,6 @@ import numpy as np
 
 from analysis_reproduce_warlaumont import (
     perform_warlaumont_analysis,
-    perform_glm_analysis,
     perform_analyses,
     str2bool,
 )
@@ -359,6 +358,8 @@ def perform_analysis_intelligibility(utterances, args):
     results_dir = "results/intelligibility/"
     os.makedirs(results_dir, exist_ok=True)
 
+    utterances.to_csv(results_dir + "utterances.csv", index=False)
+
     # plt.figure()
     # sns.scatterplot(data=results_analysis, x="age", y="contingency_caregiver")
     #
@@ -368,10 +369,8 @@ def perform_analysis_intelligibility(utterances, args):
     # plt.figure()
     # sns.scatterplot(data=results_analysis, x="age", y="contingency_children_neg_case")
     #
-    # plt.figure()
-    # sns.regplot(data=results_analysis, x="age", y="proportion_intelligible")
-
-    perform_glm_analysis(utterances, "utt_child_intelligible", "follow_up_intelligible")
+    plt.figure()
+    sns.scatterplot(data=results_analysis, x="age", y="proportion_intelligible")
 
     plt.figure()
     plt.title("Caregiver contingency")
@@ -391,15 +390,15 @@ def perform_analysis_intelligibility(utterances, args):
     )
     plt.savefig(os.path.join(results_dir, "contingency_children.png"))
 
-    plt.figure()
-    plt.title("Child contingency - per corpus")
-    sns.barplot(
-        data=utterances[utterances.utt_child_intelligible == True],
-        x="corpus",
-        y="follow_up_intelligible",
-        hue="caregiver_response"
-    )
-    plt.savefig(os.path.join(results_dir, "contingency_children_per_corpus.png"))
+    # plt.figure()
+    # plt.title("Child contingency - per corpus")
+    # sns.barplot(
+    #     data=utterances[utterances.utt_child_intelligible == True],
+    #     x="corpus",
+    #     y="follow_up_intelligible",
+    #     hue="caregiver_response"
+    # )
+    # plt.savefig(os.path.join(results_dir, "contingency_children_per_corpus.png"))
 
 
     # plt.figure()

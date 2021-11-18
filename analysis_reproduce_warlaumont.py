@@ -322,45 +322,6 @@ def perform_contingency_analysis_speech_relatedness(utterances):
     )
 
 
-def perform_glm_analysis(
-    utterances, column_utt_child_valence, column_follow_up_child_valence
-):
-
-    # Statsmodels prefers 1 and 0 over True and False:
-    utterances.replace({False: 0, True: 1}, inplace=True)
-
-    print("GLM - caregiver contingency")
-    mod = smf.glm(
-        f"caregiver_response ~ {column_utt_child_valence}",
-        family=sm.families.Binomial(),
-        data=utterances,
-    ).fit()
-    print(mod.summary())
-
-    utts_positive = utterances[utterances[column_utt_child_valence] == True]
-
-    print("GLM - child contingency")
-    mod = smf.glm(
-        f"{column_follow_up_child_valence} ~ caregiver_response",
-        family=sm.families.Binomial(),
-        data=utts_positive,
-    ).fit()
-    print(mod.summary())
-
-    # test_data = get_binomial_test_data(column_utt_child_valence, "caregiver_response")
-    # test_data["predicted"] = mod.predict(test_data)
-    # print(test_data)
-
-    print("Mixed effects - child contingency | Groups: child_name")
-    # TODO: make binomial!
-    mod = smf.mixedlm(
-        f"{column_follow_up_child_valence} ~ caregiver_response",
-        data=utts_positive,
-        groups=utts_positive["child_name"]
-    ).fit()
-    print(mod.summary())
-
-
 def perform_analysis_speech_relatedness(utterances, args):
     # Clean utterances
     utterances["utt_child"] = utterances.utt_child.apply(clean_utterance)
@@ -481,10 +442,6 @@ def perform_analysis_speech_relatedness(utterances, args):
     plt.figure()
     sns.regplot(data=results_analysis, x="age", y="proportion_speech_related", marker=".", ci=None)
     plt.savefig(os.path.join(results_dir, "dev_proportion_speech_related.png"))
-
-    perform_glm_analysis(
-        utterances, "utt_child_speech_related", "follow_up_speech_related"
-    )
 
     plt.figure()
     plt.title("Caregiver contingency")
