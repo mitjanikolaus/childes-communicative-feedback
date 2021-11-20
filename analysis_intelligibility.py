@@ -46,6 +46,8 @@ DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
 # currently not used to exclude corpora, just stored for reference:
 CORPORA_NOT_LONGITUDINAL = ["Gleason", "Rollins", "Edinburgh"]
 
+AGE_BIN_NUM_MONTHS = 6
+
 
 def parse_args():
     argparser = argparse.ArgumentParser()
@@ -280,6 +282,10 @@ def perform_contingency_analysis_intelligibility(utterances):
     )
 
 
+def age_bin(age):
+    return int(age / AGE_BIN_NUM_MONTHS) * AGE_BIN_NUM_MONTHS + AGE_BIN_NUM_MONTHS/2
+
+
 def perform_analysis_intelligibility(utterances, args):
     # Clean utterances
     utterances["utt_child"] = utterances.utt_child.apply(clean_utterance)
@@ -358,8 +364,6 @@ def perform_analysis_intelligibility(utterances, args):
     results_dir = "results/intelligibility/"
     os.makedirs(results_dir, exist_ok=True)
 
-    utterances.to_csv(results_dir + "utterances.csv", index=False)
-
     # plt.figure()
     # sns.scatterplot(data=results_analysis, x="age", y="contingency_caregiver")
     #
@@ -372,6 +376,8 @@ def perform_analysis_intelligibility(utterances, args):
     plt.figure()
     sns.scatterplot(data=results_analysis, x="age", y="proportion_intelligible")
 
+    utterances["age"] = utterances.age.map(age_bin)
+
     plt.figure()
     plt.title("Caregiver contingency")
     sns.barplot(
@@ -382,6 +388,16 @@ def perform_analysis_intelligibility(utterances, args):
     plt.savefig(os.path.join(results_dir, "contingency_caregivers.png"))
 
     plt.figure()
+    plt.title("Caregiver contingency - per age group")
+    sns.barplot(
+        data=utterances,
+        x="age",
+        y="caregiver_response",
+        hue="utt_child_intelligible"
+    )
+    plt.savefig(os.path.join(results_dir, "contingency_caregivers_per_age.png"))
+
+    plt.figure()
     plt.title("Child contingency")
     sns.barplot(
         data=utterances[utterances.utt_child_intelligible == True],
@@ -390,20 +406,22 @@ def perform_analysis_intelligibility(utterances, args):
     )
     plt.savefig(os.path.join(results_dir, "contingency_children.png"))
 
-    # plt.figure()
-    # plt.title("Child contingency - per corpus")
-    # sns.barplot(
-    #     data=utterances[utterances.utt_child_intelligible == True],
-    #     x="corpus",
-    #     y="follow_up_intelligible",
-    #     hue="caregiver_response"
-    # )
-    # plt.savefig(os.path.join(results_dir, "contingency_children_per_corpus.png"))
+    plt.figure()
+    plt.title("Child contingency - per age group")
+    sns.barplot(
+        data=utterances[utterances.utt_child_intelligible == True],
+        x="age",
+        y="follow_up_intelligible",
+        hue="caregiver_response"
+    )
+    plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"))
 
 
     # plt.figure()
     # utt_neg_car_unint = utterances[(utterances.utt_child_intelligible == False) & (utterances.utt_car_intelligible == False) & (utterances.utt_car != EMPTY_UTTERANCE)]
     # sns.barplot(data=utt_neg_car_unint, y="follow_up_intelligible")
+
+    utterances.to_csv(results_dir + "utterances.csv", index=False)
 
     plt.show()
 
