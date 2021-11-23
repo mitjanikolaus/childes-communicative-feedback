@@ -310,3 +310,10 @@ def get_binomial_test_data(column_name_1, column_name_2):
     data.append({column_name_1: 1, column_name_2: 1})
 
     return pd.DataFrame(data)
+
+
+AGE_BIN_NUM_MONTHS = 6
+
+
+def age_bin(age):
+    return int(age / AGE_BIN_NUM_MONTHS) * AGE_BIN_NUM_MONTHS + AGE_BIN_NUM_MONTHS/2

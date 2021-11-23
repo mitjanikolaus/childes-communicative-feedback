@@ -12,6 +12,7 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from statsmodels.stats.weightstats import ztest
 
+from utils import age_bin
 from utils import (
     filter_corpora_based_on_response_latency_length,
     get_path_of_utterances_file, get_binomial_test_data,
@@ -452,6 +453,18 @@ def perform_analysis_speech_relatedness(utterances, args):
     )
     plt.savefig(os.path.join(results_dir, "contingency_caregivers.png"))
 
+    utterances["age"] = utterances.age.map(age_bin)
+
+    plt.figure()
+    plt.title("Caregiver contingency - per age group")
+    sns.barplot(
+        data=utterances,
+        x="age",
+        y="caregiver_response",
+        hue="utt_child_speech_related"
+    )
+    plt.savefig(os.path.join(results_dir, "contingency_caregivers_per_age.png"))
+
     plt.figure()
     plt.title("Child contingency")
     sns.barplot(
@@ -460,6 +473,16 @@ def perform_analysis_speech_relatedness(utterances, args):
         y="follow_up_speech_related",
     )
     plt.savefig(os.path.join(results_dir, "contingency_children.png"))
+
+    plt.figure()
+    plt.title("Child contingency - per age group")
+    sns.barplot(
+        data=utterances[utterances.utt_child_speech_related == True],
+        x="age",
+        y="follow_up_speech_related",
+        hue="caregiver_response"
+    )
+    plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"))
 
     plt.show()
 

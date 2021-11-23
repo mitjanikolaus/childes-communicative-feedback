@@ -20,7 +20,7 @@ from utils import (
     EMPTY_UTTERANCE,
     clean_utterance,
     remove_nonspeech_events,
-    remove_whitespace,
+    remove_whitespace, age_bin,
 )
 
 DEFAULT_MIN_AGE = 10  # age of first words?
@@ -45,8 +45,6 @@ DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
 
 # currently not used to exclude corpora, just stored for reference:
 CORPORA_NOT_LONGITUDINAL = ["Gleason", "Rollins", "Edinburgh"]
-
-AGE_BIN_NUM_MONTHS = 6
 
 
 def parse_args():
@@ -280,10 +278,6 @@ def perform_contingency_analysis_intelligibility(utterances):
         contingency_children_neg_case,
         proportion_intelligible,
     )
-
-
-def age_bin(age):
-    return int(age / AGE_BIN_NUM_MONTHS) * AGE_BIN_NUM_MONTHS + AGE_BIN_NUM_MONTHS/2
 
 
 def perform_analysis_intelligibility(utterances, args):
