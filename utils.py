@@ -316,4 +316,4 @@ AGE_BIN_NUM_MONTHS = 6
 
 
 def age_bin(age):
-    return int(age / AGE_BIN_NUM_MONTHS) * AGE_BIN_NUM_MONTHS + AGE_BIN_NUM_MONTHS/2
+    return int(age / AGE_BIN_NUM_MONTHS) * AGE_BIN_NUM_MONTHS

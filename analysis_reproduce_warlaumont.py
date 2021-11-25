@@ -8,8 +8,6 @@ import pandas as pd
 import seaborn as sns
 import numpy as np
 
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
 from statsmodels.stats.weightstats import ztest
 
 from utils import age_bin
