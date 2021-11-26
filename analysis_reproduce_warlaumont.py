@@ -10,7 +10,6 @@ import numpy as np
 
 from statsmodels.stats.weightstats import ztest
 
-from utils import age_bin
 from utils import (
     filter_corpora_based_on_response_latency_length,
     get_path_of_utterances_file, get_binomial_test_data,
@@ -40,6 +39,8 @@ DEFAULT_MIN_TRANSCRIPT_LENGTH = 0
 # Ages aligned to study of Warlaumont et al.
 DEFAULT_MIN_AGE = 8
 DEFAULT_MAX_AGE = 48
+
+AGE_BIN_NUM_MONTHS = 6
 
 # TODO check that pause is not too long (neg): what is a reasonable value?
 # 1 second
@@ -147,6 +148,10 @@ def parse_args():
     args = argparser.parse_args()
 
     return args
+
+
+def age_bin(age):
+    return max(DEFAULT_MIN_AGE, int(age / AGE_BIN_NUM_MONTHS) * AGE_BIN_NUM_MONTHS)
 
 
 def caregiver_response_contingent_on_speech_relatedness(row):

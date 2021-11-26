@@ -20,11 +20,13 @@ from utils import (
     EMPTY_UTTERANCE,
     clean_utterance,
     remove_nonspeech_events,
-    remove_whitespace, age_bin,
+    remove_whitespace,
 )
 
 DEFAULT_MIN_AGE = 10  # age of first words?
 DEFAULT_MAX_AGE = 48
+
+AGE_BIN_NUM_MONTHS = 6
 
 DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
 
@@ -126,6 +128,10 @@ def parse_args():
     args = argparser.parse_args()
 
     return args
+
+
+def age_bin(age):
+    return max(DEFAULT_MIN_AGE, int(age / AGE_BIN_NUM_MONTHS) * AGE_BIN_NUM_MONTHS)
 
 
 def caregiver_response_contingent_on_intelligibility(row):
