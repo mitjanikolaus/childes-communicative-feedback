@@ -12,7 +12,7 @@ from statsmodels.stats.weightstats import ztest
 
 from utils import (
     filter_corpora_based_on_response_latency_length,
-    get_path_of_utterances_file, get_binomial_test_data,
+    get_path_of_utterances_file,
 )
 from search_child_utterances_and_responses import (
     CANDIDATE_CORPORA,
@@ -42,7 +42,6 @@ DEFAULT_MAX_AGE = 48
 
 AGE_BIN_NUM_MONTHS = 6
 
-# TODO check that pause is not too long (neg): what is a reasonable value?
 # 1 second
 DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
