@@ -355,16 +355,21 @@ def perform_analysis_intelligibility(utterances, args):
         x="utt_child_intelligible",
         y="caregiver_response",
     )
+    plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_caregivers.png"))
 
-    plt.figure()
+    plt.figure(figsize=(6, 3))
     plt.title("Caregiver contingency - per age group")
-    sns.barplot(
+    axis = sns.barplot(
         data=utterances,
         x="age",
         y="caregiver_response",
-        hue="utt_child_intelligible"
+        hue="utt_child_intelligible",
+        ci=None,
     )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel='prob_caregiver_response')
+    plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_caregivers_per_age.png"))
 
     plt.figure()
@@ -374,16 +379,21 @@ def perform_analysis_intelligibility(utterances, args):
         x="caregiver_response",
         y="follow_up_intelligible",
     )
+    plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children.png"))
 
-    plt.figure()
+    plt.figure(figsize=(6, 3))
     plt.title("Child contingency - per age group")
-    sns.barplot(
+    axis = sns.barplot(
         data=utterances[utterances.utt_child_intelligible == True],
         x="age",
         y="follow_up_intelligible",
-        hue="caregiver_response"
+        hue="caregiver_response",
+        ci=None,
     )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel='prob_follow_up_intelligible')
+    plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"))
 
     utterances.to_csv(results_dir + "utterances.csv", index=False)

@@ -433,10 +433,12 @@ def perform_analysis_speech_relatedness(utterances, args):
 
     plt.figure()
     sns.scatterplot(data=results_analysis, x="age", y="contingency_caregiver")
+    plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "dev_contingency_caregivers.png"))
 
     plt.figure()
     sns.scatterplot(data=results_analysis, x="age", y="contingency_children_pos_case")
+    plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "dev_contingency_children.png"))
 
     # plt.figure()
@@ -444,6 +446,7 @@ def perform_analysis_speech_relatedness(utterances, args):
 
     plt.figure()
     sns.regplot(data=results_analysis, x="age", y="proportion_speech_related", marker=".", ci=None)
+    plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "dev_proportion_speech_related.png"))
 
     plt.figure()
@@ -453,18 +456,23 @@ def perform_analysis_speech_relatedness(utterances, args):
         x="utt_child_speech_related",
         y="caregiver_response",
     )
+    plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_caregivers.png"))
 
     utterances["age"] = utterances.age.map(age_bin)
 
-    plt.figure()
+    plt.figure(figsize=(6, 3))
     plt.title("Caregiver contingency - per age group")
-    sns.barplot(
+    axis = sns.barplot(
         data=utterances,
         x="age",
         y="caregiver_response",
-        hue="utt_child_speech_related"
+        hue="utt_child_speech_related",
+        ci=None,
     )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel='prob_caregiver_response')
+    plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_caregivers_per_age.png"))
 
     plt.figure()
@@ -474,16 +482,21 @@ def perform_analysis_speech_relatedness(utterances, args):
         x="caregiver_response",
         y="follow_up_speech_related",
     )
+    plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children.png"))
 
-    plt.figure()
+    plt.figure(figsize=(6, 3))
     plt.title("Child contingency - per age group")
-    sns.barplot(
+    axis = sns.barplot(
         data=utterances[utterances.utt_child_speech_related == True],
         x="age",
         y="follow_up_speech_related",
-        hue="caregiver_response"
+        hue="caregiver_response",
+        ci=None,
     )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel='prob_follow_up_speech_related')
+    plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"))
 
     plt.show()

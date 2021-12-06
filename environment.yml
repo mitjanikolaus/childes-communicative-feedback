@@ -169,7 +169,7 @@ dependencies:
   - regex=2021.8.3=py37h7f8727e_0
   - rpy2=3.4.5=py37r36h6f94858_0
   - scipy=1.7.1=py37h292c36d_2
-  - seaborn=0.11.0=py_0
+  - seaborn=0.11.2=py_0
   - send2trash=1.5.0=py37_0
   - setuptools=58.0.4=py37h06a4308_0
   - simplegeneric=0.8.1=py_1
