@@ -69,6 +69,16 @@ def get_paralinguistic_events(utterance):
     return events
 
 
+def paralinguistic_event_is_intelligible(event):
+    if (
+            "sing" in event
+            or "hum" in event
+            or "whisper" in event
+    ):
+        return True
+    return False
+
+
 def paralinguistic_event_is_speech_related(event):
     if (
         "babbl" in event
@@ -244,11 +254,16 @@ def is_babbling(word):
 def remove_babbling(utterance):
     # Remove any paralinguistic events
     events = get_paralinguistic_events(utterance)
+    intelligible_events = []
     for event in events:
         utterance = utterance.replace(event, "")
+        if paralinguistic_event_is_intelligible(event):
+            intelligible_events.append(event)
 
     words = utterance.split(" ")
     filtered_utterance = [word for word in words if not is_babbling(word)]
+
+    filtered_utterance.extend(intelligible_events)
 
     filtered_utterance = " ".join(filtered_utterance)
     filtered_utterance = clean_utterance(filtered_utterance)

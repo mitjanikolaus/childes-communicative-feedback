@@ -23,7 +23,7 @@ from utils import (
     remove_whitespace,
 )
 
-DEFAULT_MIN_AGE = 10  # age of first words?
+DEFAULT_MIN_AGE = 10  # age of first words
 DEFAULT_MAX_AGE = 48
 
 AGE_BIN_NUM_MONTHS = 6
