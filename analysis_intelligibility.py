@@ -246,36 +246,6 @@ def perform_contingency_analysis_intelligibility(utterances):
     else:
         contingency_children_neg_case = np.nan
 
-    # if (
-    #     not contingency_children_pos_case == np.nan
-    #     and not contingency_children_neg_case == np.nan
-    # ):
-    #     ratio_contingent_follow_ups = (
-    #         n_follow_up_intelligible_if_response_to_intelligible
-    #         + n_follow_up_intelligible_if_no_response_to_unintelligible
-    #     ) / (n_responses_to_intelligible + n_no_responses_to_unintelligible)
-    #     ratio_incontingent_follow_ups = (
-    #         n_follow_up_intelligible_if_no_response_to_intelligible
-    #         + n_follow_up_intelligible_if_response_to_unintelligible
-    #     ) / (n_no_responses_to_intelligible + n_responses_to_unintelligible)
-    #
-    #     child_contingency_both_cases = (
-    #         ratio_contingent_follow_ups - ratio_incontingent_follow_ups
-    #     )
-    #     print(f"Child contingency (both cases): {child_contingency_both_cases:.4f}")
-    #     child_contingency_both_cases_same_weighting = np.mean(
-    #         [contingency_children_pos_case, contingency_children_neg_case]
-    #     )
-    #
-    #     print(
-    #         f"Child contingency (both cases, same weighting of positive and negative cases): "
-    #         f"{child_contingency_both_cases_same_weighting:.4f}"
-    #     )
-    #
-    # else:
-    #     child_contingency_both_cases = np.nan
-    #     child_contingency_both_cases_same_weighting = np.nan
-
     proportion_intelligible = n_intelligible / (n_intelligible + n_unintelligible)
 
     return (
@@ -415,11 +385,6 @@ def perform_analysis_intelligibility(utterances, args):
         hue="caregiver_response"
     )
     plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"))
-
-
-    # plt.figure()
-    # utt_neg_car_unint = utterances[(utterances.utt_child_intelligible == False) & (utterances.utt_car_intelligible == False) & (utterances.utt_car != EMPTY_UTTERANCE)]
-    # sns.barplot(data=utt_neg_car_unint, y="follow_up_intelligible")
 
     utterances.to_csv(results_dir + "utterances.csv", index=False)
 
