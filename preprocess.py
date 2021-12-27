@@ -23,7 +23,7 @@ SPEAKER_CODES_CAREGIVER = [
     "GFA",
     "CAR",
 ]
-
+# Corpora that are conversational (have child AND caregiver transcripts), are English, and have timing information
 CANDIDATE_CORPORA = [
     "Edinburgh",
     "VanHouten",
@@ -72,63 +72,56 @@ def find_child_utterances_and_responses(
 ):
     utterances = []
 
-    ages = transcripts.age(months=True)
+    file_paths = transcripts.file_paths()
+
+    ages = transcripts.ages(months=True)
 
     # Get target child names (prepend corpus name to make the names unique)
-    target_child_names = {
-        file: participants[SPEAKER_CODE_CHILD]["corpus"]
+    child_names = [
+        header["Participants"][SPEAKER_CODE_CHILD]["corpus"]
         + "_"
-        + participants[SPEAKER_CODE_CHILD]["participant_name"]
-        for file, participants in transcripts.participants().items()
-        if SPEAKER_CODE_CHILD in participants
-    }
+        + header["Participants"][SPEAKER_CODE_CHILD]["name"]
+        if SPEAKER_CODE_CHILD in header["Participants"] else None
+        for header in transcripts.headers()
+    ]
 
-    utts_child = transcripts.utterances(
+    utts_by_file = transcripts.utterances(
         by_files=True,
-        clean=False,
-        time_marker=True,
-        raise_error_on_missing_time_marker=False,
-        phon=True,  # Setting phon to true to keep "xxx" and "yyy" in utterances
     )
 
-    # Filter out empty transcripts and transcripts without age information
-    utts_child = {
-        file: utts
-        for file, utts in utts_child.items()
-        if (len(utts) > 0) and (ages[file] is not None) and (ages[file] != 0)
-    }
-
-    # Filter out transcripts without child information
-    utts_child = {
-        file: utts for file, utts in utts_child.items() if file in target_child_names
-    }
-
-    for file, utts in utts_child.items():
-        age = ages[file]
-        child_name = target_child_names[file]
-        # print(f"Child: {child_name} Age: ", round(age))
+    for file, age, child_name, utts in zip(file_paths, ages, child_names, utts_by_file):
+        # Filter out empty transcripts and transcripts without age or child information
+        if len(utts) < 0:
+            print("Empty transcript: ", file)
+            continue
+        if age is None or age == 0:
+            print("Missing age information: ", file)
+            continue
+        if child_name == None:
+            print("Missing child name information: ", file)
+            continue
 
         # Make a dataframe
         utts = pd.DataFrame(
             [
                 {
-                    "speaker_code": speaker,
-                    "utt": utt,
-                    "start_time": timing[0],
-                    "end_time": timing[1],
+                    "speaker_code": utt.participant,
+                    "utt": utt.tiers[utt.participant],
+                    "start_time": utt.time_marks[0],
+                    "end_time": utt.time_marks[1],
                 }
-                for speaker, utt, timing in utts
+                for utt in utts if utt.time_marks
             ]
         )
+        if len(utts) == 0:
+            continue
+
         utts["speaker_code_next"] = utts.speaker_code.shift(-1)
         utts["start_time_next"] = utts.start_time.shift(-1)
 
-        # check that timing information is present
-        utts_with_timing = utts.dropna(subset=["end_time", "start_time_next"])
-
         # Find all child utterances
-        utts_child = utts_with_timing[
-            utts_with_timing.speaker_code == SPEAKER_CODE_CHILD
+        utts_child = utts[
+            utts.speaker_code == SPEAKER_CODE_CHILD
         ]
 
         # Filter for utterances that don't have a child follow-up within the response latency threshold
@@ -144,15 +137,11 @@ def find_child_utterances_and_responses(
 
         for candidate_id in utts_child_without_child_follow_up.index.values:
             utt1 = utts.loc[candidate_id]
+            if candidate_id + 1 not in utts.index:
+                continue
             subsequent_utt = utts.loc[candidate_id + 1]
             if subsequent_utt.speaker_code in SPEAKER_CODES_CAREGIVER:
                 utt2 = subsequent_utt
-                if np.isnan(utt2.start_time):
-                    print(
-                        "Skipping turn because adult utterance doesn't have start time: ",
-                        utt2,
-                    )
-                    continue
             elif subsequent_utt.speaker_code in SPEAKER_CODE_CHILD:
                 latency = round(subsequent_utt["start_time"] - utt1["end_time"], 3)
                 assert latency >= response_latency_threshold
@@ -299,8 +288,9 @@ def preprocess_transcripts(response_latency):
     for corpus in CANDIDATE_CORPORA:
         print(f"Reading transcripts of {corpus} corpus.. ", end="")
         transcripts = pylangacq.read_chat(
-            os.path.expanduser(f"~/data/CHILDES/{corpus}/*.cha"),
-            parse_morphology_information=False,
+            os.path.expanduser(f"~/data/CHILDES/{corpus}/"),
+            clean=False,
+            parse_morph_info=False,
         )
         print("done.")
 

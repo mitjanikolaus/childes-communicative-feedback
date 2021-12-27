@@ -11,7 +11,7 @@ from analysis_reproduce_warlaumont import (
     perform_analyses,
     str2bool,
 )
-from search_child_utterances_and_responses import (
+from preprocess import (
     CANDIDATE_CORPORA,
     DEFAULT_RESPONSE_THRESHOLD,
 )

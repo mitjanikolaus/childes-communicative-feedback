@@ -9,7 +9,7 @@ from analysis_reproduce_warlaumont import (
     DEFAULT_MAX_AGE,
     DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF,
 )
-from search_child_utterances_and_responses import CANDIDATE_CORPORA, DEFAULT_RESPONSE_THRESHOLD
+from preprocess import CANDIDATE_CORPORA, DEFAULT_RESPONSE_THRESHOLD
 from utils import (
     is_babbling,
     VOCAB,

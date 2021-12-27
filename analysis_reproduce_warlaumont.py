@@ -14,7 +14,7 @@ from utils import (
     filter_corpora_based_on_response_latency_length,
     get_path_of_utterances_file,
 )
-from search_child_utterances_and_responses import (
+from preprocess import (
     CANDIDATE_CORPORA,
     DEFAULT_RESPONSE_THRESHOLD,
 )
