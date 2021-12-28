@@ -1,7 +1,9 @@
 import argparse
+import itertools
 import math
 import os
 from collections import Counter
+from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -14,18 +16,12 @@ from tqdm import tqdm
 from annotate import ANNOTATED_UTTERANCES_FILE, is_empty, get_response_latency
 from utils import (
     filter_corpora_based_on_response_latency_length,
-    get_path_of_utterances_file,
     age_bin,
 )
 from preprocess import (
     CANDIDATE_CORPORA,
     SPEAKER_CODE_CHILD,
     SPEAKER_CODES_CAREGIVER,
-)
-from utils import (
-    clean_utterance,
-    remove_nonspeech_events,
-    CODE_UNINTELLIGIBLE,
 )
 
 DEFAULT_RESPONSE_THRESHOLD = 1000
@@ -342,80 +338,90 @@ def has_response(
     return False
 
 
-def get_micro_conversations(utterances, args):
+def get_micro_conversations_for_transcript(utterances, transcript, args):
     conversations = []
-    print("Creating micro conversations from transcripts..")
-    for transcript in tqdm(utterances.transcript_file.unique()):
-        utterances_transcript = utterances[utterances.transcript_file == transcript]
-        utterances_child = utterances_transcript[
-            utterances_transcript.speaker_code == SPEAKER_CODE_CHILD
-        ]
+    utterances_transcript = utterances[utterances.transcript_file == transcript]
+    utterances_child = utterances_transcript[
+        utterances_transcript.speaker_code == SPEAKER_CODE_CHILD
+    ]
 
-        # Filter for child utterances that are at the end of a turn
-        utts_child_end_of_turn = utterances_child[
-            ~(
+    # Filter for child utterances that are at the end of a turn
+    utts_child_end_of_turn = utterances_child[
+        ~(
                 (utterances_child.speaker_code_next == SPEAKER_CODE_CHILD)
                 & (
-                    utterances_child.start_time_next - utterances_child.end_time
-                    < args.response_latency
+                        utterances_child.start_time_next - utterances_child.end_time
+                        < args.response_latency
                 )
-            )
-        ]
+        )
+    ]
 
-        for candidate_id in utts_child_end_of_turn.index.values:
-            conversation = utterances_transcript.loc[candidate_id].to_dict()
-            if np.isnan(conversation["is_speech_related"]) or is_empty(conversation["transcript_raw"]):
+    for candidate_id in utts_child_end_of_turn.index.values:
+        conversation = utterances_transcript.loc[candidate_id].to_dict()
+        if np.isnan(conversation["is_speech_related"]) or is_empty(conversation["transcript_raw"]):
+            continue
+        if candidate_id + 1 not in utterances_transcript.index:
+            # No response in transcript, ignore the last utterance
+            continue
+
+        subsequent_utt = utterances_transcript.loc[candidate_id + 1]
+        if subsequent_utt.speaker_code in SPEAKER_CODES_CAREGIVER:
+            utt2 = subsequent_utt
+            if is_empty(utt2["transcript_raw"]) or np.isnan(utt2["is_speech_related"]):
                 continue
-            if candidate_id + 1 not in utterances_transcript.index:
-                # No response in transcript, ignore the last utterance
+            conversation["response_is_speech_related"] = utt2["is_speech_related"]
+
+            conversation["response_latency"] = get_response_latency(conversation)
+            if conversation["response_latency"] is None:
                 continue
 
-            subsequent_utt = utterances_transcript.loc[candidate_id + 1]
-            if subsequent_utt.speaker_code in SPEAKER_CODES_CAREGIVER:
-                utt2 = subsequent_utt
-                if is_empty(utt2["transcript_raw"]) or np.isnan(utt2["is_speech_related"]):
-                    continue
-                conversation["response_is_speech_related"] = utt2["is_speech_related"]
-
-                conversation["response_latency"] = get_response_latency(conversation)
-                if conversation["response_latency"] is None:
-                    continue
-
-            elif subsequent_utt.speaker_code == SPEAKER_CODE_CHILD:
-                conversation["response_latency"] = math.inf
-                conversation["start_time_next"] = math.inf
-                conversation["response_is_speech_related"] = False
-                following_utts = utterances_transcript.loc[subsequent_utt.name + 1:]
-                following_utts_non_child = following_utts[
-                    following_utts.speaker_code != SPEAKER_CODE_CHILD
+        elif subsequent_utt.speaker_code == SPEAKER_CODE_CHILD:
+            conversation["response_latency"] = math.inf
+            conversation["start_time_next"] = math.inf
+            conversation["response_is_speech_related"] = False
+            following_utts = utterances_transcript.loc[subsequent_utt.name + 1:]
+            following_utts_non_child = following_utts[
+                following_utts.speaker_code != SPEAKER_CODE_CHILD
                 ]
-                if (
+            if (
                     len(following_utts_non_child) == 0
                     or following_utts_non_child.iloc[0].speaker_code
                     not in SPEAKER_CODES_CAREGIVER
-                ):
-                    # Child is not speaking to its caregiver, ignore this turn
-                    continue
-            else:
+            ):
                 # Child is not speaking to its caregiver, ignore this turn
                 continue
+        else:
+            # Child is not speaking to its caregiver, ignore this turn
+            continue
 
-            following_utts = utterances_transcript.loc[candidate_id + 1:]
-            following_utts_child = following_utts[
-                following_utts.speaker_code == SPEAKER_CODE_CHILD
+        following_utts = utterances_transcript.loc[candidate_id + 1:]
+        following_utts_child = following_utts[
+            following_utts.speaker_code == SPEAKER_CODE_CHILD
             ]
-            if len(following_utts_child) > 0:
-                utt3 = following_utts_child.iloc[0]
+        if len(following_utts_child) > 0:
+            utt3 = following_utts_child.iloc[0]
 
-                if is_empty(utt3["transcript_raw"]) or np.isnan(utt3["is_speech_related"]):
-                    continue
+            if is_empty(utt3["transcript_raw"]) or np.isnan(utt3["is_speech_related"]):
+                continue
 
-                conversation["response_latency_follow_up"] = (
+            conversation["response_latency_follow_up"] = (
                     utt3["start_time"] - conversation["end_time"]
-                )
-                conversation["follow_up_speech_related"] = utt3["is_speech_related"]
-                conversations.append(conversation)
+            )
+            conversation["follow_up_speech_related"] = utt3["is_speech_related"]
+            conversations.append(conversation)
+    return conversations
 
+
+def get_micro_conversations(utterances, args):
+    print("Creating micro conversations from transcripts..")
+    process_args = [(utterances, transcript, args) for transcript in utterances.transcript_file.unique()]
+
+    with Pool(processes=8) as pool:
+        results = pool.starmap(
+            get_micro_conversations_for_transcript, tqdm(process_args, total=len(process_args))
+        )
+
+    conversations = list(itertools.chain(*results))
     conversations = pd.DataFrame(conversations)
 
     conversations = conversations.assign(
