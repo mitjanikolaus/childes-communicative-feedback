@@ -1,3 +1,4 @@
+import argparse
 import math
 import re
 
@@ -21,6 +22,19 @@ IS_QUOTATION_MARKER = lambda word: word in ['+"/', '+"/.', '+"', '+".']
 IS_UNKNOWN_CODE = lambda word: word == "zzz"
 
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    elif v.lower() in ("none", "nan"):
+        return None
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
+
+
 def is_excluded_code(word):
     if (
         IS_UNTRANSCRIBED(word)
@@ -39,23 +53,26 @@ def is_excluded_code(word):
     return False
 
 
-EMPTY_UTTERANCE = ""
+def age_bin(age, min_age, num_months):
+    return max(min_age, int(age / num_months) * num_months)
 
-# non-speech-related sounds
-IS_SIMPLE_EVENT_NON_SPEECH = (
-    lambda word: word.startswith("&=")
-    and word
-    not in CODES_EVENT_WHISPERS
-    + CODES_EVENT_MUMBLES
-    + CODES_EVENT_BABBLES
-    + CODES_EVENT_VOCALIZES
-)
-IS_OTHER_LAUGHTER = lambda word: word in ["haha", "hahaha", "hahahaha"]
+
+
+def is_simple_event(word):
+    return word.startswith("&=")
+
+
+def is_laughter(word):
+    return word in ["haha", "hahaha", "hahahaha"]
 
 
 def word_is_speech_related(word):
-    if IS_SIMPLE_EVENT_NON_SPEECH(word) or IS_OTHER_LAUGHTER(word):
+    if is_simple_event(word):
+        return paralinguistic_event_is_speech_related(word)
+
+    if is_laughter(word):
         return False
+
     return True
 
 
@@ -87,6 +104,7 @@ def paralinguistic_event_is_speech_related(event):
         or "whisper" in event
         or "mumbl" in event
         or "mutter" in event
+        or "vocaliz" in event
     ):
         return True
     return False
@@ -103,15 +121,7 @@ def remove_nonspeech_events(utterance):
     cleaned_utterance = [word for word in words if word_is_speech_related(word)]
 
     cleaned_utterance = " ".join(cleaned_utterance)
-    cleaned_utterance = remove_whitespace(cleaned_utterance)
-    return cleaned_utterance
-
-
-def remove_whitespace(utterance):
-    # Remove trailing whitespace
-    cleaned_utterance = re.sub(r"\s+$", "", utterance)
-    # Remove whitespace at beginning
-    cleaned_utterance = re.sub(r"^\s+", "", cleaned_utterance)
+    cleaned_utterance = cleaned_utterance.strip()
     return cleaned_utterance
 
 
@@ -192,13 +202,19 @@ def clean_utterance(utterance):
 
     cleaned_utterance = " ".join(cleaned_utterance)
 
-    # Remove punctuation
-    cleaned_utterance = re.sub(r"[,\"„”]", "", cleaned_utterance)
-    cleaned_utterance = re.sub(r"''", "", cleaned_utterance)
-    cleaned_utterance = re.sub(r"[\.!\?]+\s*$", "", cleaned_utterance)
-
-    cleaned_utterance = remove_whitespace(cleaned_utterance)
+    cleaned_utterance = cleaned_utterance.strip()
     return cleaned_utterance
+
+
+def remove_punctuation(utterance):
+    try:
+        cleaned_utterance = re.sub(r"[,\"„”]", "", utterance)
+        cleaned_utterance = re.sub(r"''", "", cleaned_utterance)
+        cleaned_utterance = re.sub(r"[\.!\?]+\s*$", "", cleaned_utterance)
+    except TypeError as e:
+        print(utterance)
+        raise e
+    return cleaned_utterance.strip()
 
 
 # Unintelligible words with an unclear phonetic shape should be transcribed as
@@ -213,10 +229,6 @@ CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION = "@u"
 CODE_INTERJECTION = "@i"
 CODE_PHONOLGICAL_CONSISTENT_FORM = "@p"
 CODE_PHONOLOGICAL_FRAGMENT = "&"
-CODES_EVENT_BABBLES = ["&=babbles", "&=babble"]
-CODES_EVENT_VOCALIZES = ["&=vocalizes", "&=vocalize"]
-CODES_EVENT_WHISPERS = ["&=whispers", "&=whisper"]
-CODES_EVENT_MUMBLES = ["&=mumbles", "&=mumble"]
 
 OTHER_BABBLING = ["ba", "baa", "babaa", "ababa", "bada"]
 
@@ -224,6 +236,8 @@ OTHER_BABBLING = ["ba", "baa", "babaa", "ababa", "bada"]
 VOCAB = set(
     pd.read_csv("data/childes_custom_vocab.csv", header=None, names=["word"]).word
 )
+
+
 
 
 def is_babbling(word):
@@ -300,12 +314,12 @@ def filter_corpora_based_on_response_latency_length(
 
     # Filter corpora to be in range of mean +/- 1 standard deviation
     filtered = []
-    # print("Response latencies:")
+    print("Response latencies:")
     for corpus in corpora:
         mean = utterances[
             (utterances.corpus == corpus) & (utterances.response_latency < math.inf)
         ].response_latency.values.mean()
-        # print(f"{corpus}: {mean:.1f}")
+        print(f"{corpus}: {mean:.1f}")
         if (
             mean_latency - standard_deviations_off * std_mean_latency
             < mean
