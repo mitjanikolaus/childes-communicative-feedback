@@ -16,7 +16,7 @@ from tqdm import tqdm
 from annotate import ANNOTATED_UTTERANCES_FILE, is_empty, get_response_latency
 from utils import (
     filter_corpora_based_on_response_latency_length,
-    age_bin,
+    age_bin, str2bool,
 )
 from preprocess import (
     CANDIDATE_CORPORA,
@@ -49,19 +49,6 @@ DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
 
 
 DEFAULT_EXCLUDED_CORPORA = []
-
-
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ("yes", "true", "t", "y", "1"):
-        return True
-    elif v.lower() in ("no", "false", "f", "n", "0"):
-        return False
-    elif v.lower() in ("none", "nan"):
-        return None
-    else:
-        raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
 def parse_args():
