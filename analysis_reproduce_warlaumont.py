@@ -9,6 +9,7 @@ import seaborn as sns
 import numpy as np
 
 from statsmodels.stats.weightstats import ztest
+from tqdm import tqdm
 
 from annotate import ANNOTATED_UTTERANCES_FILE, is_empty, get_response_latency
 from utils import (
@@ -33,8 +34,6 @@ DEFAULT_RESPONSE_THRESHOLD = 1000
 DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
 DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
-
-DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED = True
 
 DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
 
@@ -138,14 +137,6 @@ def parse_args():
         const=True,
         nargs="?",
         default=DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES,
-    )
-    argparser.add_argument(
-        "--label-partially-speech-related",
-        type=str2bool,
-        const=True,
-        nargs="?",
-        default=DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED,
-        help="Label for partially speech-related utterances: Set to True to count as speech-related, False to count as not speech-related or None to exclude these utterances from the analysis",
     )
 
     args = argparser.parse_args()
@@ -353,7 +344,8 @@ def has_response(
 
 def get_micro_conversations(utterances, args):
     conversations = []
-    for transcript in utterances.transcript_file.unique():
+    print("Creating micro conversations from transcripts..")
+    for transcript in tqdm(utterances.transcript_file.unique()):
         utterances_transcript = utterances[utterances.transcript_file == transcript]
         utterances_child = utterances_transcript[
             utterances_transcript.speaker_code == SPEAKER_CODE_CHILD
@@ -372,13 +364,19 @@ def get_micro_conversations(utterances, args):
 
         for candidate_id in utts_child_end_of_turn.index.values:
             conversation = utterances_transcript.loc[candidate_id].to_dict()
+            if np.isnan(conversation["is_speech_related"]) or is_empty(conversation["transcript_raw"]):
+                continue
             if candidate_id + 1 not in utterances_transcript.index:
                 # No response in transcript, ignore the last utterance
                 continue
+
             subsequent_utt = utterances_transcript.loc[candidate_id + 1]
             if subsequent_utt.speaker_code in SPEAKER_CODES_CAREGIVER:
                 utt2 = subsequent_utt
-                conversation["response_is_speech_related"] = utt2.is_speech_related
+                if is_empty(utt2["transcript_raw"]) or np.isnan(utt2["is_speech_related"]):
+                    continue
+                conversation["response_is_speech_related"] = utt2["is_speech_related"]
+
                 conversation["response_latency"] = get_response_latency(conversation)
                 if conversation["response_latency"] is None:
                     continue
@@ -387,26 +385,30 @@ def get_micro_conversations(utterances, args):
                 conversation["response_latency"] = math.inf
                 conversation["start_time_next"] = math.inf
                 conversation["response_is_speech_related"] = False
-                following_utts = utterances_transcript.loc[subsequent_utt.name + 1 :]
+                following_utts = utterances_transcript.loc[subsequent_utt.name + 1:]
                 following_utts_non_child = following_utts[
                     following_utts.speaker_code != SPEAKER_CODE_CHILD
                 ]
-                if not (
-                    len(following_utts_non_child) > 0
-                    and following_utts_non_child.iloc[0].speaker_code
-                    in SPEAKER_CODES_CAREGIVER  # TODO: check
+                if (
+                    len(following_utts_non_child) == 0
+                    or following_utts_non_child.iloc[0].speaker_code
+                    not in SPEAKER_CODES_CAREGIVER
                 ):
+                    # Child is not speaking to its caregiver, ignore this turn
                     continue
             else:
                 # Child is not speaking to its caregiver, ignore this turn
                 continue
 
-            following_utts = utterances_transcript.loc[candidate_id + 1 :]
+            following_utts = utterances_transcript.loc[candidate_id + 1:]
             following_utts_child = following_utts[
                 following_utts.speaker_code == SPEAKER_CODE_CHILD
             ]
             if len(following_utts_child) > 0:
                 utt3 = following_utts_child.iloc[0]
+
+                if is_empty(utt3["transcript_raw"]) or np.isnan(utt3["is_speech_related"]):
+                    continue
 
                 conversation["response_latency_follow_up"] = (
                     utt3["start_time"] - conversation["end_time"]
@@ -430,9 +432,6 @@ def get_micro_conversations(utterances, args):
 
 
 def perform_analysis_speech_relatedness(utterances, args):
-    # Drop empty utterances #TODO: what if we do this later?
-    utterances = utterances[~utterances.transcript_raw.apply(is_empty)]
-
     conversations = get_micro_conversations(utterances, args)
 
     # disregard conversations with follow up too far in the future
@@ -445,27 +444,24 @@ def perform_analysis_speech_relatedness(utterances, args):
 
     conversations.dropna(
         subset=(
-            "is_speech_related",
             "response_latency",
             "response_latency_follow_up",
             "has_response",
-            "follow_up_speech_related",
         ),
         inplace=True,
     )
-    if not args.corpora:
-        print(f"No corpora given, selecting based on average response latency")
-        args.corpora = filter_corpora_based_on_response_latency_length(
-            CANDIDATE_CORPORA,
-            conversations,
-            args.min_age,
-            args.max_age,
-            args.response_latency_max_standard_deviations_off,
-        )
 
-    print(f"Corpora included in analysis: {args.corpora}")
+    print(f"Filtering corpora based on average response latency")
+    corpora = filter_corpora_based_on_response_latency_length(
+        conversations,
+        args.min_age,
+        args.max_age,
+        args.response_latency_max_standard_deviations_off,
+    )
+
+    print(f"Corpora included in analysis: {corpora}")
     # Filter by corpora
-    conversations = conversations[conversations.corpus.isin(args.corpora)]
+    conversations = conversations[conversations.corpus.isin(corpora)]
 
     counter_non_speech = Counter(
         conversations[conversations.is_speech_related == False].transcript_raw.values
@@ -592,9 +588,6 @@ def perform_analysis_speech_relatedness(utterances, args):
 def perform_analyses(args, analysis_function):
     utterances = pd.read_csv(ANNOTATED_UTTERANCES_FILE, index_col=None)
 
-    # Fill in empty strings for dummy caregiver responses
-    # utterances.utt_car.fillna("", inplace=True)
-
     print(args)
 
     print("Excluding corpora: ", args.excluded_corpora)
@@ -604,6 +597,9 @@ def perform_analyses(args, analysis_function):
     utterances = utterances[
         (args.min_age <= utterances.age) & (utterances.age <= args.max_age)
     ]
+
+    if args.corpora:
+        utterances = utterances[utterances.corpus.isin(args.corpora)]
 
     min_age = utterances.age.min()
     max_age = utterances.age.max()

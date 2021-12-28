@@ -285,7 +285,7 @@ def remove_babbling(utterance):
 
 
 def filter_corpora_based_on_response_latency_length(
-    corpora, utterances, min_age, max_age, standard_deviations_off
+    conversations, min_age, max_age, standard_deviations_off
 ):
     # Calculate mean and stddev of response latency using data from Nguyen, Versyp, Cox, Fusaroli (2021)
     latency_data = pd.read_csv("data/MA turn-taking.csv")
@@ -315,9 +315,9 @@ def filter_corpora_based_on_response_latency_length(
     # Filter corpora to be in range of mean +/- 1 standard deviation
     filtered = []
     print("Response latencies:")
-    for corpus in corpora:
-        mean = utterances[
-            (utterances.corpus == corpus) & (utterances.response_latency < math.inf)
+    for corpus in conversations.corpus.unique():
+        mean = conversations[
+            (conversations.corpus == corpus) & (conversations.response_latency < math.inf)
         ].response_latency.values.mean()
         print(f"{corpus}: {mean:.1f}")
         if (
