@@ -35,8 +35,8 @@ DEFAULT_MIN_TRANSCRIPT_LENGTH = 0
 # 1 second
 DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
-# 10 seconds
-DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
+# 10 minutes
+DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 60 * 1000  # ms
 
 # Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words
 DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
@@ -204,6 +204,17 @@ def perform_analysis_intelligibility(utterances, args):
 
     conversations = get_micro_conversations(utterances, args)
 
+    print(f"Filtering corpora based on average response latency")
+    corpora = filter_corpora_based_on_response_latency_length(
+        conversations,
+        args.min_age,
+        args.max_age,
+        args.response_latency_max_standard_deviations_off,
+    )
+    print(f"Corpora included in analysis: {corpora}")
+    # Filter by corpora
+    conversations = conversations[conversations.corpus.isin(corpora)]
+
     conversations = conversations.assign(
         has_response=conversations.apply(
             has_response,
@@ -220,17 +231,6 @@ def perform_analysis_intelligibility(utterances, args):
         ),
         inplace=True,
     )
-
-    print(f"Filtering corpora based on average response latency")
-    corpora = filter_corpora_based_on_response_latency_length(
-        conversations,
-        args.min_age,
-        args.max_age,
-        args.response_latency_max_standard_deviations_off,
-    )
-    print(f"Corpora included in analysis: {corpora}")
-    # Filter by corpora
-    conversations = conversations[conversations.corpus.isin(corpora)]
 
     # Get the number of children in all corpora:
     num_children = len(conversations.child_name.unique())

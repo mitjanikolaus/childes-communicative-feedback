@@ -45,8 +45,8 @@ DEFAULT_MAX_AGE = 48
 AGE_BIN_NUM_MONTHS = 6
 
 
-# 10 seconds
-DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
+# 10 minutes
+DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 60 * 1000  # ms
 
 
 DEFAULT_EXCLUDED_CORPORA = []
@@ -426,9 +426,19 @@ def perform_analysis_speech_relatedness(utterances, args):
         ),
         inplace=True,
     )
-    # utterances = utterances[~utterances.transcript_raw.apply(is_empty)]
 
     conversations = get_micro_conversations(utterances, args)
+
+    print(f"Filtering corpora based on average response latency")
+    corpora = filter_corpora_based_on_response_latency_length(
+        conversations,
+        args.min_age,
+        args.max_age,
+        args.response_latency_max_standard_deviations_off,
+    )
+    print(f"Corpora included in analysis: {corpora}")
+    # Filter by corpora
+    conversations = conversations[conversations.corpus.isin(corpora)]
 
     conversations = conversations.assign(
         has_response=conversations.apply(
@@ -444,17 +454,6 @@ def perform_analysis_speech_relatedness(utterances, args):
         subset=("has_response",),
         inplace=True,
     )
-
-    print(f"Filtering corpora based on average response latency")
-    corpora = filter_corpora_based_on_response_latency_length(
-        conversations,
-        args.min_age,
-        args.max_age,
-        args.response_latency_max_standard_deviations_off,
-    )
-    print(f"Corpora included in analysis: {corpora}")
-    # Filter by corpora
-    conversations = conversations[conversations.corpus.isin(corpora)]
 
     counter_non_speech = Counter(
         conversations[conversations.is_speech_related == False].transcript_raw.values
