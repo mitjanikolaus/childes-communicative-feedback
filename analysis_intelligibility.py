@@ -4,24 +4,22 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import pandas as pd
 
 
 from analysis_reproduce_warlaumont import (
     perform_warlaumont_analysis,
-    perform_analyses,
-    str2bool,
+    str2bool, get_micro_conversations, has_response,
 )
+from annotate import ANNOTATED_UTTERANCES_FILE
 from preprocess import (
     CANDIDATE_CORPORA,
-    DEFAULT_RESPONSE_THRESHOLD,
 )
 from utils import (
-    remove_babbling,
-    EMPTY_UTTERANCE,
-    clean_utterance,
-    remove_nonspeech_events,
-    remove_whitespace,
+    age_bin, filter_corpora_based_on_response_latency_length,
 )
+
+DEFAULT_RESPONSE_THRESHOLD = 1000
 
 DEFAULT_MIN_AGE = 10  # age of first words
 DEFAULT_MAX_AGE = 48
@@ -29,8 +27,6 @@ DEFAULT_MAX_AGE = 48
 AGE_BIN_NUM_MONTHS = 6
 
 DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
-
-DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE = True
 
 DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES = True
 
@@ -116,45 +112,33 @@ def parse_args():
         nargs="?",
         default=DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES,
     )
-    argparser.add_argument(
-        "--label-partially-intelligible",
-        type=str2bool,
-        const=True,
-        nargs="?",
-        default=DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE,
-        help="Label for partially intelligible utterances: Set to True to count as intelligible, False to count as unintelligible or None to exclude these utterances from the analysis",
-    )
 
     args = argparser.parse_args()
 
     return args
 
 
-def age_bin(age):
-    return max(DEFAULT_MIN_AGE, int(age / AGE_BIN_NUM_MONTHS) * AGE_BIN_NUM_MONTHS)
-
-
 def caregiver_response_contingent_on_intelligibility(row):
     return (
-        (row["utt_child_intelligible"] == True) & (row["caregiver_response"] == True)
+        (row["is_intelligible"] == True) & (row["has_response"] == True)
     ) | (
-        (row["utt_child_intelligible"] == False) & (row["caregiver_response"] == False)
+        (row["is_intelligible"] == False) & (row["has_response"] == False)
     )
 
 
-def perform_contingency_analysis_intelligibility(utterances):
+def perform_contingency_analysis_intelligibility(conversations):
     # caregiver contingency:
     n_responses_to_intelligible = len(
-        utterances[utterances.utt_child_intelligible & utterances.caregiver_response]
+        conversations[conversations.is_intelligible & conversations.has_response]
     )
-    n_intelligible = len(utterances[utterances.utt_child_intelligible])
+    n_intelligible = len(conversations[conversations.is_intelligible])
 
     n_responses_to_unintelligible = len(
-        utterances[
-            (utterances.utt_child_intelligible == False) & utterances.caregiver_response
+        conversations[
+            (conversations.is_intelligible == False) & conversations.has_response
         ]
     )
-    n_unintelligible = len(utterances[utterances.utt_child_intelligible == False])
+    n_unintelligible = len(conversations[conversations.is_intelligible == False])
 
     if n_intelligible > 0 and n_unintelligible > 0:
         contingency_caregiver = (n_responses_to_intelligible / n_intelligible) - (
@@ -165,23 +149,23 @@ def perform_contingency_analysis_intelligibility(utterances):
 
     # Contingency of child vocalization on previous adult response (positive case):
     n_follow_up_intelligible_if_response_to_intelligible = len(
-        utterances[
-            utterances.follow_up_intelligible
-            & utterances.utt_child_intelligible
-            & utterances.caregiver_response
+        conversations[
+            conversations.follow_up_intelligible
+            & conversations.is_intelligible
+            & conversations.has_response
         ]
     )
 
     n_follow_up_intelligible_if_no_response_to_intelligible = len(
-        utterances[
-            utterances.follow_up_intelligible
-            & utterances.utt_child_intelligible
-            & (utterances.caregiver_response == False)
+        conversations[
+            conversations.follow_up_intelligible
+            & conversations.is_intelligible
+            & (conversations.has_response == False)
         ]
     )
     n_no_responses_to_intelligible = len(
-        utterances[
-            utterances.utt_child_intelligible & (utterances.caregiver_response == False)
+        conversations[
+            conversations.is_intelligible & (conversations.has_response == False)
         ]
     )
 
@@ -201,159 +185,83 @@ def perform_contingency_analysis_intelligibility(utterances):
     else:
         contingency_children_pos_case = np.nan
 
-    # Contingency of child vocalization on previous adult response (negative case):
-    n_follow_up_intelligible_if_no_response_to_unintelligible = len(
-        utterances[
-            utterances.follow_up_intelligible
-            & (utterances.utt_child_intelligible == False)
-            & (utterances.caregiver_response == False)
-        ]
-    )
-    n_no_responses_to_unintelligible = len(
-        utterances[
-            (utterances.utt_child_intelligible == False)
-            & (utterances.caregiver_response == False)
-        ]
-    )
-
-    n_follow_up_intelligible_if_response_to_unintelligible = len(
-        utterances[
-            utterances.follow_up_intelligible
-            & (utterances.utt_child_intelligible == False)
-            & utterances.caregiver_response
-        ]
-    )
-    n_responses_to_unintelligible = len(
-        utterances[
-            (utterances.utt_child_intelligible == False) & utterances.caregiver_response
-        ]
-    )
-
-    if n_no_responses_to_unintelligible > 0 and n_responses_to_unintelligible > 0:
-
-        ratio_follow_up_intelligible_if_no_response_to_unintelligible = (
-            n_follow_up_intelligible_if_no_response_to_unintelligible
-            / n_no_responses_to_unintelligible
-        )
-        ratio_follow_up_intelligible_if_response_to_unintelligible = (
-            n_follow_up_intelligible_if_response_to_unintelligible
-            / n_responses_to_unintelligible
-        )
-        contingency_children_neg_case = (
-            ratio_follow_up_intelligible_if_no_response_to_unintelligible
-            - ratio_follow_up_intelligible_if_response_to_unintelligible
-        )
-    else:
-        contingency_children_neg_case = np.nan
-
     proportion_intelligible = n_intelligible / (n_intelligible + n_unintelligible)
 
     return (
         contingency_caregiver,
         contingency_children_pos_case,
-        contingency_children_neg_case,
         proportion_intelligible,
     )
 
 
 def perform_analysis_intelligibility(utterances, args):
-    # Clean utterances
-    utterances["utt_child"] = utterances.utt_child.apply(clean_utterance)
-    utterances["utt_car"] = utterances.utt_car.apply(clean_utterance)
-    utterances["utt_child_follow_up"] = utterances.utt_child_follow_up.apply(
-        clean_utterance
+    utterances.dropna(
+        subset=(
+            "is_intelligible",
+        ),
+        inplace=True,
     )
 
-    # Remove nonspeech events
-    utterances["utt_child"] = utterances.utt_child.apply(remove_nonspeech_events)
-    utterances["utt_car"] = utterances.utt_car.apply(remove_nonspeech_events)
-    utterances["utt_child_follow_up"] = utterances.utt_child_follow_up.apply(
-        remove_nonspeech_events
-    )
+    conversations = get_micro_conversations(utterances, args)
 
-    # Drop empty children's utterances (these are non-speech-related)
-    utterances = utterances[
-        (
-            (utterances.utt_child != EMPTY_UTTERANCE)
-            & (utterances.utt_child_follow_up != EMPTY_UTTERANCE)
+    conversations = conversations.assign(
+        has_response=conversations.apply(
+            has_response,
+            axis=1,
+            response_latency=args.response_latency,
+            max_neg_response_latency=args.max_neg_response_latency,
+            count_only_intelligible_responses=args.count_only_intelligible_responses,
         )
-    ]
-
-    # Label utterances as intelligible or unintelligible
-    def is_intelligible(
-        utterance, label_partially_intelligible=args.label_partially_intelligible
-    ):
-        utt_without_babbling = remove_babbling(utterance)
-
-        utt_without_babbling = remove_whitespace(utt_without_babbling)
-        if utt_without_babbling == EMPTY_UTTERANCE:
-            return False
-
-        is_partly_intelligible = len(utt_without_babbling) != len(utterance)
-        if is_partly_intelligible:
-            return label_partially_intelligible
-
-        return True
-
-    utterances = utterances.assign(
-        utt_child_intelligible=utterances.utt_child.apply(is_intelligible)
-    )
-    utterances = utterances.assign(
-        utt_car_intelligible=utterances.utt_car.apply(is_intelligible)
-    )
-    utterances = utterances.assign(
-        follow_up_intelligible=utterances.utt_child_follow_up.apply(is_intelligible)
     )
 
-    # Label caregiver responses as present or not
-    def caregiver_intelligible_response(row):
-        return (row["response_latency"] <= args.response_latency) & (
-            (not args.count_only_intelligible_responses)
-            | is_intelligible(row["utt_car"], label_partially_intelligible=True)
-        )
-
-    utterances = utterances.assign(
-        caregiver_response=utterances.apply(caregiver_intelligible_response, axis=1)
+    conversations.dropna(
+        subset=(
+            "has_response",
+        ),
+        inplace=True,
     )
 
-    # Remove NaNs
-    utterances = utterances.dropna(
-        subset=("utt_child_intelligible", "follow_up_intelligible")
+    print(f"Filtering corpora based on average response latency")
+    corpora = filter_corpora_based_on_response_latency_length(
+        conversations,
+        args.min_age,
+        args.max_age,
+        args.response_latency_max_standard_deviations_off,
     )
+    print(f"Corpora included in analysis: {corpora}")
+    # Filter by corpora
+    conversations = conversations[conversations.corpus.isin(corpora)]
+
+    # Get the number of children in all corpora:
+    num_children = len(conversations.child_name.unique())
+    print(f"Number of children in the analysis: {num_children}")
 
     # Label caregiver responses as contingent on child utterance or not
-    utterances = utterances.assign(
-        caregiver_response_contingent=utterances[
-            ["utt_child_intelligible", "caregiver_response"]
+    conversations = conversations.assign(
+        caregiver_response_contingent=conversations[
+            ["is_intelligible", "has_response"]
         ].apply(caregiver_response_contingent_on_intelligibility, axis=1)
     )
 
     results_analysis = perform_warlaumont_analysis(
-        utterances, args, perform_contingency_analysis_intelligibility, "proportion_intelligible"
+        conversations, args, perform_contingency_analysis_intelligibility, "proportion_intelligible"
     )
     results_dir = "results/intelligibility/"
     os.makedirs(results_dir, exist_ok=True)
 
-    # plt.figure()
-    # sns.scatterplot(data=results_analysis, x="age", y="contingency_caregiver")
-    #
-    # plt.figure()
-    # sns.scatterplot(data=results_analysis, x="age", y="contingency_children_pos_case")
-    #
-    # plt.figure()
-    # sns.scatterplot(data=results_analysis, x="age", y="contingency_children_neg_case")
-    #
     plt.figure()
     sns.scatterplot(data=results_analysis, x="age", y="proportion_intelligible")
 
-    utterances["age"] = utterances.age.map(age_bin)
+    conversations["age"] = conversations.age.apply(
+        age_bin, min_age=args.min_age, num_months=AGE_BIN_NUM_MONTHS
+    )
 
     plt.figure()
     plt.title("Caregiver contingency")
     sns.barplot(
-        data=utterances,
-        x="utt_child_intelligible",
-        y="caregiver_response",
+        data=conversations,
+        x="is_intelligible",
+        y="has_response",
     )
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_caregivers.png"))
@@ -361,10 +269,10 @@ def perform_analysis_intelligibility(utterances, args):
     plt.figure(figsize=(6, 3))
     plt.title("Caregiver contingency - per age group")
     axis = sns.barplot(
-        data=utterances,
+        data=conversations,
         x="age",
-        y="caregiver_response",
-        hue="utt_child_intelligible",
+        y="has_response",
+        hue="is_intelligible",
         ci=None,
     )
     sns.move_legend(axis, "lower right")
@@ -375,8 +283,8 @@ def perform_analysis_intelligibility(utterances, args):
     plt.figure()
     plt.title("Child contingency")
     sns.barplot(
-        data=utterances[utterances.utt_child_intelligible == True],
-        x="caregiver_response",
+        data=conversations[conversations.is_intelligible == True],
+        x="has_response",
         y="follow_up_intelligible",
     )
     plt.tight_layout()
@@ -385,10 +293,10 @@ def perform_analysis_intelligibility(utterances, args):
     plt.figure(figsize=(6, 3))
     plt.title("Child contingency - per age group")
     axis = sns.barplot(
-        data=utterances[utterances.utt_child_intelligible == True],
+        data=conversations[conversations.is_intelligible == True],
         x="age",
         y="follow_up_intelligible",
-        hue="caregiver_response",
+        hue="has_response",
         ci=None,
     )
     sns.move_legend(axis, "lower right")
@@ -396,14 +304,37 @@ def perform_analysis_intelligibility(utterances, args):
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"))
 
-    utterances.to_csv(results_dir + "utterances.csv", index=False)
+    conversations.to_csv(results_dir + "conversations.csv", index=False)
 
     plt.show()
 
-    return utterances
+    return conversations
 
 
 if __name__ == "__main__":
     args = parse_args()
 
-    utterances = perform_analyses(args, perform_analysis_intelligibility)
+    print(args)
+
+    utterances = pd.read_csv(ANNOTATED_UTTERANCES_FILE, index_col=None)
+
+    print("Excluding corpora: ", args.excluded_corpora)
+    utterances = utterances[~utterances.corpus.isin(args.excluded_corpora)]
+
+    if args.corpora:
+        print("Including only corpora: ", args.corpora)
+        utterances = utterances[utterances.corpus.isin(args.corpora)]
+
+    # Filter by age
+    utterances = utterances[
+        (args.min_age <= utterances.age) & (utterances.age <= args.max_age)
+    ]
+
+    min_age = utterances.age.min()
+    max_age = utterances.age.max()
+    mean_age = utterances.age.mean()
+    print(
+        f"Mean of child age in analysis: {mean_age:.1f} (min: {min_age} max: {max_age})"
+    )
+
+    conversations = perform_analysis_intelligibility(utterances, args)

@@ -3,6 +3,7 @@ import math
 import re
 
 import pandas as pd
+import numpy as np
 
 
 def get_path_of_utterances_file(response_latency):
@@ -16,7 +17,7 @@ IS_TRAILING_OFF = lambda word: word == "+..."
 IS_TRAILING_OFF_2 = lambda word: word == "+.."
 IS_EXCLUDED_WORD = lambda word: "@x:" in word
 IS_PAUSE = lambda word: bool(re.match(r"\(\d*?\.*\d*?\)", word))
-IS_OMITTED_WORD = lambda word: word.startswith("0")
+IS_OMITTED_WORD = lambda word: word == "0"
 IS_SATELLITE_MARKER = lambda word: word == "‡"
 IS_QUOTATION_MARKER = lambda word: word in ['+"/', '+"/.', '+"', '+".']
 IS_UNKNOWN_CODE = lambda word: word == "zzz"
@@ -57,7 +58,6 @@ def age_bin(age, min_age, num_months):
     return max(min_age, int(age / num_months) * num_months)
 
 
-
 def is_simple_event(word):
     return word.startswith("&=")
 
@@ -76,7 +76,18 @@ def word_is_speech_related(word):
     return True
 
 
-def get_paralinguistic_events(utterance):
+def get_paralinguistic_event(utterance):
+    matches = re.findall(r"\[=! [^]]*]", utterance)
+    if len(matches) < 1:
+        return None
+    if len(matches) == 1:
+        event = matches[0]
+        return event
+    else:
+        raise ValueError("Multiple paralinguistic events: ", utterance)
+
+
+def get_all_paralinguistic_events(utterance):
     matches = re.finditer(r"\[=! [^]]*]", utterance)
     events = []
     for match in matches:
@@ -89,6 +100,7 @@ def get_paralinguistic_events(utterance):
 def paralinguistic_event_is_intelligible(event):
     if (
             "sing" in event
+            or "sung" in event
             or "hum" in event
             or "whisper" in event
     ):
@@ -100,29 +112,94 @@ def paralinguistic_event_is_speech_related(event):
     if (
         "babbl" in event
         or "hum" in event
-        or "sing" in event
+        or ("sing" in event and not "fussing" in event and not "kissing" in event)
+        or "sung" in event
         or "whisper" in event
         or "mumbl" in event
         or "mutter" in event
-        or "vocaliz" in event
+        or "voc" in event
     ):
         return True
     return False
 
 
+def paralinguistic_event_is_external(event):
+    if (
+        paralinguistic_event_is_speech_related(event)
+        or "laugh" in event
+        or ("mak" in event and "noise" in event)
+        or "cough" in event
+        or "squeak" in event
+        or "squeal" in event
+        or "crie" in event
+        or "moan" in event
+        or "giggl" in event
+        or "shout" in event
+        or "snor" in event
+        or "hiccup" in event
+        or "cry" in event
+        or "sigh" in event
+        or "gasp" in event
+        or "exhale" in event
+        or "clap" in event
+        or "gurgle" in event
+        or "groan" in event
+        or "yawn" in event
+        or "murmum" in event
+        or "whinge" in event
+        or "whine" in event
+        or "whining" in event
+        or "whing" in event
+        or "sneeze" in event
+        or "roar" in event
+        or "shriek" in event
+        or "growl" in event
+        or "grunt" in event
+        or "chuckle" in event
+        or "slurp" in event
+        or "sob" in event
+        or "raspberr" in event
+        or "scream" in event
+        or "whimper" in event
+        or "burp" in event
+        or "whimper" in event
+        or "chant" in event
+        or "whistl" in event
+        or "yell" in event
+        or "kiss" in event
+        or "cheer" in event
+        or "screech" in event
+        or "blow" in event
+        or "cooing" in event
+        or "belch" in event
+        or "squawk" in event
+    ):
+        return False
+    return True
+
+
 def remove_nonspeech_events(utterance):
     # Remove paralinguistic events
-    events = get_paralinguistic_events(utterance)
-    for event in events:
-        if not paralinguistic_event_is_speech_related(event):
-            utterance = utterance.replace(event, "")
+    event = get_paralinguistic_event(utterance)
+    keep_event = None
+    if event:
+        utterance = utterance.replace(event, "")
+        if paralinguistic_event_is_speech_related(event):
+            keep_event = event
+        else:
+            # For cases like "mm [=! squeal]":
+            words = utterance.strip().split(" ")
+            if len(words) == 1 and words[0] not in VOCAB and not is_babbling(words[0]):
+                return ""
 
-    words = utterance.split(" ")
-    cleaned_utterance = [word for word in words if word_is_speech_related(word)]
+    words = utterance.strip().split(" ")
+    cleaned_utterance = [word for word in words if word_is_speech_related(word) and not is_excluded_code(word)]
+
+    if keep_event:
+        cleaned_utterance.append(keep_event)
 
     cleaned_utterance = " ".join(cleaned_utterance)
-    cleaned_utterance = cleaned_utterance.strip()
-    return cleaned_utterance
+    return cleaned_utterance.strip()
 
 
 def clean_utterance(utterance):
@@ -155,11 +232,17 @@ def clean_utterance(utterance):
     utterance = re.sub(r"\[!+]", "", utterance)
     # Remove "complex local events"
     utterance = re.sub(r"\[\^\S*]", "", utterance)
+    # Remove arrows:
+    utterance = re.sub(r"↓", "", utterance)
+    utterance = re.sub(r"→", "", utterance)
+    utterance = re.sub(r"↑", "", utterance)
+    # Remove inhalations
+    utterance = re.sub(r"∙", "", utterance)
 
     words = utterance.split(" ")
     cleaned_utterance = []
     for word in words:
-        if not word == EMPTY_UTTERANCE and not is_excluded_code(word):
+        if not word == "" and not is_excluded_code(word):
             # remove other codes:
             word = re.sub(r"@z:\S*", "", word)
             # child invented forms, family forms, neologisms
@@ -186,8 +269,11 @@ def clean_utterance(utterance):
             word = re.sub(r"@q", "", word)
             # remove brackets
             word = word.replace("(", "").replace(")", "")
-            # remove brackets
             word = word.replace("<", "").replace(">", "")
+            word = word.replace("‹", "").replace("›", "")
+            word = word.replace("⌊", "").replace("⌋", "")
+            word = word.replace("⌈", "").replace("⌉", "")
+            word = word.replace("°", "")
             # compound words
             word = word.replace("_", " ")
             word = word.replace("+", " ")
@@ -230,7 +316,7 @@ CODE_INTERJECTION = "@i"
 CODE_PHONOLGICAL_CONSISTENT_FORM = "@p"
 CODE_PHONOLOGICAL_FRAGMENT = "&"
 
-OTHER_BABBLING = ["ba", "baa", "babaa", "ababa", "bada"]
+OTHER_BABBLING = ["da", "ba", "baa", "babaa", "ababa", "bada", "dada", "gagaa", "gaga"]
 
 
 VOCAB = set(
@@ -238,19 +324,17 @@ VOCAB = set(
 )
 
 
-
-
 def is_babbling(word):
+    # Catching simple events (&=) first, because otherwise they could interpreted as phonological fragment (&)
+    if is_simple_event(word):
+        return not paralinguistic_event_is_intelligible(word)
     if (
         word.endswith(CODE_BABBLING)
         or word.endswith(CODE_INTERJECTION)
         or word.startswith(CODE_PHONOLOGICAL_FRAGMENT)
         or word == CODE_UNINTELLIGIBLE
         or word == CODE_PHONETIC
-        or word in CODES_EVENT_BABBLES
-        or word in CODES_EVENT_VOCALIZES
-        or word in CODES_EVENT_MUMBLES
-        or word in OTHER_BABBLING
+        or word.lower() in OTHER_BABBLING
         or (
             word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
             and word.lower().replace(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION, "")
@@ -267,21 +351,26 @@ def is_babbling(word):
 
 def remove_babbling(utterance):
     # Remove any paralinguistic events
-    events = get_paralinguistic_events(utterance)
-    intelligible_events = []
-    for event in events:
+    event = get_paralinguistic_event(utterance)
+    keep_event = None
+    if event:
         utterance = utterance.replace(event, "")
         if paralinguistic_event_is_intelligible(event):
-            intelligible_events.append(event)
+            keep_event = event
+        else:
+            # For cases like "mm [=! babbling]":
+            words = utterance.strip().split(" ")
+            if len(words) == 1 and words[0] not in VOCAB:
+                return ""
 
-    words = utterance.split(" ")
-    filtered_utterance = [word for word in words if not is_babbling(word)]
+    words = utterance.strip().split(" ")
+    filtered_utterance = [word for word in words if not (is_babbling(word) or is_excluded_code(word))]
 
-    filtered_utterance.extend(intelligible_events)
+    if keep_event:
+        filtered_utterance.append(event)
 
     filtered_utterance = " ".join(filtered_utterance)
-    filtered_utterance = clean_utterance(filtered_utterance)
-    return filtered_utterance
+    return filtered_utterance.strip()
 
 
 def filter_corpora_based_on_response_latency_length(
