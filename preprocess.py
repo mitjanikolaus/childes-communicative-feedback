@@ -47,7 +47,9 @@ CANDIDATE_CORPORA = [
     "Providence",
 ]
 
-PREPROCESSED_UTTERANCES_FILE = os.path.expanduser("~/data/communicative_feedback/utterances.csv")
+PREPROCESSED_UTTERANCES_FILE = os.path.expanduser(
+    "~/data/communicative_feedback/utterances.csv"
+)
 
 
 def parse_args():
@@ -57,9 +59,7 @@ def parse_args():
     return args
 
 
-def find_child_utterances_and_responses(
-    corpus, transcripts
-):
+def find_child_utterances_and_responses(corpus, transcripts):
     file_paths = transcripts.file_paths()
 
     ages = transcripts.ages(months=True)
@@ -69,7 +69,8 @@ def find_child_utterances_and_responses(
         header["Participants"][SPEAKER_CODE_CHILD]["corpus"]
         + "_"
         + header["Participants"][SPEAKER_CODE_CHILD]["name"]
-        if SPEAKER_CODE_CHILD in header["Participants"] else None
+        if SPEAKER_CODE_CHILD in header["Participants"]
+        else None
         for header in transcripts.headers()
     ]
 
@@ -79,7 +80,9 @@ def find_child_utterances_and_responses(
 
     all_utts = []
 
-    for file, age, child_name, utts_transcript in zip(file_paths, ages, child_names, utts_by_file):
+    for file, age, child_name, utts_transcript in zip(
+        file_paths, ages, child_names, utts_by_file
+    ):
         # Filter out empty transcripts and transcripts without age or child information
         if len(utts_transcript) == 0:
             # print("Empty transcript: ", file)
@@ -117,7 +120,9 @@ def find_child_utterances_and_responses(
         if len(utts_transcript["start_time"].dropna()) == 0:
             continue
 
-        utts_transcript["transcript_raw"] = utts_transcript["transcript_raw"].apply(clean_utterance)
+        utts_transcript["transcript_raw"] = utts_transcript["transcript_raw"].apply(
+            clean_utterance
+        )
 
         utts_transcript = utts_transcript[utts_transcript["transcript_raw"] != ""]
         utts_transcript.dropna(subset=["transcript_raw", "speaker_code"], inplace=True)
@@ -142,9 +147,7 @@ def preprocess_transcripts():
         print("done.")
 
         print(f"Searching for child utterances and responses.. ", end="")
-        utterances_corpus = find_child_utterances_and_responses(
-            corpus, transcripts
-        )
+        utterances_corpus = find_child_utterances_and_responses(corpus, transcripts)
         print("done.")
 
         all_utterances.append(utterances_corpus)

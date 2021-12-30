@@ -145,7 +145,7 @@ def perform_warlaumont_analysis(
         _,
     ) = analysis_function(conversations)
     print(f"Caregiver contingency: {contingency_caregiver:.4f}")
-    print(f"Child contingency (positive case): {contingency_children_pos_case:.4f}")
+    print(f"Child contingency: {contingency_children_pos_case:.4f}")
 
     print("Per-transcript analysis: ")
     results = []
@@ -421,9 +421,7 @@ def get_micro_conversations(utterances, args):
 
 def perform_analysis_speech_relatedness(utterances, args):
     utterances.dropna(
-        subset=(
-            "is_speech_related",
-        ),
+        subset=("is_speech_related",),
         inplace=True,
     )
 

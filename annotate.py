@@ -7,7 +7,10 @@ import numpy as np
 
 from utils import (
     remove_punctuation,
-    str2bool, remove_babbling, get_paralinguistic_event, paralinguistic_event_is_external,
+    str2bool,
+    remove_babbling,
+    get_paralinguistic_event,
+    paralinguistic_event_is_external,
     get_all_paralinguistic_events,
 )
 from preprocess import (
@@ -78,7 +81,9 @@ def get_response_latency(row):
 
 
 def is_intelligible(
-    utterance, label_partially_intelligible=DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE, label_empty_utterance=None
+    utterance,
+    label_partially_intelligible=DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE,
+    label_empty_utterance=None,
 ):
     utterance_without_punctuation = remove_punctuation(utterance)
     if utterance_without_punctuation == "":
@@ -96,7 +101,9 @@ def is_intelligible(
     if utt_without_babbling == "":
         return False
 
-    is_partly_intelligible = len(utt_without_babbling) != len(utterance_without_nonspeech)
+    is_partly_intelligible = len(utt_without_babbling) != len(
+        utterance_without_nonspeech
+    )
     if is_partly_intelligible:
         return label_partially_intelligible
 
@@ -121,9 +128,7 @@ def annotate(args):
     utterances = pd.read_csv(PREPROCESSED_UTTERANCES_FILE, index_col=None)
 
     utterances.dropna(
-        subset=(
-            "transcript_raw",
-        ),
+        subset=("transcript_raw",),
         inplace=True,
     )
 

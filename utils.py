@@ -9,6 +9,7 @@ import numpy as np
 def get_path_of_utterances_file(response_latency):
     return f"~/data/communicative_feedback/chi_utts_car_response_latency_{response_latency}.csv"
 
+
 # codes that will be excluded from analysis
 IS_UNTRANSCRIBED = lambda word: "www" in word
 IS_INTERRUPTION = lambda word: word.startswith("+/")
@@ -98,12 +99,7 @@ def get_all_paralinguistic_events(utterance):
 
 
 def paralinguistic_event_is_intelligible(event):
-    if (
-            "sing" in event
-            or "sung" in event
-            or "hum" in event
-            or "whisper" in event
-    ):
+    if "sing" in event or "sung" in event or "hum" in event or "whisper" in event:
         return True
     return False
 
@@ -193,7 +189,11 @@ def remove_nonspeech_events(utterance):
                 return ""
 
     words = utterance.strip().split(" ")
-    cleaned_utterance = [word for word in words if word_is_speech_related(word) and not is_excluded_code(word)]
+    cleaned_utterance = [
+        word
+        for word in words
+        if word_is_speech_related(word) and not is_excluded_code(word)
+    ]
 
     if keep_event:
         cleaned_utterance.append(keep_event)
@@ -364,7 +364,9 @@ def remove_babbling(utterance):
                 return ""
 
     words = utterance.strip().split(" ")
-    filtered_utterance = [word for word in words if not (is_babbling(word) or is_excluded_code(word))]
+    filtered_utterance = [
+        word for word in words if not (is_babbling(word) or is_excluded_code(word))
+    ]
 
     if keep_event:
         filtered_utterance.append(event)
@@ -406,7 +408,8 @@ def filter_corpora_based_on_response_latency_length(
     print("Response latencies:")
     for corpus in conversations.corpus.unique():
         mean = conversations[
-            (conversations.corpus == corpus) & (conversations.response_latency < math.inf)
+            (conversations.corpus == corpus)
+            & (conversations.response_latency < math.inf)
         ].response_latency.values.mean()
         print(f"{corpus}: {mean:.1f}")
         if (

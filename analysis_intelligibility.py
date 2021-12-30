@@ -9,14 +9,17 @@ import pandas as pd
 
 from analysis_reproduce_warlaumont import (
     perform_warlaumont_analysis,
-    str2bool, get_micro_conversations, has_response,
+    str2bool,
+    get_micro_conversations,
+    has_response,
 )
 from annotate import ANNOTATED_UTTERANCES_FILE
 from preprocess import (
     CANDIDATE_CORPORA,
 )
 from utils import (
-    age_bin, filter_corpora_based_on_response_latency_length,
+    age_bin,
+    filter_corpora_based_on_response_latency_length,
 )
 
 DEFAULT_RESPONSE_THRESHOLD = 1000
@@ -119,9 +122,7 @@ def parse_args():
 
 
 def caregiver_response_contingent_on_intelligibility(row):
-    return (
-        (row["is_intelligible"] == True) & (row["has_response"] == True)
-    ) | (
+    return ((row["is_intelligible"] == True) & (row["has_response"] == True)) | (
         (row["is_intelligible"] == False) & (row["has_response"] == False)
     )
 
@@ -196,9 +197,7 @@ def perform_contingency_analysis_intelligibility(conversations):
 
 def perform_analysis_intelligibility(utterances, args):
     utterances.dropna(
-        subset=(
-            "is_intelligible",
-        ),
+        subset=("is_intelligible",),
         inplace=True,
     )
 
@@ -226,9 +225,7 @@ def perform_analysis_intelligibility(utterances, args):
     )
 
     conversations.dropna(
-        subset=(
-            "has_response",
-        ),
+        subset=("has_response",),
         inplace=True,
     )
 
@@ -244,7 +241,10 @@ def perform_analysis_intelligibility(utterances, args):
     )
 
     results_analysis = perform_warlaumont_analysis(
-        conversations, args, perform_contingency_analysis_intelligibility, "proportion_intelligible"
+        conversations,
+        args,
+        perform_contingency_analysis_intelligibility,
+        "proportion_intelligible",
     )
     results_dir = "results/intelligibility/"
     os.makedirs(results_dir, exist_ok=True)
@@ -276,7 +276,7 @@ def perform_analysis_intelligibility(utterances, args):
         ci=None,
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel='prob_caregiver_response')
+    axis.set(ylabel="prob_caregiver_response")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_caregivers_per_age.png"))
 
@@ -300,7 +300,7 @@ def perform_analysis_intelligibility(utterances, args):
         ci=None,
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel='prob_follow_up_intelligible')
+    axis.set(ylabel="prob_follow_up_intelligible")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"))
 
