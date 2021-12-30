@@ -376,8 +376,10 @@ def remove_babbling(utterance):
 
 
 def filter_corpora_based_on_response_latency_length(
-    conversations, min_age, max_age, standard_deviations_off
+    conversations, standard_deviations_off
 ):
+    print(f"Filtering corpora based on average response latency")
+
     # Calculate mean and stddev of response latency using data from Nguyen, Versyp, Cox, Fusaroli (2021)
     latency_data = pd.read_csv("data/MA turn-taking.csv")
 
@@ -385,6 +387,8 @@ def filter_corpora_based_on_response_latency_length(
     latency_data = latency_data[latency_data["clinical group"] == "Healthy"]
 
     # Use only data of the target age range:
+    min_age = conversations.age.min()
+    max_age = conversations.age.max()
     latency_data = latency_data[
         (latency_data.mean_age_infants_months >= min_age)
         & (latency_data.mean_age_infants_months <= max_age)
@@ -419,7 +423,9 @@ def filter_corpora_based_on_response_latency_length(
         ):
             filtered.append(corpus)
 
-    return filtered
+    print(f"Corpora included in analysis after filtering: {filtered}")
+    conversations = conversations[conversations.corpus.isin(filtered)]
+    return conversations
 
 
 def get_binomial_test_data(column_name_1, column_name_2):
