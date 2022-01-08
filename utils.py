@@ -54,8 +54,8 @@ def is_excluded_code(word):
     return False
 
 
-def age_bin(age, min_age, num_months):
-    return max(min_age, int(age / num_months) * num_months)
+def age_bin(age, min_age, max_age, num_months):
+    return min(max_age, max(min_age, int((age + num_months / 2) / num_months) * num_months))
 
 
 def is_simple_event(word):

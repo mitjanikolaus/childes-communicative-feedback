@@ -247,7 +247,7 @@ def perform_analysis_intelligibility(utterances, args):
     sns.scatterplot(data=results_analysis, x="age", y="proportion_intelligible")
 
     conversations["age"] = conversations.age.apply(
-        age_bin, num_months=AGE_BIN_NUM_MONTHS
+        age_bin, min_age=args.min_age, max_age=args.max_age, num_months=AGE_BIN_NUM_MONTHS
     )
 
     plt.figure()

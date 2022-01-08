@@ -520,7 +520,7 @@ def perform_analysis_speech_relatedness(utterances, args):
     plt.savefig(os.path.join(results_dir, "contingency_caregivers.png"))
 
     conversations["age"] = conversations.age.apply(
-        age_bin, num_months=AGE_BIN_NUM_MONTHS
+        age_bin, min_age=args.min_age, max_age=args.max_age, num_months=AGE_BIN_NUM_MONTHS
     )
 
     plt.figure(figsize=(6, 3))
