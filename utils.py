@@ -3,7 +3,6 @@ import math
 import re
 
 import pandas as pd
-import numpy as np
 
 
 def get_path_of_utterances_file(response_latency):
@@ -185,7 +184,7 @@ def remove_nonspeech_events(utterance):
         else:
             # For cases like "mm [=! squeal]":
             words = utterance.strip().split(" ")
-            if len(words) == 1 and words[0] not in VOCAB and not is_babbling(words[0]):
+            if len(words) == 1 and words[0].lower() not in VOCAB and not is_babbling(words[0]):
                 return ""
 
     words = utterance.strip().split(" ")
@@ -360,7 +359,7 @@ def remove_babbling(utterance):
         else:
             # For cases like "mm [=! babbling]":
             words = utterance.strip().split(" ")
-            if len(words) == 1 and words[0] not in VOCAB:
+            if len(words) == 1 and words[0].lower() not in VOCAB:
                 return ""
 
     words = utterance.strip().split(" ")
