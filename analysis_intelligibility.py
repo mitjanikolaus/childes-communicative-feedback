@@ -196,12 +196,12 @@ def perform_contingency_analysis_intelligibility(conversations):
 
 
 def perform_analysis_intelligibility(utterances, args):
-    utterances.dropna(
-        subset=("is_intelligible",),
+    conversations = get_micro_conversations(utterances, args)
+
+    conversations.dropna(
+        subset=("is_intelligible", "response_is_intelligible", "follow_up_intelligible"),
         inplace=True,
     )
-
-    conversations = get_micro_conversations(utterances, args)
 
     conversations = filter_corpora_based_on_response_latency_length(
         conversations,
@@ -247,7 +247,7 @@ def perform_analysis_intelligibility(utterances, args):
     sns.scatterplot(data=results_analysis, x="age", y="proportion_intelligible")
 
     conversations["age"] = conversations.age.apply(
-        age_bin, min_age=args.min_age, num_months=AGE_BIN_NUM_MONTHS
+        age_bin, num_months=AGE_BIN_NUM_MONTHS
     )
 
     plt.figure()
