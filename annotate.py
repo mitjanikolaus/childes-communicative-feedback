@@ -22,7 +22,7 @@ from utils import (
 )
 
 ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
-    "~/data/communicative_feedback/utterances_annotated.csv"
+    "~/data/communicative_feedback/utterances_annotated.p"
 )
 
 
@@ -125,7 +125,7 @@ def is_external_event(utterance):
 
 
 def annotate(args):
-    utterances = pd.read_csv(PREPROCESSED_UTTERANCES_FILE, index_col=None)
+    utterances = pd.read_pickle(PREPROCESSED_UTTERANCES_FILE)
 
     utterances.dropna(
         subset=("transcript_raw",),
@@ -186,4 +186,4 @@ if __name__ == "__main__":
     annotated_utts = annotate(args)
 
     os.makedirs(os.path.dirname(ANNOTATED_UTTERANCES_FILE), exist_ok=True)
-    annotated_utts.to_csv(ANNOTATED_UTTERANCES_FILE, index=False)
+    annotated_utts.to_pickle(ANNOTATED_UTTERANCES_FILE)

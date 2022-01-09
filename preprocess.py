@@ -48,7 +48,7 @@ CANDIDATE_CORPORA = [
 ]
 
 PREPROCESSED_UTTERANCES_FILE = os.path.expanduser(
-    "~/data/communicative_feedback/utterances.csv"
+    "~/data/communicative_feedback/utterances.p"
 )
 
 
@@ -163,4 +163,4 @@ if __name__ == "__main__":
     preprocessed_utterances = preprocess_transcripts()
 
     os.makedirs(os.path.dirname(PREPROCESSED_UTTERANCES_FILE), exist_ok=True)
-    preprocessed_utterances.to_csv(PREPROCESSED_UTTERANCES_FILE, index=False)
+    preprocessed_utterances.to_pickle(PREPROCESSED_UTTERANCES_FILE)
