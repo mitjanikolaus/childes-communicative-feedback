@@ -9,7 +9,8 @@ from analysis_reproduce_warlaumont import (
     DEFAULT_MAX_AGE,
     DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF,
 )
-from preprocess import CANDIDATE_CORPORA, DEFAULT_RESPONSE_THRESHOLD
+from annotate import ANNOTATED_UTTERANCES_FILE
+from preprocess import CANDIDATE_CORPORA
 from utils import (
     is_babbling,
     VOCAB,
@@ -17,7 +18,6 @@ from utils import (
     filter_corpora_based_on_response_latency_length,
     clean_utterance,
     remove_nonspeech_events,
-    EMPTY_UTTERANCE, get_path_of_utterances_file,
 )
 
 
@@ -56,7 +56,7 @@ def check_vocab(adj_utterances):
                 and word not in VOCAB
                 and word.replace(CODE_PHONOLGICAL_CONSISTENT_FORM, "") not in VOCAB
                 and not is_babbling(word)
-                and not word == EMPTY_UTTERANCE
+                and not word == ""
             ):
                 # if word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM) or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION):
                 # missing.append(word.replace(CODE_PHONOLGICAL_CONSISTENT_FORM, ""))
@@ -69,22 +69,9 @@ def check_vocab(adj_utterances):
 
 
 if __name__ == "__main__":
-    utterances = pd.read_csv(get_path_of_utterances_file(DEFAULT_RESPONSE_THRESHOLD), index_col=None)
+    utterances = pd.read_csv(ANNOTATED_UTTERANCES_FILE, index_col=None)
 
     # Fill in empty strings for dummy caregiver responses
     utterances.utt_car.fillna("", inplace=True)
-
-    corpora = filter_corpora_based_on_response_latency_length(
-        CANDIDATE_CORPORA,
-        utterances,
-        DEFAULT_MIN_AGE,
-        DEFAULT_MAX_AGE,
-        DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF,
-    )
-
-    print(f"Corpora included in analysis: {corpora}")
-
-    # Filter corpora
-    utterances = utterances[utterances.corpus.isin(corpora)]
 
     check_vocab(utterances.copy())

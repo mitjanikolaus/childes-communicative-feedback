@@ -5,10 +5,6 @@ import re
 import pandas as pd
 
 
-def get_path_of_utterances_file(response_latency):
-    return f"~/data/communicative_feedback/chi_utts_car_response_latency_{response_latency}.csv"
-
-
 # codes that will be excluded from analysis
 IS_UNTRANSCRIBED = lambda word: "www" in word
 IS_INTERRUPTION = lambda word: word.startswith("+/")
