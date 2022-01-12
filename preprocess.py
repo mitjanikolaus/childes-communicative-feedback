@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import pylangacq
 
-from utils import clean_utterance
+from utils import clean_utterance, POS_PUNCTUATION
 
 SPEAKER_CODE_CHILD = "CHI"
 
@@ -59,7 +59,12 @@ def parse_args():
     return args
 
 
-def find_child_utterances_and_responses(corpus, transcripts):
+def get_pos_tag(tag):
+    tag = str(tag).lower()
+    return tag
+
+
+def preprocess_utterances(corpus, transcripts):
     file_paths = transcripts.file_paths()
 
     ages = transcripts.ages(months=True)
@@ -100,8 +105,8 @@ def find_child_utterances_and_responses(corpus, transcripts):
                 {
                     "speaker_code": utt.participant,
                     "transcript_raw": utt.tiers[utt.participant],
-                    "tokens": " ".join([t.word for t in utt.tokens]),
-                    "pos": " ".join([str(t.pos) for t in utt.tokens]),
+                     "tokens": [t.word.lower() for t in utt.tokens if t.word != "CLITIC"],
+                    "pos": [get_pos_tag(t.pos) for t in utt.tokens if t.pos not in POS_PUNCTUATION],
                     "start_time": utt.time_marks[0] if utt.time_marks else None,
                     "end_time": utt.time_marks[1] if utt.time_marks else None,
                     "age": round(age),
@@ -146,8 +151,8 @@ def preprocess_transcripts():
         )
         print("done.")
 
-        print(f"Searching for child utterances and responses.. ", end="")
-        utterances_corpus = find_child_utterances_and_responses(corpus, transcripts)
+        print(f"Preprocessing utterances.. ", end="")
+        utterances_corpus = preprocess_utterances(corpus, transcripts)
         print("done.")
 
         all_utterances.append(utterances_corpus)

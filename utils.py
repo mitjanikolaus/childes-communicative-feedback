@@ -4,6 +4,7 @@ import re
 
 import pandas as pd
 
+POS_PUNCTUATION = [".", "?", "...", "!", "+/", "+/?", "" "...?", ",", "-", "+\"/.", "+...", "++/.", "+/."]
 
 # codes that will be excluded from analysis
 IS_UNTRANSCRIBED = lambda word: "www" in word
