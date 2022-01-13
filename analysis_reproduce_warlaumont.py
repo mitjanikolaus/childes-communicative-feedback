@@ -13,11 +13,11 @@ import numpy as np
 from statsmodels.stats.weightstats import ztest
 from tqdm import tqdm
 
-from annotate import ANNOTATED_UTTERANCES_FILE, get_response_latency
+from annotate import ANNOTATED_UTTERANCES_FILE
 from utils import (
     filter_corpora_based_on_response_latency_length,
     age_bin,
-    str2bool,
+    str2bool, SPEECH_ACT_NO_FUNCTION,
 )
 from preprocess import (
     CANDIDATE_CORPORA,
@@ -208,17 +208,17 @@ def perform_contingency_analysis_speech_relatedness(conversations):
         contingency_caregiver = np.nan
 
     # Contingency of child vocalization on previous adult response (positive case):
-    n_follow_up_speech_related_if_response_to_speech_related = len(
+    n_follow_up_is_speech_related_if_response_to_speech_related = len(
         conversations[
-            conversations.follow_up_speech_related
+            conversations.follow_up_is_speech_related
             & conversations.is_speech_related
             & conversations.has_response
         ]
     )
 
-    n_follow_up_speech_related_if_no_response_to_speech_related = len(
+    n_follow_up_is_speech_related_if_no_response_to_speech_related = len(
         conversations[
-            conversations.follow_up_speech_related
+            conversations.follow_up_is_speech_related
             & conversations.is_speech_related
             & (conversations.has_response == False)
         ]
@@ -230,48 +230,20 @@ def perform_contingency_analysis_speech_relatedness(conversations):
     )
 
     if n_responses_to_speech > 0 and n_no_responses_to_speech_related > 0:
-        ratio_follow_up_speech_related_if_response_to_speech_related = (
-            n_follow_up_speech_related_if_response_to_speech_related
+        ratio_follow_up_is_speech_related_if_response_to_speech_related = (
+            n_follow_up_is_speech_related_if_response_to_speech_related
             / n_responses_to_speech
         )
-        ratio_follow_up_speech_related_if_no_response_to_speech_related = (
-            n_follow_up_speech_related_if_no_response_to_speech_related
+        ratio_follow_up_is_speech_related_if_no_response_to_speech_related = (
+            n_follow_up_is_speech_related_if_no_response_to_speech_related
             / n_no_responses_to_speech_related
         )
         contingency_children_pos_case = (
-            ratio_follow_up_speech_related_if_response_to_speech_related
-            - ratio_follow_up_speech_related_if_no_response_to_speech_related
+            ratio_follow_up_is_speech_related_if_response_to_speech_related
+            - ratio_follow_up_is_speech_related_if_no_response_to_speech_related
         )
     else:
         contingency_children_pos_case = np.nan
-
-    # Contingency of child vocalization on previous adult response (negative case):
-    n_follow_up_speech_related_if_no_response_to_non_speech_related = len(
-        conversations[
-            conversations.follow_up_speech_related
-            & (conversations.is_speech_related == False)
-            & (conversations.has_response == False)
-        ]
-    )
-    n_no_responses_to_non_speech_related = len(
-        conversations[
-            (conversations.is_speech_related == False)
-            & (conversations.has_response == False)
-        ]
-    )
-
-    n_follow_up_speech_related_if_response_to_non_speech_related = len(
-        conversations[
-            conversations.follow_up_speech_related
-            & (conversations.is_speech_related == False)
-            & conversations.has_response
-        ]
-    )
-    n_responses_to_non_speech_related = len(
-        conversations[
-            (conversations.is_speech_related == False) & conversations.has_response
-        ]
-    )
 
     proportion_speech_related = n_speech / (n_speech + n_non_speech)
 
@@ -306,9 +278,24 @@ def has_response(
     return False
 
 
-def get_micro_conversations_for_transcript(utterances, transcript, args):
+DUMMY_RESPONSE = {
+        "transcript_raw": "",
+        "start_time": math.inf,
+        "end_time": math.inf,
+        "is_speech_related": False,
+        "is_intelligible": False,
+        "speech_act": SPEECH_ACT_NO_FUNCTION,
+    }
+
+KEEP_KEYS = ["transcript_raw", "start_time", "is_speech_related", "is_intelligible"]
+
+
+def get_dict_with_prefix(series, prefix, keep_keys=KEEP_KEYS):
+    return {prefix + key: series[key] for key in keep_keys}
+
+
+def get_micro_conversations_for_transcript(utterances_transcript, args):
     conversations = []
-    utterances_transcript = utterances[utterances.transcript_file == transcript]
     utterances_child = utterances_transcript[
         utterances_transcript.speaker_code == SPEAKER_CODE_CHILD
     ]
@@ -320,27 +307,16 @@ def get_micro_conversations_for_transcript(utterances, transcript, args):
         conversation = utterances_transcript.loc[candidate_id].to_dict()
         if candidate_id + 1 not in utterances_transcript.index.values:
             continue
-        utt2 = utterances_transcript.loc[candidate_id + 1]
-        conversation["response_is_speech_related"] = utt2["is_speech_related"]
-        conversation["response_is_intelligible"] = utt2["is_intelligible"]
+        response = get_dict_with_prefix(utterances_transcript.loc[candidate_id + 1], "response_")
+        conversation.update(response)
 
-        conversation["response_latency"] = get_response_latency(conversation)
-        if conversation["response_latency"] is None:
-            continue
-
-        following_utts = utterances_transcript.loc[candidate_id + 1 :]
+        following_utts = utterances_transcript.loc[candidate_id + 1:]
         following_utts_child = following_utts[
             following_utts.speaker_code == SPEAKER_CODE_CHILD
         ]
         if len(following_utts_child) > 0:
-            utt3 = following_utts_child.iloc[0]
-            conversation["response_latency_follow_up"] = (
-                utt3["start_time"] - conversation["end_time"]
-            )
-            if np.isnan(conversation["response_latency_follow_up"]):
-                continue
-            conversation["follow_up_speech_related"] = utt3["is_speech_related"]
-            conversation["follow_up_intelligible"] = utt3["is_intelligible"]
+            follow_up = get_dict_with_prefix(following_utts_child.iloc[0], "follow_up_")
+            conversation.update(follow_up)
             conversations.append(conversation)
 
     utts_child_no_response = utterances_child[
@@ -356,16 +332,14 @@ def get_micro_conversations_for_transcript(utterances, transcript, args):
         if candidate_id + 1 not in utterances_transcript.index.values:
             continue
         subsequent_utt = utterances_transcript.loc[candidate_id + 1]
-        conversation["response_latency"] = math.inf
-        conversation["start_time_next"] = math.inf
-        conversation["response_is_speech_related"] = False
-        conversation["response_is_intelligible"] = False
+        response = get_dict_with_prefix(DUMMY_RESPONSE, "response_")
+        conversation.update(response)
         following_utts = utterances_transcript.loc[subsequent_utt.name + 1 :]
         following_utts_non_child = following_utts[
             following_utts.speaker_code != SPEAKER_CODE_CHILD
         ]
         if (
-            len(following_utts_non_child) == 0
+            len(following_utts_non_child) == 0  #TODO: remove?
             or following_utts_non_child.iloc[0].speaker_code
             not in SPEAKER_CODES_CAREGIVER
         ):
@@ -376,15 +350,9 @@ def get_micro_conversations_for_transcript(utterances, transcript, args):
             following_utts.speaker_code == SPEAKER_CODE_CHILD
         ]
         if len(following_utts_child) > 0:
-            utt3 = following_utts_child.iloc[0]
+            follow_up = get_dict_with_prefix(following_utts_child.iloc[0], "follow_up_")
+            conversation.update(follow_up)
 
-            conversation["response_latency_follow_up"] = (
-                utt3["start_time"] - conversation["end_time"]
-            )
-            if np.isnan(conversation["response_latency_follow_up"]):
-                continue
-            conversation["follow_up_speech_related"] = utt3["is_speech_related"]
-            conversation["follow_up_intelligible"] = utt3["is_intelligible"]
             conversations.append(conversation)
 
     return conversations
@@ -392,21 +360,24 @@ def get_micro_conversations_for_transcript(utterances, transcript, args):
 
 def get_micro_conversations(utterances, args):
     print("Creating micro conversations from transcripts..")
+    utterances_grouped = [group for _, group in utterances.groupby('transcript_file')]
     process_args = [
-        (utterances, transcript, args)
-        for transcript in utterances.transcript_file.unique()
+        (utts_transcript, args)
+        for utts_transcript in utterances_grouped
     ]
 
-    # results = [get_micro_conversations_for_transcript(utterances, transcript, args)
-    #     for transcript in utterances.transcript_file.unique()]
+    # results = [get_micro_conversations_for_transcript(utts_transcript, args)
+    #     for utts_transcript in utterances_grouped]
     with Pool(processes=8) as pool:
         results = pool.starmap(
             get_micro_conversations_for_transcript,
             tqdm(process_args, total=len(process_args)),
         )
 
-    conversations = list(itertools.chain(*results))
-    conversations = pd.DataFrame(conversations)
+    conversations = pd.DataFrame(list(itertools.chain(*results)))
+
+    conversations["response_latency"] = conversations["response_start_time"] - conversations["end_time"]
+    conversations["response_latency_follow_up"] = conversations["follow_up_start_time"] - conversations["end_time"]
 
     # disregard conversations with follow up too far in the future
     conversations = conversations[
@@ -423,7 +394,12 @@ def perform_analysis_speech_relatedness(utterances, args):
     conversations = get_micro_conversations(utterances, args)
 
     conversations.dropna(
-        subset=("is_speech_related", "response_is_speech_related", "follow_up_speech_related"),
+        subset=("response_latency", "response_latency_follow_up"),
+        inplace=True,
+    )
+
+    conversations.dropna(
+        subset=("is_speech_related", "response_is_speech_related", "follow_up_is_speech_related"),
         inplace=True,
     )
 
@@ -542,7 +518,7 @@ def perform_analysis_speech_relatedness(utterances, args):
     sns.barplot(
         data=conversations[conversations.is_speech_related == True],
         x="has_response",
-        y="follow_up_speech_related",
+        y="follow_up_is_speech_related",
     )
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children.png"))
@@ -552,12 +528,12 @@ def perform_analysis_speech_relatedness(utterances, args):
     axis = sns.barplot(
         data=conversations[conversations.is_speech_related == True],
         x="age",
-        y="follow_up_speech_related",
+        y="follow_up_is_speech_related",
         hue="has_response",
         ci=None,
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prob_follow_up_speech_related")
+    axis.set(ylabel="prob_follow_up_is_speech_related")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"))
 

@@ -149,17 +149,17 @@ def perform_contingency_analysis_intelligibility(conversations):
         contingency_caregiver = np.nan
 
     # Contingency of child vocalization on previous adult response (positive case):
-    n_follow_up_intelligible_if_response_to_intelligible = len(
+    n_follow_up_is_intelligible_if_response_to_intelligible = len(
         conversations[
-            conversations.follow_up_intelligible
+            conversations.follow_up_is_intelligible
             & conversations.is_intelligible
             & conversations.has_response
         ]
     )
 
-    n_follow_up_intelligible_if_no_response_to_intelligible = len(
+    n_follow_up_is_intelligible_if_no_response_to_intelligible = len(
         conversations[
-            conversations.follow_up_intelligible
+            conversations.follow_up_is_intelligible
             & conversations.is_intelligible
             & (conversations.has_response == False)
         ]
@@ -171,17 +171,17 @@ def perform_contingency_analysis_intelligibility(conversations):
     )
 
     if n_responses_to_intelligible > 0 and n_no_responses_to_intelligible > 0:
-        ratio_follow_up_intelligible_if_response_to_intelligible = (
-            n_follow_up_intelligible_if_response_to_intelligible
+        ratio_follow_up_is_intelligible_if_response_to_intelligible = (
+            n_follow_up_is_intelligible_if_response_to_intelligible
             / n_responses_to_intelligible
         )
-        ratio_follow_up_intelligible_if_no_response_to_intelligible = (
-            n_follow_up_intelligible_if_no_response_to_intelligible
+        ratio_follow_up_is_intelligible_if_no_response_to_intelligible = (
+            n_follow_up_is_intelligible_if_no_response_to_intelligible
             / n_no_responses_to_intelligible
         )
         contingency_children_pos_case = (
-            ratio_follow_up_intelligible_if_response_to_intelligible
-            - ratio_follow_up_intelligible_if_no_response_to_intelligible
+            ratio_follow_up_is_intelligible_if_response_to_intelligible
+            - ratio_follow_up_is_intelligible_if_no_response_to_intelligible
         )
     else:
         contingency_children_pos_case = np.nan
@@ -199,7 +199,7 @@ def perform_analysis_intelligibility(utterances, args):
     conversations = get_micro_conversations(utterances, args)
 
     conversations.dropna(
-        subset=("is_intelligible", "response_is_intelligible", "follow_up_intelligible"),
+        subset=("is_intelligible", "response_is_intelligible", "follow_up_is_intelligible"),
         inplace=True,
     )
 
@@ -279,7 +279,7 @@ def perform_analysis_intelligibility(utterances, args):
     sns.barplot(
         data=conversations[conversations.is_intelligible == True],
         x="has_response",
-        y="follow_up_intelligible",
+        y="follow_up_is_intelligible",
     )
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children.png"))
@@ -289,12 +289,12 @@ def perform_analysis_intelligibility(utterances, args):
     axis = sns.barplot(
         data=conversations[conversations.is_intelligible == True],
         x="age",
-        y="follow_up_intelligible",
+        y="follow_up_is_intelligible",
         hue="has_response",
         ci=None,
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prob_follow_up_intelligible")
+    axis.set(ylabel="prob_follow_up_is_intelligible")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"))
 

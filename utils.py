@@ -17,6 +17,8 @@ ANNOTATED_UTTERANCES_FILE_WITH_SPEECH_ACTS = os.path.expanduser(
     "~/data/communicative_feedback/utterances_annotated_with_speech_acts.p"
 )
 
+SPEECH_ACT_NO_FUNCTION = "YY"
+
 POS_PUNCTUATION = [".", "?", "...", "!", "+/", "+/?", "" "...?", ",", "-", "+\"/.", "+...", "++/.", "+/."]
 
 # codes that will be excluded from analysis

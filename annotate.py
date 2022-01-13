@@ -67,13 +67,6 @@ def is_speech_related(
     return True
 
 
-def get_response_latency(row):
-    if np.isnan(row["start_time_next"]) or np.isnan(row["end_time"]):
-        return None
-
-    return row["start_time_next"] - row["end_time"]
-
-
 def is_intelligible(
     utterance,
     label_partially_intelligible=DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE,
