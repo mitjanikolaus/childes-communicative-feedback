@@ -1,8 +1,21 @@
 import argparse
 import math
+import os
 import re
 
 import pandas as pd
+
+PREPROCESSED_UTTERANCES_FILE = os.path.expanduser(
+    "~/data/communicative_feedback/utterances.p"
+)
+
+ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
+    "~/data/communicative_feedback/utterances_annotated.p"
+)
+
+ANNOTATED_UTTERANCES_FILE_WITH_SPEECH_ACTS = os.path.expanduser(
+    "~/data/communicative_feedback/utterances_annotated_with_speech_acts.p"
+)
 
 POS_PUNCTUATION = [".", "?", "...", "!", "+/", "+/?", "" "...?", ",", "-", "+\"/.", "+...", "++/.", "+/."]
 

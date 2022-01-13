@@ -1,6 +1,5 @@
 import argparse
 import os
-from collections import Counter
 
 import pandas as pd
 import numpy as np
@@ -11,7 +10,7 @@ from utils import (
     remove_babbling,
     get_paralinguistic_event,
     paralinguistic_event_is_external,
-    get_all_paralinguistic_events,
+    get_all_paralinguistic_events, ANNOTATED_UTTERANCES_FILE,
 )
 from preprocess import (
     PREPROCESSED_UTTERANCES_FILE,
@@ -20,11 +19,6 @@ from utils import (
     remove_nonspeech_events,
     CODE_UNINTELLIGIBLE,
 )
-
-ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
-    "~/data/communicative_feedback/utterances_annotated.p"
-)
-
 
 DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED = True
 

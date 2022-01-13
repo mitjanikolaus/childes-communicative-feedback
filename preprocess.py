@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import pylangacq
 
-from utils import clean_utterance, POS_PUNCTUATION
+from utils import clean_utterance, POS_PUNCTUATION, PREPROCESSED_UTTERANCES_FILE
 
 SPEAKER_CODE_CHILD = "CHI"
 
@@ -46,10 +46,6 @@ CANDIDATE_CORPORA = [
     "Nelson",
     "Providence",
 ]
-
-PREPROCESSED_UTTERANCES_FILE = os.path.expanduser(
-    "~/data/communicative_feedback/utterances.p"
-)
 
 
 def parse_args():
@@ -103,9 +99,10 @@ def preprocess_utterances(corpus, transcripts):
         utts_transcript = pd.DataFrame(
             [
                 {
+                    "utterance_id": id,
                     "speaker_code": utt.participant,
                     "transcript_raw": utt.tiers[utt.participant],
-                     "tokens": [t.word.lower() for t in utt.tokens if t.word != "CLITIC"],
+                    "tokens": [t.word.lower() for t in utt.tokens if t.word != "CLITIC"],
                     "pos": [get_pos_tag(t.pos) for t in utt.tokens if t.pos not in POS_PUNCTUATION],
                     "start_time": utt.time_marks[0] if utt.time_marks else None,
                     "end_time": utt.time_marks[1] if utt.time_marks else None,
@@ -114,7 +111,7 @@ def preprocess_utterances(corpus, transcripts):
                     "transcript_file": file,
                     "child_name": child_name,
                 }
-                for utt in utts_transcript
+                for id, utt in enumerate(utts_transcript)
             ]
         )
 

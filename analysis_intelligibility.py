@@ -310,7 +310,7 @@ if __name__ == "__main__":
 
     print(args)
 
-    utterances = pd.read_pickle(ANNOTATED_UTTERANCES_FILE, index_col=None)
+    utterances = pd.read_pickle(ANNOTATED_UTTERANCES_FILE)
 
     print("Excluding corpora: ", args.excluded_corpora)
     utterances = utterances[~utterances.corpus.isin(args.excluded_corpora)]
