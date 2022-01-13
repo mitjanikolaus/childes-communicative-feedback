@@ -24,6 +24,12 @@ from utils import (
 
 DEFAULT_RESPONSE_THRESHOLD = 1000
 
+# 1 second
+DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
+
+# 10 seconds
+DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
+
 DEFAULT_MIN_AGE = 10  # age of first words
 DEFAULT_MAX_AGE = 48
 
@@ -34,12 +40,6 @@ DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
 DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES = True
 
 DEFAULT_MIN_TRANSCRIPT_LENGTH = 0
-
-# 1 second
-DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
-
-# 1 minute
-DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 1 * 60 * 1000  # ms
 
 # Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words
 DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
@@ -199,6 +199,11 @@ def perform_analysis_intelligibility(utterances, args):
     conversations = get_micro_conversations(utterances, args)
 
     conversations.dropna(
+        subset=("response_latency", "response_latency_follow_up"),
+        inplace=True,
+    )
+
+    conversations.dropna(
         subset=("is_intelligible", "response_is_intelligible", "follow_up_is_intelligible"),
         inplace=True,
     )
@@ -213,14 +218,8 @@ def perform_analysis_intelligibility(utterances, args):
             has_response,
             axis=1,
             response_latency=args.response_latency,
-            max_neg_response_latency=args.max_neg_response_latency,
             count_only_intelligible_responses=args.count_only_intelligible_responses,
         )
-    )
-
-    conversations.dropna(
-        subset=("has_response",),
-        inplace=True,
     )
 
     # Get the number of children in all corpora:

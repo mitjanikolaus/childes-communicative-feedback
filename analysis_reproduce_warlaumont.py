@@ -30,6 +30,9 @@ DEFAULT_RESPONSE_THRESHOLD = 1000
 # 1 second
 DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
+# 10 seconds
+DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
+
 DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
 
 DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
@@ -43,11 +46,6 @@ DEFAULT_MIN_AGE = 8
 DEFAULT_MAX_AGE = 48
 
 AGE_BIN_NUM_MONTHS = 6
-
-
-# 1 minute
-DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 1 * 60 * 1000  # ms
-
 
 DEFAULT_EXCLUDED_CORPORA = []
 
@@ -257,17 +255,9 @@ def perform_contingency_analysis_speech_relatedness(conversations):
 def has_response(
     row,
     response_latency,
-    max_neg_response_latency,
     count_only_speech_related_responses=False,
     count_only_intelligible_responses=False,
 ):
-    if np.isnan(row["response_latency"]):
-        return None
-
-    # Disregard utterances with too long negative pauses
-    if row["response_latency"] < max_neg_response_latency:
-        return None
-
     if row["response_latency"] <= response_latency:
         if count_only_speech_related_responses:
             return row["response_is_speech_related"]
@@ -304,17 +294,19 @@ def get_micro_conversations_for_transcript(utterances_transcript, args):
         utterances_child.speaker_code_next.isin(SPEAKER_CODES_CAREGIVER)
     ]
     for candidate_id in utts_child_before_caregiver_utt.index.values:
-        conversation = utterances_transcript.loc[candidate_id].to_dict()
         if candidate_id + 1 not in utterances_transcript.index.values:
             continue
-        response = get_dict_with_prefix(utterances_transcript.loc[candidate_id + 1], "response_")
-        conversation.update(response)
 
         following_utts = utterances_transcript.loc[candidate_id + 1:]
         following_utts_child = following_utts[
             following_utts.speaker_code == SPEAKER_CODE_CHILD
         ]
         if len(following_utts_child) > 0:
+            conversation = utterances_transcript.loc[candidate_id].to_dict()
+
+            response = get_dict_with_prefix(utterances_transcript.loc[candidate_id + 1], "response_")
+            conversation.update(response)
+
             follow_up = get_dict_with_prefix(following_utts_child.iloc[0], "follow_up_")
             conversation.update(follow_up)
             conversations.append(conversation)
@@ -326,22 +318,15 @@ def get_micro_conversations_for_transcript(utterances_transcript, args):
             >= args.response_latency
         )
     ]
-
     for candidate_id in utts_child_no_response.index.values:
-        conversation = utterances_transcript.loc[candidate_id].to_dict()
-        if candidate_id + 1 not in utterances_transcript.index.values:
-            continue
-        subsequent_utt = utterances_transcript.loc[candidate_id + 1]
-        response = get_dict_with_prefix(DUMMY_RESPONSE, "response_")
-        conversation.update(response)
-        following_utts = utterances_transcript.loc[subsequent_utt.name + 1 :]
+        following_utts = utterances_transcript.loc[candidate_id + 1:]
         following_utts_non_child = following_utts[
             following_utts.speaker_code != SPEAKER_CODE_CHILD
         ]
         if (
-            len(following_utts_non_child) == 0  #TODO: remove?
-            or following_utts_non_child.iloc[0].speaker_code
-            not in SPEAKER_CODES_CAREGIVER
+            len(following_utts_non_child) > 0
+            and (following_utts_non_child.iloc[0].speaker_code
+            not in SPEAKER_CODES_CAREGIVER)
         ):
             # Child is not speaking to its caregiver, ignore this turn
             continue
@@ -350,6 +335,11 @@ def get_micro_conversations_for_transcript(utterances_transcript, args):
             following_utts.speaker_code == SPEAKER_CODE_CHILD
         ]
         if len(following_utts_child) > 0:
+            conversation = utterances_transcript.loc[candidate_id].to_dict()
+
+            response = get_dict_with_prefix(DUMMY_RESPONSE, "response_")
+            conversation.update(response)
+
             follow_up = get_dict_with_prefix(following_utts_child.iloc[0], "follow_up_")
             conversation.update(follow_up)
 
@@ -387,6 +377,14 @@ def get_micro_conversations(utterances, args):
         )
     ]
 
+    # Disregard conversations with too long negative pauses
+    conversations = conversations[
+        (
+                conversations.response_latency
+                > args.max_neg_response_latency
+        )
+    ]
+
     return conversations
 
 
@@ -413,14 +411,8 @@ def perform_analysis_speech_relatedness(utterances, args):
             has_response,
             axis=1,
             response_latency=args.response_latency,
-            max_neg_response_latency=args.max_neg_response_latency,
             count_only_speech_related_responses=args.count_only_speech_related_responses,
         )
-    )
-
-    conversations.dropna(
-        subset=("has_response",),
-        inplace=True,
     )
 
     counter_non_speech = Counter(

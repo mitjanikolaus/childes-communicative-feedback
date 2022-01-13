@@ -130,6 +130,7 @@ def preprocess_utterances(corpus, transcripts):
         utts_transcript.dropna(subset=["transcript_raw", "speaker_code"], inplace=True)
 
         utts_transcript["speaker_code_next"] = utts_transcript.speaker_code.shift(-1)
+        utts_transcript["start_time_next"] = utts_transcript.start_time.shift(-1)
 
         all_utts.append(utts_transcript)
 
