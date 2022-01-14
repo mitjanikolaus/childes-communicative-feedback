@@ -37,8 +37,8 @@ DEFAULT_MIN_TRANSCRIPT_LENGTH = 0
 # 1 second
 DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
-# 1 minute
-DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 1 * 60 * 1000  # ms
+# 10 seconds
+DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
 
 # Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words
 DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
@@ -334,7 +334,6 @@ def perform_contingency_analysis(conversations):
         contingency_children_pos_case,
         proportion_intelligible,
     )
-
 
 
 if __name__ == "__main__":

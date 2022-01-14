@@ -2,7 +2,6 @@ import argparse
 import os
 
 import pandas as pd
-import numpy as np
 
 from utils import (
     remove_punctuation,
@@ -25,6 +24,18 @@ DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE = True
 CONTINGENCIES = pd.read_csv(
     "data/adjacency_pairs_contingency.csv", keep_default_na=False
 )
+
+# Speech acts that relate to nonverbal/external events
+SPEECH_ACTS_NONVERBAL_EVENTS = [
+    "CR",    # Criticize or point out error in nonverbal act.
+    "PM",   # Praise for motor acts i.e for nonverbal behavior.
+    "WD",   # Warn of danger.
+    "DS",   # Disapprove scold protest disruptive behavior.
+    "AB",   # Approve of appropriate behavior.
+    "TO",   # Mark transfer of object to hearer
+    "ET",   # Express enthusiasm for hearer's performance.
+    "ED",   # Exclaim in disapproval.
+]
 
 
 def is_empty(utterance):
@@ -108,6 +119,10 @@ def is_contingent(row):
     # If there's no change in speaker, we also don't need to annotate contingency
     if row["prev_speaker_code"] == row["speaker_code"]:
         return None
+    # If any of the speech acts relates to an external event, we can't annotate its contingency
+    if row["prev_speech_act"] in SPEECH_ACTS_NONVERBAL_EVENTS or row["speech_act"] in SPEECH_ACTS_NONVERBAL_EVENTS:
+        return None
+
     # If the utterance is not intelligible, it can't be contingent:
     if not row["is_intelligible"]:
         return False
@@ -116,8 +131,7 @@ def is_contingent(row):
     if len(contingency) == 1:
         return bool(contingency.iloc[0]["contingency"])
     else:
-        print(f"Warning: No contingency data for pair: {row.prev_speech_act}-{row.speech_act}")
-        return False
+        raise RuntimeError(f"No contingency data for pair: {row.prev_speech_act}-{row.speech_act}")
 
 
 def has_multiple_events(utterance):
@@ -141,8 +155,6 @@ def annotate(args):
         subset=("transcript_raw",),
         inplace=True,
     )
-
-    # utterances = utterances[:10000]
 
     utterances = utterances[~utterances.transcript_raw.apply(has_multiple_events)]
     utterances = utterances[~utterances.transcript_raw.apply(is_external_event)]
@@ -169,7 +181,7 @@ def annotate(args):
             is_contingent,
             axis=1)
     )
-    utterances.drop(columns=("prev_transcript_file", "prev_speaker_code"), inplace=True)
+    utterances.drop(columns=["prev_transcript_file", "prev_speaker_code"], inplace=True)
 
     return utterances
 

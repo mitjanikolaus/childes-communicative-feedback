@@ -1146,53 +1146,53 @@
 "NA","TQ","Intentionally nonsatisfying answer to question","Ask a limited-alternative yes/no question.",1
 "NA","WD","Intentionally nonsatisfying answer to question","Warn of danger.",1
 "NA","YQ","Intentionally nonsatisfying answer to question","Ask a yes/no question.",1
-"OO","AA","Unintelligible vocalization.","Answer in the affirmative to yes/no question.",1
-"OO","AB","Unintelligible vocalization.","Approve of appropriate behavior.",1
-"OO","AC","Unintelligible vocalization.","Answer calls/ show attentiveness to communications.",1
-"OO","AD","Unintelligible vocalization.","Agree to carry out an act requested or proposed by other.",1
-"OO","AN","Unintelligible vocalization.","Answer in the negative to yes/no question",1
-"OO","AP","Unintelligible vocalization.","Agree with proposition or proposal expressed by previous speaker",1
-"OO","CL","Unintelligible vocalization.","Call attention to hearer by name or by substitute exclamations",1
-"OO","CM","Unintelligible vocalization.","Commiserate express sympathy for hearer's distress.",1
-"OO","CN","Unintelligible vocalization.","Count.",1
-"OO","CR","Unintelligible vocalization.","Criticize or point out error in nonverbal act.",1
-"OO","CS","Unintelligible vocalization.","Counter-suggestion/ an indirect refusal.",1
-"OO","DC","Unintelligible vocalization.","Create a new state of affairs by declaration",1
-"OO","DP","Unintelligible vocalization.","Declare make-believe reality.",1
-"OO","DS","Unintelligible vocalization.","Disapprove scold protest disruptive behavior.",1
-"OO","EA","Unintelligible vocalization.","Elicit onomatopoeic or animal sounds.",1
-"OO","EC","Unintelligible vocalization.","Elicit completion of word or sentence.",1
-"OO","ED","Unintelligible vocalization.","Exclaim in disapproval.",1
-"OO","EI","Unintelligible vocalization.","Elicit imitation of word or sentence by modelling or by explicit command",1
-"OO","EM","Unintelligible vocalization.","Exclaim in distress pain.",1
-"OO","EN","Unintelligible vocalization.","Express positive emotion.",1
-"OO","ET","Unintelligible vocalization.","Express enthusiasm for hearer's performance.",1
-"OO","FP","Unintelligible vocalization.","Ask for permission to carry out act.",1
-"OO","GI","Unintelligible vocalization.","Give in/ accept other's insistence or refusal.",1
-"OO","GR","Unintelligible vocalization.","Give reason/ justify a request for an action refusal or prohibition",1
-"OO","MK","Unintelligible vocalization.","Mark occurrence of event (thank greet apologize congratulate etc.).",1
+"OO","AA","Unintelligible vocalization.","Answer in the affirmative to yes/no question.",0
+"OO","AB","Unintelligible vocalization.","Approve of appropriate behavior.",0
+"OO","AC","Unintelligible vocalization.","Answer calls/ show attentiveness to communications.",0
+"OO","AD","Unintelligible vocalization.","Agree to carry out an act requested or proposed by other.",0
+"OO","AN","Unintelligible vocalization.","Answer in the negative to yes/no question",0
+"OO","AP","Unintelligible vocalization.","Agree with proposition or proposal expressed by previous speaker",0
+"OO","CL","Unintelligible vocalization.","Call attention to hearer by name or by substitute exclamations",0
+"OO","CM","Unintelligible vocalization.","Commiserate express sympathy for hearer's distress.",0
+"OO","CN","Unintelligible vocalization.","Count.",0
+"OO","CR","Unintelligible vocalization.","Criticize or point out error in nonverbal act.",0
+"OO","CS","Unintelligible vocalization.","Counter-suggestion/ an indirect refusal.",0
+"OO","DC","Unintelligible vocalization.","Create a new state of affairs by declaration",0
+"OO","DP","Unintelligible vocalization.","Declare make-believe reality.",0
+"OO","DS","Unintelligible vocalization.","Disapprove scold protest disruptive behavior.",0
+"OO","EA","Unintelligible vocalization.","Elicit onomatopoeic or animal sounds.",0
+"OO","EC","Unintelligible vocalization.","Elicit completion of word or sentence.",0
+"OO","ED","Unintelligible vocalization.","Exclaim in disapproval.",0
+"OO","EI","Unintelligible vocalization.","Elicit imitation of word or sentence by modelling or by explicit command",0
+"OO","EM","Unintelligible vocalization.","Exclaim in distress pain.",0
+"OO","EN","Unintelligible vocalization.","Express positive emotion.",0
+"OO","ET","Unintelligible vocalization.","Express enthusiasm for hearer's performance.",0
+"OO","FP","Unintelligible vocalization.","Ask for permission to carry out act.",0
+"OO","GI","Unintelligible vocalization.","Give in/ accept other's insistence or refusal.",0
+"OO","GR","Unintelligible vocalization.","Give reason/ justify a request for an action refusal or prohibition",0
+"OO","MK","Unintelligible vocalization.","Mark occurrence of event (thank greet apologize congratulate etc.).",0
 "OO","OO","Unintelligible vocalization.","Unintelligible vocalization.",0
-"OO","PA","Unintelligible vocalization.","Permit hearer to perform act.",1
-"OO","PD","Unintelligible vocalization.","Promise.",1
-"OO","PF","Unintelligible vocalization.","Prohibit/forbid/protest hearer's performance of an act",1
-"OO","PM","Unintelligible vocalization.","Praise for motor acts i.e for nonverbal behavior.",1
-"OO","PR","Unintelligible vocalization.","Perform verbal move in game.",1
-"OO","QN","Unintelligible vocalization.","Ask a product-question (wh-question)",1
-"OO","RD","Unintelligible vocalization.","Refuse to carry out an act requested or proposed by other.",1
-"OO","RP","Unintelligible vocalization.","Request propose or suggest an action for hearer or for hearer and speaker.",1
-"OO","RQ","Unintelligible vocalization.","Yes/no question or suggestion about hearer's wishes and intentions",1
-"OO","RR","Unintelligible vocalization.","Request to repeat utterance.",1
-"OO","RT","Unintelligible vocalization.","Repeat or imitate other's utterance.",1
-"OO","SA","Unintelligible vocalization.","Answer a wh-question with a statement.",1
-"OO","SI","Unintelligible vocalization.","State intent to carry out act by speaker.",1
-"OO","SS","Unintelligible vocalization.","Signal to start performing an act such as running or rolling a ball",1
-"OO","ST","Unintelligible vocalization.","Make a declarative statement.",1
-"OO","TO","Unintelligible vocalization.","Mark transfer of object to hearer",1
-"OO","TQ","Unintelligible vocalization.","Ask a limited-alternative yes/no question.",1
-"OO","TX","Unintelligible vocalization.","Read or recite written text aloud.",1
-"OO","XA","Unintelligible vocalization.","Exhibit attentiveness to hearer.",1
-"OO","YA","Unintelligible vocalization.","Answer a question with a yes/no question.",1
-"OO","YQ","Unintelligible vocalization.","Ask a yes/no question.",1
+"OO","PA","Unintelligible vocalization.","Permit hearer to perform act.",0
+"OO","PD","Unintelligible vocalization.","Promise.",0
+"OO","PF","Unintelligible vocalization.","Prohibit/forbid/protest hearer's performance of an act",0
+"OO","PM","Unintelligible vocalization.","Praise for motor acts i.e for nonverbal behavior.",0
+"OO","PR","Unintelligible vocalization.","Perform verbal move in game.",0
+"OO","QN","Unintelligible vocalization.","Ask a product-question (wh-question)",0
+"OO","RD","Unintelligible vocalization.","Refuse to carry out an act requested or proposed by other.",0
+"OO","RP","Unintelligible vocalization.","Request propose or suggest an action for hearer or for hearer and speaker.",0
+"OO","RQ","Unintelligible vocalization.","Yes/no question or suggestion about hearer's wishes and intentions",0
+"OO","RR","Unintelligible vocalization.","Request to repeat utterance.",0
+"OO","RT","Unintelligible vocalization.","Repeat or imitate other's utterance.",0
+"OO","SA","Unintelligible vocalization.","Answer a wh-question with a statement.",0
+"OO","SI","Unintelligible vocalization.","State intent to carry out act by speaker.",0
+"OO","SS","Unintelligible vocalization.","Signal to start performing an act such as running or rolling a ball",0
+"OO","ST","Unintelligible vocalization.","Make a declarative statement.",0
+"OO","TO","Unintelligible vocalization.","Mark transfer of object to hearer",0
+"OO","TQ","Unintelligible vocalization.","Ask a limited-alternative yes/no question.",0
+"OO","TX","Unintelligible vocalization.","Read or recite written text aloud.",0
+"OO","XA","Unintelligible vocalization.","Exhibit attentiveness to hearer.",0
+"OO","YA","Unintelligible vocalization.","Answer a question with a yes/no question.",0
+"OO","YQ","Unintelligible vocalization.","Ask a yes/no question.",0
 "OO","YY","Unintelligible vocalization.","Make a word-like utterance without clear function.",0
 "PA","AA","Permit hearer to perform act.","Answer in the affirmative to yes/no question.",0
 "PA","AB","Permit hearer to perform act.","Approve of appropriate behavior.",0
@@ -2342,57 +2342,57 @@
 "YQ","YD","Ask a yes/no question.","Agree to a declaration.",0
 "YQ","YQ","Ask a yes/no question.","Ask a yes/no question.",0
 "YQ","YY","Ask a yes/no question.","Make a word-like utterance without clear function.",0
-"YY","AA","Make a word-like utterance without clear function.","Answer in the affirmative to yes/no question.",1
-"YY","AB","Make a word-like utterance without clear function.","Approve of appropriate behavior.",1
-"YY","AC","Make a word-like utterance without clear function.","Answer calls/ show attentiveness to communications.",1
-"YY","AD","Make a word-like utterance without clear function.","Agree to carry out an act requested or proposed by other.",1
-"YY","AN","Make a word-like utterance without clear function.","Answer in the negative to yes/no question",1
-"YY","AP","Make a word-like utterance without clear function.","Agree with proposition or proposal expressed by previous speaker",1
-"YY","CL","Make a word-like utterance without clear function.","Call attention to hearer by name or by substitute exclamations",1
-"YY","CM","Make a word-like utterance without clear function.","Commiserate express sympathy for hearer's distress.",1
-"YY","CN","Make a word-like utterance without clear function.","Count.",1
-"YY","CR","Make a word-like utterance without clear function.","Criticize or point out error in nonverbal act.",1
-"YY","CS","Make a word-like utterance without clear function.","Counter-suggestion/ an indirect refusal.",1
-"YY","CT","Make a word-like utterance without clear function.","Correct provide correct verbal form in place of erroneous one.",1
-"YY","DC","Make a word-like utterance without clear function.","Create a new state of affairs by declaration",1
-"YY","DP","Make a word-like utterance without clear function.","Declare make-believe reality.",1
-"YY","DS","Make a word-like utterance without clear function.","Disapprove scold protest disruptive behavior.",1
-"YY","DW","Make a word-like utterance without clear function.","Disagree with proposition expressed by previous speaker.",1
-"YY","EA","Make a word-like utterance without clear function.","Elicit onomatopoeic or animal sounds.",1
-"YY","EC","Make a word-like utterance without clear function.","Elicit completion of word or sentence.",1
-"YY","ED","Make a word-like utterance without clear function.","Exclaim in disapproval.",1
-"YY","EI","Make a word-like utterance without clear function.","Elicit imitation of word or sentence by modelling or by explicit command",1
-"YY","EM","Make a word-like utterance without clear function.","Exclaim in distress pain.",1
-"YY","EN","Make a word-like utterance without clear function.","Express positive emotion.",1
-"YY","EQ","Make a word-like utterance without clear function.","Eliciting question (e.g. hmm?).",1
-"YY","ET","Make a word-like utterance without clear function.","Express enthusiasm for hearer's performance.",1
-"YY","EX","Make a word-like utterance without clear function.","Elicit completion of rote-learned text.",1
-"YY","FP","Make a word-like utterance without clear function.","Ask for permission to carry out act.",1
-"YY","GI","Make a word-like utterance without clear function.","Give in/ accept other's insistence or refusal.",1
-"YY","GR","Make a word-like utterance without clear function.","Give reason/ justify a request for an action refusal or prohibition",1
-"YY","MK","Make a word-like utterance without clear function.","Mark occurrence of event (thank greet apologize congratulate etc.).",1
+"YY","AA","Make a word-like utterance without clear function.","Answer in the affirmative to yes/no question.",0
+"YY","AB","Make a word-like utterance without clear function.","Approve of appropriate behavior.",0
+"YY","AC","Make a word-like utterance without clear function.","Answer calls/ show attentiveness to communications.",0
+"YY","AD","Make a word-like utterance without clear function.","Agree to carry out an act requested or proposed by other.",0
+"YY","AN","Make a word-like utterance without clear function.","Answer in the negative to yes/no question",0
+"YY","AP","Make a word-like utterance without clear function.","Agree with proposition or proposal expressed by previous speaker",0
+"YY","CL","Make a word-like utterance without clear function.","Call attention to hearer by name or by substitute exclamations",0
+"YY","CM","Make a word-like utterance without clear function.","Commiserate express sympathy for hearer's distress.",0
+"YY","CN","Make a word-like utterance without clear function.","Count.",0
+"YY","CR","Make a word-like utterance without clear function.","Criticize or point out error in nonverbal act.",0
+"YY","CS","Make a word-like utterance without clear function.","Counter-suggestion/ an indirect refusal.",0
+"YY","CT","Make a word-like utterance without clear function.","Correct provide correct verbal form in place of erroneous one.",0
+"YY","DC","Make a word-like utterance without clear function.","Create a new state of affairs by declaration",0
+"YY","DP","Make a word-like utterance without clear function.","Declare make-believe reality.",0
+"YY","DS","Make a word-like utterance without clear function.","Disapprove scold protest disruptive behavior.",0
+"YY","DW","Make a word-like utterance without clear function.","Disagree with proposition expressed by previous speaker.",0
+"YY","EA","Make a word-like utterance without clear function.","Elicit onomatopoeic or animal sounds.",0
+"YY","EC","Make a word-like utterance without clear function.","Elicit completion of word or sentence.",0
+"YY","ED","Make a word-like utterance without clear function.","Exclaim in disapproval.",0
+"YY","EI","Make a word-like utterance without clear function.","Elicit imitation of word or sentence by modelling or by explicit command",0
+"YY","EM","Make a word-like utterance without clear function.","Exclaim in distress pain.",0
+"YY","EN","Make a word-like utterance without clear function.","Express positive emotion.",0
+"YY","EQ","Make a word-like utterance without clear function.","Eliciting question (e.g. hmm?).",0
+"YY","ET","Make a word-like utterance without clear function.","Express enthusiasm for hearer's performance.",0
+"YY","EX","Make a word-like utterance without clear function.","Elicit completion of rote-learned text.",0
+"YY","FP","Make a word-like utterance without clear function.","Ask for permission to carry out act.",0
+"YY","GI","Make a word-like utterance without clear function.","Give in/ accept other's insistence or refusal.",0
+"YY","GR","Make a word-like utterance without clear function.","Give reason/ justify a request for an action refusal or prohibition",0
+"YY","MK","Make a word-like utterance without clear function.","Mark occurrence of event (thank greet apologize congratulate etc.).",0
 "YY","OO","Make a word-like utterance without clear function.","Unintelligible vocalization.",0
-"YY","PA","Make a word-like utterance without clear function.","Permit hearer to perform act.",1
-"YY","PD","Make a word-like utterance without clear function.","Promise.",1
-"YY","PF","Make a word-like utterance without clear function.","Prohibit/forbid/protest hearer's performance of an act",1
-"YY","PM","Make a word-like utterance without clear function.","Praise for motor acts i.e for nonverbal behavior.",1
-"YY","PR","Make a word-like utterance without clear function.","Perform verbal move in game.",1
-"YY","QN","Make a word-like utterance without clear function.","Ask a product-question (wh-question)",1
-"YY","RD","Make a word-like utterance without clear function.","Refuse to carry out an act requested or proposed by other.",1
-"YY","RP","Make a word-like utterance without clear function.","Request propose or suggest an action for hearer or for hearer and speaker.",1
-"YY","RQ","Make a word-like utterance without clear function.","Yes/no question or suggestion about hearer's wishes and intentions",1
-"YY","RR","Make a word-like utterance without clear function.","Request to repeat utterance.",1
-"YY","RT","Make a word-like utterance without clear function.","Repeat or imitate other's utterance.",1
-"YY","SA","Make a word-like utterance without clear function.","Answer a wh-question with a statement.",1
-"YY","SI","Make a word-like utterance without clear function.","State intent to carry out act by speaker.",1
-"YY","SS","Make a word-like utterance without clear function.","Signal to start performing an act such as running or rolling a ball",1
-"YY","ST","Make a word-like utterance without clear function.","Make a declarative statement.",1
-"YY","TO","Make a word-like utterance without clear function.","Mark transfer of object to hearer",1
-"YY","TQ","Make a word-like utterance without clear function.","Ask a limited-alternative yes/no question.",1
-"YY","TX","Make a word-like utterance without clear function.","Read or recite written text aloud.",1
-"YY","WD","Make a word-like utterance without clear function.","Warn of danger.",1
-"YY","WS","Make a word-like utterance without clear function.","Express a wish.",1
-"YY","XA","Make a word-like utterance without clear function.","Exhibit attentiveness to hearer.",1
-"YY","YA","Make a word-like utterance without clear function.","Answer a question with a yes/no question.",1
-"YY","YQ","Make a word-like utterance without clear function.","Ask a yes/no question.",1
+"YY","PA","Make a word-like utterance without clear function.","Permit hearer to perform act.",0
+"YY","PD","Make a word-like utterance without clear function.","Promise.",0
+"YY","PF","Make a word-like utterance without clear function.","Prohibit/forbid/protest hearer's performance of an act",0
+"YY","PM","Make a word-like utterance without clear function.","Praise for motor acts i.e for nonverbal behavior.",0
+"YY","PR","Make a word-like utterance without clear function.","Perform verbal move in game.",0
+"YY","QN","Make a word-like utterance without clear function.","Ask a product-question (wh-question)",0
+"YY","RD","Make a word-like utterance without clear function.","Refuse to carry out an act requested or proposed by other.",0
+"YY","RP","Make a word-like utterance without clear function.","Request propose or suggest an action for hearer or for hearer and speaker.",0
+"YY","RQ","Make a word-like utterance without clear function.","Yes/no question or suggestion about hearer's wishes and intentions",0
+"YY","RR","Make a word-like utterance without clear function.","Request to repeat utterance.",0
+"YY","RT","Make a word-like utterance without clear function.","Repeat or imitate other's utterance.",0
+"YY","SA","Make a word-like utterance without clear function.","Answer a wh-question with a statement.",0
+"YY","SI","Make a word-like utterance without clear function.","State intent to carry out act by speaker.",0
+"YY","SS","Make a word-like utterance without clear function.","Signal to start performing an act such as running or rolling a ball",0
+"YY","ST","Make a word-like utterance without clear function.","Make a declarative statement.",0
+"YY","TO","Make a word-like utterance without clear function.","Mark transfer of object to hearer",0
+"YY","TQ","Make a word-like utterance without clear function.","Ask a limited-alternative yes/no question.",0
+"YY","TX","Make a word-like utterance without clear function.","Read or recite written text aloud.",0
+"YY","WD","Make a word-like utterance without clear function.","Warn of danger.",0
+"YY","WS","Make a word-like utterance without clear function.","Express a wish.",0
+"YY","XA","Make a word-like utterance without clear function.","Exhibit attentiveness to hearer.",0
+"YY","YA","Make a word-like utterance without clear function.","Answer a question with a yes/no question.",0
+"YY","YQ","Make a word-like utterance without clear function.","Ask a yes/no question.",0
 "YY","YY","Make a word-like utterance without clear function.","Make a word-like utterance without clear function.",0
