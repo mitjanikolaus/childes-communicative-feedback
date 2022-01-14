@@ -473,7 +473,6 @@ def perform_analysis_speech_relatedness(utterances, args):
         x="age",
         y="proportion_speech_related",
         marker=".",
-        ci=None,
     )
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "dev_proportion_speech_related.png"))
@@ -499,7 +498,6 @@ def perform_analysis_speech_relatedness(utterances, args):
         x="age",
         y="has_response",
         hue="is_speech_related",
-        ci=None,
     )
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_caregiver_response")

@@ -266,7 +266,6 @@ def perform_analysis_intelligibility(utterances, args):
         x="age",
         y="has_response",
         hue="is_intelligible",
-        ci=None,
     )
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_caregiver_response")
@@ -290,7 +289,6 @@ def perform_analysis_intelligibility(utterances, args):
         x="age",
         y="follow_up_is_intelligible",
         hue="has_response",
-        ci=None,
     )
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_follow_up_is_intelligible")

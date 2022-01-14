@@ -232,7 +232,6 @@ def perform_analysis(utterances, args):
         x="age",
         y="pos_feedback",
         hue="is_contingent",
-        ci=None,
     )
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_caregiver_response")
@@ -256,7 +255,6 @@ def perform_analysis(utterances, args):
         x="age",
         y="follow_up_is_contingent",
         hue="pos_feedback",
-        ci=None,
     )
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_follow_up_is_contingent")
