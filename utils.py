@@ -9,12 +9,12 @@ PREPROCESSED_UTTERANCES_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances.p"
 )
 
-ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
-    "~/data/communicative_feedback/utterances_annotated.p"
+UTTERANCES_WITH_SPEECH_ACTS_FILE = os.path.expanduser(
+    "~/data/communicative_feedback/utterances_annotated_with_speech_acts.p"
 )
 
-ANNOTATED_UTTERANCES_FILE_WITH_SPEECH_ACTS = os.path.expanduser(
-    "~/data/communicative_feedback/utterances_annotated_with_speech_acts.p"
+ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
+    "~/data/communicative_feedback/utterances_annotated.p"
 )
 
 SPEECH_ACT_NO_FUNCTION = "YY"
@@ -33,6 +33,10 @@ IS_OMITTED_WORD = lambda word: word == "0"
 IS_SATELLITE_MARKER = lambda word: word == "‡"
 IS_QUOTATION_MARKER = lambda word: word in ['+"/', '+"/.', '+"', '+".']
 IS_UNKNOWN_CODE = lambda word: word == "zzz"
+
+
+def is_nan(value):
+    return value != value
 
 
 def str2bool(v):

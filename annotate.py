@@ -10,10 +10,7 @@ from utils import (
     remove_babbling,
     get_paralinguistic_event,
     paralinguistic_event_is_external,
-    get_all_paralinguistic_events, ANNOTATED_UTTERANCES_FILE,
-)
-from preprocess import (
-    PREPROCESSED_UTTERANCES_FILE,
+    get_all_paralinguistic_events, ANNOTATED_UTTERANCES_FILE, UTTERANCES_WITH_SPEECH_ACTS_FILE, is_nan,
 )
 from utils import (
     remove_nonspeech_events,
@@ -23,6 +20,11 @@ from utils import (
 DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED = True
 
 DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE = True
+
+# Do not keep default NA handling, because there's a speech act called "NA"!
+CONTINGENCIES = pd.read_csv(
+    "data/adjacency_pairs_contingency.csv", keep_default_na=False
+)
 
 
 def is_empty(utterance):
@@ -97,6 +99,27 @@ def is_intelligible(
     return True
 
 
+def is_contingent(row):
+    if is_nan(row["prev_speech_act"]):
+        return None
+    # If there was a transition of transcripts, we don't annotate contingency
+    if row["prev_transcript_file"] != row["transcript_file"]:
+        return None
+    # If there's no change in speaker, we also don't need to annotate contingency
+    if row["prev_speaker_code"] == row["speaker_code"]:
+        return None
+    # If the utterance is not intelligible, it can't be contingent:
+    if not row["is_intelligible"]:
+        return False
+
+    contingency = CONTINGENCIES[(CONTINGENCIES.source == row.prev_speech_act) & (CONTINGENCIES.target == row.speech_act)]
+    if len(contingency) == 1:
+        return bool(contingency.iloc[0]["contingency"])
+    else:
+        print(f"Warning: No contingency data for pair: {row.prev_speech_act}-{row.speech_act}")
+        return False
+
+
 def has_multiple_events(utterance):
     return len(get_all_paralinguistic_events(utterance)) > 1
 
@@ -112,15 +135,14 @@ def is_external_event(utterance):
 
 
 def annotate(args):
-    utterances = pd.read_pickle(PREPROCESSED_UTTERANCES_FILE)
+    utterances = pd.read_pickle(UTTERANCES_WITH_SPEECH_ACTS_FILE)
 
     utterances.dropna(
         subset=("transcript_raw",),
         inplace=True,
     )
 
-    # utterances = utterances[utterances.age < 20]
-    # utterances = utterances.sample(10000)
+    # utterances = utterances[:10000]
 
     utterances = utterances[~utterances.transcript_raw.apply(has_multiple_events)]
     utterances = utterances[~utterances.transcript_raw.apply(is_external_event)]
@@ -138,6 +160,16 @@ def annotate(args):
             label_partially_intelligible=args.label_partially_intelligible,
         )
     )
+
+    utterances["prev_speech_act"] = utterances["speech_act"].shift(1)
+    utterances["prev_transcript_file"] = utterances["transcript_file"].shift(1)
+    utterances["prev_speaker_code"] = utterances["speaker_code"].shift(1)
+    utterances = utterances.assign(
+        is_contingent=utterances.apply(
+            is_contingent,
+            axis=1)
+    )
+    utterances.drop(columns=("prev_transcript_file", "prev_speaker_code"), inplace=True)
 
     return utterances
 

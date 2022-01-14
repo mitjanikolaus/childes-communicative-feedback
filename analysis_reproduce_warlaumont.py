@@ -274,10 +274,11 @@ DUMMY_RESPONSE = {
         "end_time": math.inf,
         "is_speech_related": False,
         "is_intelligible": False,
+        "is_contingent": False,
         "speech_act": SPEECH_ACT_NO_FUNCTION,
     }
 
-KEEP_KEYS = ["transcript_raw", "start_time", "is_speech_related", "is_intelligible"]
+KEEP_KEYS = ["transcript_raw", "start_time", "is_speech_related", "is_intelligible", "is_contingent", "speech_act"]
 
 
 def get_dict_with_prefix(series, prefix, keep_keys=KEEP_KEYS):
