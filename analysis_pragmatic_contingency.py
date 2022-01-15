@@ -49,6 +49,9 @@ SPEECH_ACTS_CLARIFICATION_OR_CORRECTION = [
     "CT",   # Correct provide correct verbal form in place of erroneous one.
 ]
 
+SPEECH_ACTS_EXCLUDE = []
+# SPEECH_ACTS_EXCLUDE = ["OO", "YY"]
+
 
 def parse_args():
     argparser = argparse.ArgumentParser()
@@ -158,6 +161,10 @@ def perform_analysis(utterances, args):
         subset=("is_intelligible", "response_is_intelligible", "follow_up_is_intelligible"),
         inplace=True,
     )
+
+    conversations = conversations[~conversations.speech_act.isin(SPEECH_ACTS_EXCLUDE)]
+    conversations = conversations[~conversations.response_speech_act.isin(SPEECH_ACTS_EXCLUDE)]
+    conversations = conversations[~conversations.follow_up_speech_act.isin(SPEECH_ACTS_EXCLUDE)]
 
     conversations = filter_corpora_based_on_response_latency_length(
         conversations,
