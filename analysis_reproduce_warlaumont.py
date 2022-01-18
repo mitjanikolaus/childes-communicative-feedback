@@ -132,54 +132,48 @@ def caregiver_response_contingent_on_speech_relatedness(row):
     )
 
 
-def perform_warlaumont_analysis(
-    conversations, args, analysis_function, label_positive_valence
+def perform_average_and_per_transcript_analysis(
+    conversations, args, analysis_function
 ):
     print(f"\nFound {len(conversations)} micro-conversations")
     print("Overall analysis: ")
-    (
-        contingency_caregiver,
-        contingency_children_pos_case,
-        _,
-    ) = analysis_function(conversations)
-    print(f"Caregiver contingency: {contingency_caregiver:.4f}")
-    print(f"Child contingency: {contingency_children_pos_case:.4f}")
+    average_results = analysis_function(conversations)
+    for key, value in average_results.items():
+        if key not in ["age"]:
+            print(f"{key}: {value:.4f}")
 
     print("Per-transcript analysis: ")
     results = []
-
     for transcript in conversations.transcript_file.unique():
         conversations_transcript = conversations[
             conversations.transcript_file == transcript
         ]
         if len(conversations_transcript) > args.min_transcript_length:
-            (
-                contingency_caregiver,
-                contingency_children_pos_case,
-                proportion_positive_valence,
-            ) = analysis_function(conversations_transcript)
             results.append(
-                {
-                    "age": conversations_transcript.age.values[0],
-                    "contingency_caregiver": contingency_caregiver,
-                    "contingency_children_pos_case": contingency_children_pos_case,
-                    label_positive_valence: proportion_positive_valence,
-                }
+                analysis_function(conversations_transcript)
             )
     results = pd.DataFrame(results)
 
-    p_value = ztest(
-        results.contingency_caregiver.dropna(), value=0.0, alternative="larger"
-    )[1]
-    print(
-        f"Caregiver contingency: {results.contingency_caregiver.dropna().mean():.4f} +-{results.contingency_caregiver.dropna().std():.4f} p-value:{p_value}"
-    )
-    p_value = ztest(
-        results.contingency_children_pos_case.dropna(), value=0.0, alternative="larger"
-    )[1]
-    print(
-        f"Child contingency (positive case): {results.contingency_children_pos_case.dropna().mean():.4f} +-{results.contingency_children_pos_case.dropna().std():.4f} p-value:{p_value}"
-    )
+    for key, value in results.items():
+        if "proportion" in key:
+            plt.figure()
+            sns.regplot(
+                data=results,
+                x="age",
+                y=key,
+                marker=".",
+            )
+            plt.tight_layout()
+        else:
+            if key not in ["age"]:
+                value = value.dropna()
+                p_value = ztest(
+                    value, value=0.0, alternative="larger"
+                )[1]
+                print(
+                    f"{key}: {value.mean():.4f} +-{value.std():.4f} p-value:{p_value}"
+                )
+
 
     return results
 
@@ -245,11 +239,12 @@ def perform_contingency_analysis_speech_relatedness(conversations):
 
     proportion_speech_related = n_speech / (n_speech + n_non_speech)
 
-    return (
-        contingency_caregiver,
-        contingency_children_pos_case,
-        proportion_speech_related,
-    )
+    return {
+        "age": conversations.age.mean(),
+        "contingency_caregiver": contingency_caregiver,
+        "contingency_children_pos_case": contingency_children_pos_case,
+        "proportion_intelligible": proportion_speech_related,
+    }
 
 
 def has_response(
@@ -448,11 +443,10 @@ def perform_analysis_speech_relatedness(utterances, args):
         ].apply(caregiver_response_contingent_on_speech_relatedness, axis=1)
     )
 
-    results_analysis = perform_warlaumont_analysis(
+    results_analysis = perform_average_and_per_transcript_analysis(
         conversations,
         args,
         perform_contingency_analysis_speech_relatedness,
-        "proportion_speech_related",
     )
     results_dir = "results/reproduce_warlaumont/"
     os.makedirs(results_dir, exist_ok=True)
@@ -466,16 +460,6 @@ def perform_analysis_speech_relatedness(utterances, args):
     sns.scatterplot(data=results_analysis, x="age", y="contingency_children_pos_case")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "dev_contingency_children.png"))
-
-    plt.figure()
-    sns.regplot(
-        data=results_analysis,
-        x="age",
-        y="proportion_speech_related",
-        marker=".",
-    )
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "dev_proportion_speech_related.png"))
 
     plt.figure()
     plt.title("Caregiver contingency")

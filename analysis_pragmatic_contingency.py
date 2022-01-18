@@ -8,7 +8,7 @@ import numpy as np
 
 
 from analysis_reproduce_warlaumont import (
-    perform_warlaumont_analysis,
+    perform_average_and_per_transcript_analysis,
     str2bool,
     get_micro_conversations,
     has_response,
@@ -21,7 +21,7 @@ from utils import (
     filter_corpora_based_on_response_latency_length, ANNOTATED_UTTERANCES_FILE,
 )
 
-DEFAULT_RESPONSE_THRESHOLD = 1000
+DEFAULT_RESPONSE_THRESHOLD = 2000
 
 DEFAULT_MIN_AGE = 10  # age of first words
 DEFAULT_MAX_AGE = 48
@@ -44,7 +44,7 @@ DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
 DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
 
 SPEECH_ACTS_CLARIFICATION_OR_CORRECTION = [
-    "EQ",   # "Eliciting question (e.g. hmm?).
+    "EQ",   # Eliciting question (e.g. hmm?).
     "RR",   # Request to repeat utterance.
     "CT",   # Correct provide correct verbal form in place of erroneous one.
     "AQ",   # Aggravated question expression of disapproval by restating a question
@@ -207,17 +207,13 @@ def perform_analysis(utterances, args):
         ].apply(caregiver_feedback_coherent, axis=1)
     )
 
-    results_analysis = perform_warlaumont_analysis(
+    perform_average_and_per_transcript_analysis(
         conversations,
         args,
         perform_contingency_analysis,
-        "proportion_contingent",
     )
     results_dir = "results/contingency/"
     os.makedirs(results_dir, exist_ok=True)
-
-    plt.figure()
-    sns.scatterplot(data=results_analysis, x="age", y="proportion_contingent")
 
     conversations["age"] = conversations.age.apply(
         age_bin, min_age=args.min_age, max_age=args.max_age, num_months=AGE_BIN_NUM_MONTHS
@@ -281,24 +277,24 @@ def perform_contingency_analysis(conversations):
     n_pos_feedback_to_contingent = len(
         conversations[conversations.is_contingent & conversations.pos_feedback]
     )
-    n_intelligible = len(conversations[conversations.is_contingent])
+    n_contingent = len(conversations[conversations.is_contingent])
 
     n_pos_feedback_to_unintelligible = len(
         conversations[
             (conversations.is_contingent == False) & conversations.pos_feedback
         ]
     )
-    n_unintelligible = len(conversations[conversations.is_contingent == False])
+    n_not_contingent = len(conversations[conversations.is_contingent == False])
 
-    if n_intelligible > 0 and n_unintelligible > 0:
-        contingency_caregiver = (n_pos_feedback_to_contingent / n_intelligible) - (
-            n_pos_feedback_to_unintelligible / n_unintelligible
+    if n_contingent > 0 and n_not_contingent > 0:
+        contingency_caregiver = (n_pos_feedback_to_contingent / n_contingent) - (
+            n_pos_feedback_to_unintelligible / n_not_contingent
         )
     else:
         contingency_caregiver = np.nan
 
     # Contingency of child vocalization on previous adult response (positive case):
-    n_follow_up_is_contingent_if_response_to_contingent = len(
+    n_follow_up_is_contingent_if_pos_feedback_to_contingent = len(
         conversations[
             conversations.follow_up_is_contingent
             & conversations.is_contingent
@@ -306,42 +302,43 @@ def perform_contingency_analysis(conversations):
         ]
     )
 
-    n_follow_up_is_contingent_if_no_response_to_contingent = len(
+    n_follow_up_is_contingent_if_neg_feedback_to_contingent = len(
         conversations[
             conversations.follow_up_is_contingent
             & conversations.is_contingent
             & (conversations.pos_feedback == False)
         ]
     )
-    n_no_pos_feedback_to_contingent = len(
+    n_neg_feedback_to_contingent = len(
         conversations[
             conversations.is_contingent & (conversations.pos_feedback == False)
         ]
     )
 
-    if n_pos_feedback_to_contingent > 0 and n_no_pos_feedback_to_contingent > 0:
-        ratio_follow_up_is_contingent_if_response_to_contingent = (
-            n_follow_up_is_contingent_if_response_to_contingent
+    if n_pos_feedback_to_contingent > 0 and n_neg_feedback_to_contingent > 0:
+        ratio_follow_up_is_contingent_if_pos_feedback_to_contingent = (
+            n_follow_up_is_contingent_if_pos_feedback_to_contingent
             / n_pos_feedback_to_contingent
         )
-        ratio_follow_up_is_contingent_if_no_response_to_contingent = (
-            n_follow_up_is_contingent_if_no_response_to_contingent
-            / n_no_pos_feedback_to_contingent
+        ratio_follow_up_is_contingent_if_neg_feedback_to_contingent = (
+            n_follow_up_is_contingent_if_neg_feedback_to_contingent
+            / n_neg_feedback_to_contingent
         )
         contingency_children_pos_case = (
-            ratio_follow_up_is_contingent_if_response_to_contingent
-            - ratio_follow_up_is_contingent_if_no_response_to_contingent
+            ratio_follow_up_is_contingent_if_pos_feedback_to_contingent
+            - ratio_follow_up_is_contingent_if_neg_feedback_to_contingent
         )
     else:
         contingency_children_pos_case = np.nan
 
-    proportion_intelligible = n_intelligible / (n_intelligible + n_unintelligible)
+    proportion_contingent = n_contingent / (n_contingent + n_not_contingent)
 
-    return (
-        contingency_caregiver,
-        contingency_children_pos_case,
-        proportion_intelligible,
-    )
+    return {
+        "age": conversations.age.mean(),
+        "contingency_caregiver": contingency_caregiver,
+        "contingency_children_pos_case": contingency_children_pos_case,
+        "proportion_contingent": proportion_contingent,
+    }
 
 
 if __name__ == "__main__":

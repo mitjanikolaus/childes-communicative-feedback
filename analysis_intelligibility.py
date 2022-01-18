@@ -8,7 +8,7 @@ import pandas as pd
 
 
 from analysis_reproduce_warlaumont import (
-    perform_warlaumont_analysis,
+    perform_average_and_per_transcript_analysis,
     str2bool,
     get_micro_conversations,
     has_response,
@@ -188,11 +188,12 @@ def perform_contingency_analysis_intelligibility(conversations):
 
     proportion_intelligible = n_intelligible / (n_intelligible + n_unintelligible)
 
-    return (
-        contingency_caregiver,
-        contingency_children_pos_case,
-        proportion_intelligible,
-    )
+    return {
+        "age": conversations.age.mean(),
+        "contingency_caregiver": contingency_caregiver,
+        "contingency_children_pos_case": contingency_children_pos_case,
+        "proportion_intelligible": proportion_intelligible,
+    }
 
 
 def perform_analysis_intelligibility(utterances, args):
@@ -233,17 +234,13 @@ def perform_analysis_intelligibility(utterances, args):
         ].apply(caregiver_response_contingent_on_intelligibility, axis=1)
     )
 
-    results_analysis = perform_warlaumont_analysis(
+    perform_average_and_per_transcript_analysis(
         conversations,
         args,
         perform_contingency_analysis_intelligibility,
-        "proportion_intelligible",
     )
     results_dir = "results/intelligibility/"
     os.makedirs(results_dir, exist_ok=True)
-
-    plt.figure()
-    sns.scatterplot(data=results_analysis, x="age", y="proportion_intelligible")
 
     conversations["age"] = conversations.age.apply(
         age_bin, min_age=args.min_age, max_age=args.max_age, num_months=AGE_BIN_NUM_MONTHS
