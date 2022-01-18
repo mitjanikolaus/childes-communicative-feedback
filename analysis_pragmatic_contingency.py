@@ -47,6 +47,7 @@ SPEECH_ACTS_CLARIFICATION_OR_CORRECTION = [
     "EQ",   # "Eliciting question (e.g. hmm?).
     "RR",   # Request to repeat utterance.
     "CT",   # Correct provide correct verbal form in place of erroneous one.
+    "AQ",   # Aggravated question expression of disapproval by restating a question
 ]
 
 SPEECH_ACTS_EXCLUDE = []

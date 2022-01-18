@@ -1441,7 +1441,7 @@
 "QN","GI","Ask a product-question (wh-question)","Give in/ accept other's insistence or refusal.",0
 "QN","GR","Ask a product-question (wh-question)","Give reason/ justify a request for an action refusal or prohibition",0
 "QN","MK","Ask a product-question (wh-question)","Mark occurrence of event (thank greet apologize congratulate etc.).",0
-"QN","NA","Ask a product-question (wh-question)","Intentionally nonsatisfying answer to question",1
+"QN","NA","Ask a product-question (wh-question)","Intentionally nonsatisfying answer to question",0
 "QN","ND","Ask a product-question (wh-question)","Disagree with a declaration.",0
 "QN","OO","Ask a product-question (wh-question)","Unintelligible vocalization.",0
 "QN","PA","Ask a product-question (wh-question)","Permit hearer to perform act.",0
@@ -1545,7 +1545,7 @@
 "RP","GI","Request propose or suggest an action for hearer or for hearer and speaker.","Give in/ accept other's insistence or refusal.",0
 "RP","GR","Request propose or suggest an action for hearer or for hearer and speaker.","Give reason/ justify a request for an action refusal or prohibition",0
 "RP","MK","Request propose or suggest an action for hearer or for hearer and speaker.","Mark occurrence of event (thank greet apologize congratulate etc.).",0
-"RP","NA","Request propose or suggest an action for hearer or for hearer and speaker.","Intentionally nonsatisfying answer to question",1
+"RP","NA","Request propose or suggest an action for hearer or for hearer and speaker.","Intentionally nonsatisfying answer to question",0
 "RP","OO","Request propose or suggest an action for hearer or for hearer and speaker.","Unintelligible vocalization.",0
 "RP","PA","Request propose or suggest an action for hearer or for hearer and speaker.","Permit hearer to perform act.",1
 "RP","PD","Request propose or suggest an action for hearer or for hearer and speaker.","Promise.",0
@@ -1649,7 +1649,7 @@
 "RR","GI","Request to repeat utterance.","Give in/ accept other's insistence or refusal.",0
 "RR","GR","Request to repeat utterance.","Give reason/ justify a request for an action refusal or prohibition",0
 "RR","MK","Request to repeat utterance.","Mark occurrence of event (thank greet apologize congratulate etc.).",0
-"RR","NA","Request to repeat utterance.","Intentionally nonsatisfying answer to question",1
+"RR","NA","Request to repeat utterance.","Intentionally nonsatisfying answer to question",0
 "RR","OO","Request to repeat utterance.","Unintelligible vocalization.",0
 "RR","PA","Request to repeat utterance.","Permit hearer to perform act.",0
 "RR","PD","Request to repeat utterance.","Promise.",0
@@ -2066,7 +2066,7 @@
 "TQ","FP","Ask a limited-alternative yes/no question.","Ask for permission to carry out act.",0
 "TQ","GR","Ask a limited-alternative yes/no question.","Give reason/ justify a request for an action refusal or prohibition",0
 "TQ","MK","Ask a limited-alternative yes/no question.","Mark occurrence of event (thank greet apologize congratulate etc.).",0
-"TQ","NA","Ask a limited-alternative yes/no question.","Intentionally nonsatisfying answer to question",1
+"TQ","NA","Ask a limited-alternative yes/no question.","Intentionally nonsatisfying answer to question",0
 "TQ","OO","Ask a limited-alternative yes/no question.","Unintelligible vocalization.",0
 "TQ","PD","Ask a limited-alternative yes/no question.","Promise.",0
 "TQ","PF","Ask a limited-alternative yes/no question.","Prohibit/forbid/protest hearer's performance of an act",0
@@ -2315,7 +2315,7 @@
 "YQ","GI","Ask a yes/no question.","Give in/ accept other's insistence or refusal.",0
 "YQ","GR","Ask a yes/no question.","Give reason/ justify a request for an action refusal or prohibition",0
 "YQ","MK","Ask a yes/no question.","Mark occurrence of event (thank greet apologize congratulate etc.).",0
-"YQ","NA","Ask a yes/no question.","Intentionally nonsatisfying answer to question",1
+"YQ","NA","Ask a yes/no question.","Intentionally nonsatisfying answer to question",0
 "YQ","OO","Ask a yes/no question.","Unintelligible vocalization.",0
 "YQ","PA","Ask a yes/no question.","Permit hearer to perform act.",0
 "YQ","PD","Ask a yes/no question.","Promise.",0
