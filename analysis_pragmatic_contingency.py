@@ -18,7 +18,7 @@ from preprocess import (
 )
 from utils import (
     age_bin,
-    filter_corpora_based_on_response_latency_length, ANNOTATED_UTTERANCES_FILE,
+    filter_corpora_based_on_response_latency_length, ANNOTATED_UTTERANCES_FILE, SPEECH_ACT_NO_FUNCTION,
 )
 
 DEFAULT_RESPONSE_THRESHOLD = 2000
@@ -331,12 +331,64 @@ def perform_contingency_analysis(conversations):
     else:
         contingency_children_pos_case = np.nan
 
+    # TODO: filtering out cases with no response
+    conversations = conversations[conversations.speech_act != SPEECH_ACT_NO_FUNCTION]
+    # Negative feedback case:
+    n_neg_feedback_to_unintelligible = len(
+        conversations[
+            (conversations.is_intelligible == False)
+            & (conversations.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_OR_CORRECTION))
+        ]
+    )
+    n_neg_feedback = len(conversations[conversations.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_OR_CORRECTION)])
+
+    n_follow_up_unintelligible_if_neg_feedback_to_unintelligible = len(
+        conversations[
+            (conversations.is_intelligible == False)
+            & (conversations.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_OR_CORRECTION))
+            & (conversations.follow_up_is_intelligible == False)
+        ]
+    )
+
+    if n_neg_feedback:
+        ratio_before_feedback = (n_neg_feedback_to_unintelligible / n_neg_feedback)
+        ratio_after_feedback = (n_follow_up_unintelligible_if_neg_feedback_to_unintelligible / n_neg_feedback)
+        contingency_children_neg_case = ratio_before_feedback - ratio_after_feedback
+    else:
+        contingency_children_neg_case = np.nan
+
+    # Negative feedback control case:
+    n_pos_feedback_to_unintelligible = len(
+        conversations[
+            (conversations.is_intelligible == False)
+            & (~conversations.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_OR_CORRECTION))
+        ]
+    )
+    n_pos_feedback = len(conversations[~conversations.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_OR_CORRECTION)])
+
+    n_follow_up_unintelligible_if_pos_feedback_to_unintelligible = len(
+        conversations[
+            (conversations.is_intelligible == False)
+            & (~conversations.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_OR_CORRECTION))
+            & (conversations.follow_up_is_intelligible == False)
+        ]
+    )
+
+    if n_pos_feedback:
+        ratio_before_feedback = (n_pos_feedback_to_unintelligible / n_pos_feedback)
+        ratio_after_feedback = (n_follow_up_unintelligible_if_pos_feedback_to_unintelligible / n_pos_feedback)
+        contingency_children_neg_case_control = ratio_before_feedback - ratio_after_feedback
+    else:
+        contingency_children_neg_case_control = np.nan
+
     proportion_contingent = n_contingent / (n_contingent + n_not_contingent)
 
     return {
         "age": conversations.age.mean(),
         "contingency_caregiver": contingency_caregiver,
         "contingency_children_pos_case": contingency_children_pos_case,
+        "contingency_children_neg_case": contingency_children_neg_case,
+        "contingency_children_neg_case_control": contingency_children_neg_case_control,
         "proportion_contingent": proportion_contingent,
     }
 
