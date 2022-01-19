@@ -18,6 +18,8 @@ ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
 )
 
 SPEECH_ACT_NO_FUNCTION = "YY"
+SPEECH_ACTS_NO_FUNCTION = ["YY", "OO"]
+
 
 POS_PUNCTUATION = [".", "?", "...", "!", "+/", "+/?", "" "...?", ",", "-", "+\"/.", "+...", "++/.", "+/."]
 

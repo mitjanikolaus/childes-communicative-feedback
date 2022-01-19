@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 
 import matplotlib.pyplot as plt
@@ -19,6 +20,7 @@ from preprocess import (
 from utils import (
     age_bin,
     filter_corpora_based_on_response_latency_length, ANNOTATED_UTTERANCES_FILE, SPEECH_ACT_NO_FUNCTION,
+    SPEECH_ACTS_NO_FUNCTION,
 )
 
 DEFAULT_RESPONSE_THRESHOLD = 2000
@@ -43,11 +45,9 @@ DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
 # Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words
 DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
 
-SPEECH_ACTS_CLARIFICATION_OR_CORRECTION = [
+SPEECH_ACTS_CLARIFICATION_REQUEST = [
     "EQ",   # Eliciting question (e.g. hmm?).
     "RR",   # Request to repeat utterance.
-    "CT",   # Correct provide correct verbal form in place of erroneous one.
-    "AQ",   # Aggravated question expression of disapproval by restating a question
 ]
 
 SPEECH_ACTS_EXCLUDE = []
@@ -136,13 +136,13 @@ def caregiver_feedback_coherent(row):
 def pos_feedback(
     row,
 ):
-    "Positive feedback is counted if there is a response, it's not a clarification request and it's contingent"
+    """Positive feedback is counted if there is a response, it's not a clarification request"""
     if not row["has_response"]:
         return False
-    if row["response_speech_act"] in SPEECH_ACTS_CLARIFICATION_OR_CORRECTION:
+    if row["response_speech_act"] in SPEECH_ACTS_CLARIFICATION_REQUEST:
         return False
 
-    return row["response_is_contingent"]
+    return True
 
 
 def perform_analysis(utterances, args):
@@ -150,11 +150,6 @@ def perform_analysis(utterances, args):
 
     conversations.dropna(
         subset=("response_latency", "response_latency_follow_up"),
-        inplace=True,
-    )
-
-    conversations.dropna(
-        subset=("is_contingent", "response_is_contingent", "follow_up_is_contingent"),
         inplace=True,
     )
 
@@ -196,181 +191,418 @@ def perform_analysis(utterances, args):
         inplace=True,
     )
 
+    conversations = conversations.assign(
+        response_is_clarification_request=conversations.response_speech_act.apply(
+            lambda sa: sa in SPEECH_ACTS_CLARIFICATION_REQUEST)
+    )
+
     # Get the number of children in all corpora:
     num_children = len(conversations.child_name.unique())
     print(f"Number of children in the analysis: {num_children}")
 
-    # Label caregiver responses as contingent on child utterance or not
-    conversations = conversations.assign(
-        caregiver_feedback_coherent=conversations[
-            ["is_contingent", "pos_feedback"]
-        ].apply(caregiver_feedback_coherent, axis=1)
+    conversations["age"] = conversations.age.apply(
+        age_bin, min_age=args.min_age, max_age=args.max_age, num_months=AGE_BIN_NUM_MONTHS
     )
+    conversations["is_intelligible"] = conversations.speech_act.apply(lambda s: s not in SPEECH_ACTS_NO_FUNCTION)
+    conversations["follow_up_is_intelligible"] = conversations.follow_up_speech_act.apply(
+        lambda s: s not in SPEECH_ACTS_NO_FUNCTION)
+
+    results_dir = "results/contingency/"
+    os.makedirs(results_dir, exist_ok=True)
+
+    conversations.to_csv(results_dir + "conversations.csv", index=False)
+    conversations = pd.read_csv(results_dir + "conversations.csv")
 
     perform_average_and_per_transcript_analysis(
         conversations,
         args,
         perform_contingency_analysis,
     )
-    results_dir = "results/contingency/"
-    os.makedirs(results_dir, exist_ok=True)
 
-    conversations["age"] = conversations.age.apply(
-        age_bin, min_age=args.min_age, max_age=args.max_age, num_months=AGE_BIN_NUM_MONTHS
-    )
-
-    plt.figure()
-    plt.title("Caregiver contingency")
-    sns.barplot(
-        data=conversations,
-        x="is_contingent",
-        y="pos_feedback",
-    )
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "contingency_caregivers.png"))
-
-    plt.figure(figsize=(6, 3))
-    plt.title("Caregiver contingency - per age group")
-    axis = sns.barplot(
-        data=conversations,
-        x="age",
-        y="pos_feedback",
-        hue="is_contingent",
-    )
-    sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prob_caregiver_response")
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "contingency_caregivers_per_age.png"))
-
-    plt.figure()
-    plt.title("Child contingency")
-    sns.barplot(
-        data=conversations[conversations.is_contingent == True],
-        x="pos_feedback",
-        y="follow_up_is_contingent",
-    )
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "contingency_children.png"))
-
-    plt.figure(figsize=(6, 3))
-    plt.title("Child contingency - per age group")
-    axis = sns.barplot(
-        data=conversations[conversations.is_contingent == True],
-        x="age",
-        y="follow_up_is_contingent",
-        hue="pos_feedback",
-    )
-    sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prob_follow_up_is_contingent")
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"))
-
-    conversations.to_csv(results_dir + "conversations.csv", index=False)
+    make_plots(conversations, results_dir)
 
     plt.show()
 
     return conversations
 
 
-def perform_contingency_analysis(conversations):
-    # caregiver contingency:
-    n_pos_feedback_to_contingent = len(
-        conversations[conversations.is_contingent & conversations.pos_feedback]
+def make_plots(conversations, results_dir):
+    plt.figure(figsize=(6, 3))
+    plt.title("Caregiver timing contingency")
+    axis = sns.barplot(
+        data=conversations,
+        x="age",
+        y="has_response",
+        hue="is_intelligible",
     )
-    n_contingent = len(conversations[conversations.is_contingent])
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel="prob_response")
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "contingency_caregivers_timing.png"))
+
+    conversations_with_responses = conversations[conversations.response_latency < math.inf]
+
+    plt.figure(figsize=(6, 3))
+    plt.title("Caregiver clarification request contingency")
+    axis = sns.barplot(
+        data=conversations_with_responses,
+        x="age",
+        y="response_is_clarification_request",
+        hue="is_intelligible",
+    )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel="prob_clarification_request")
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "contingency_caregivers_clarification_request.png"))
+
+    plt.figure(figsize=(6, 3))
+    plt.title("Caregiver contingency")
+    axis = sns.barplot(
+        data=conversations,
+        x="age",
+        y="pos_feedback",
+        hue="is_intelligible",
+    )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel="prob_pos_feedback")
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "contingency_caregivers_all.png"))
+
+    plt.figure(figsize=(6, 3))
+    plt.title("Child contingency: positive feedback loop")
+    axis = sns.barplot(
+        data=conversations[conversations.is_intelligible],
+        x="age",
+        y="follow_up_is_intelligible",
+        hue="has_response",
+    )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel="prob_follow_up_is_intelligible")
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "contingency_children_pos_feedback_loop.png"))
+
+    data = conversations[conversations.response_is_clarification_request].groupby("age").agg("mean")
+    per_age = []
+    for age, row in data.iterrows():
+        per_age.append({
+            "age": age,
+            "ratio_intelligible": row["is_intelligible"],
+            "type": "utterances (before clarification request)",
+        })
+        per_age.append({
+            "age": age,
+            "ratio_intelligible": row["follow_up_is_intelligible"],
+            "type": "follow_ups (after clarification request)",
+        })
+    per_age = pd.DataFrame(per_age)
+    plt.figure(figsize=(6, 3))
+    plt.title("Child contingency: effect of clarification requests")
+    axis = sns.barplot(
+        data=per_age,
+        x="age",
+        y="ratio_intelligible",
+        hue="type",
+    )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel="ratio_intelligible")
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "contingency_children_clarification_requests.png"))
+
+
+    data = conversations[~conversations.response_is_clarification_request].groupby("age").agg("mean")
+    per_age = []
+    for age, row in data.iterrows():
+        per_age.append({
+            "age": age,
+            "ratio_intelligible": row["is_intelligible"],
+            "type": "utterance",
+        })
+        per_age.append({
+            "age": age,
+            "ratio_intelligible": row["follow_up_is_intelligible"],
+            "type": "follow_up",
+        })
+    per_age = pd.DataFrame(per_age)
+    plt.figure(figsize=(6, 3))
+    plt.title("Child contingency control case: effect of other responses")
+    axis = sns.barplot(
+        data=per_age,
+        x="age",
+        y="ratio_intelligible",
+        hue="type",
+    )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel="ratio_intelligible")
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "contingency_children_clarification_requests_control_case.png"))
+
+
+
+    data = conversations[~conversations.has_response].groupby("age").agg("mean")
+    per_age = []
+    for age, row in data.iterrows():
+        per_age.append({
+            "age": age,
+            "ratio_intelligible": row["is_intelligible"],
+            "type": "utterances (before pause)",
+        })
+        per_age.append({
+            "age": age,
+            "ratio_intelligible": row["follow_up_is_intelligible"],
+            "type": "follow_ups (after pause)",
+        })
+    per_age = pd.DataFrame(per_age)
+    plt.figure(figsize=(6, 3))
+    plt.title("Child contingency: effect of pauses")
+    axis = sns.barplot(
+        data=per_age,
+        x="age",
+        y="ratio_intelligible",
+        hue="type",
+    )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel="ratio_intelligible")
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "contingency_children_pauses.png"))
+
+
+    data = conversations[conversations.has_response].groupby("age").agg("mean")
+    per_age = []
+    for age, row in data.iterrows():
+        per_age.append({
+            "age": age,
+            "ratio_intelligible": row["is_intelligible"],
+            "type": "utterance (before response)",
+        })
+        per_age.append({
+            "age": age,
+            "ratio_intelligible": row["follow_up_is_intelligible"],
+            "type": "follow_up (after response)",
+        })
+    per_age = pd.DataFrame(per_age)
+    plt.figure(figsize=(6, 3))
+    plt.title("Child contingency control case: effect of no pause")
+    axis = sns.barplot(
+        data=per_age,
+        x="age",
+        y="ratio_intelligible",
+        hue="type",
+    )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel="ratio_intelligible")
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "contingency_children_pauses_control_case.png"))
+
+
+    data = conversations[~conversations.pos_feedback].groupby("age").agg("mean")
+    per_age = []
+    for age, row in data.iterrows():
+        per_age.append({
+            "age": age,
+            "ratio_intelligible": row["is_intelligible"],
+            "type": "utterance (before pause or CR)",
+        })
+        per_age.append({
+            "age": age,
+            "ratio_intelligible": row["follow_up_is_intelligible"],
+            "type": "follow_up (after pause or CR)",
+        })
+    per_age = pd.DataFrame(per_age)
+    plt.figure(figsize=(6, 3))
+    plt.title("Child contingency: effect of pauses + clarification requests")
+    axis = sns.barplot(
+        data=per_age,
+        x="age",
+        y="ratio_intelligible",
+        hue="type",
+    )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel="ratio_intelligible")
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "contingency_children_all.png"))
+
+
+    data = conversations[conversations.pos_feedback].groupby("age").agg("mean")
+    per_age = []
+    for age, row in data.iterrows():
+        per_age.append({
+            "age": age,
+            "ratio_intelligible": row["is_intelligible"],
+            "type": "utterance (before pause or CR)",
+        })
+        per_age.append({
+            "age": age,
+            "ratio_intelligible": row["follow_up_is_intelligible"],
+            "type": "follow_up (after pause or CR)",
+        })
+    per_age = pd.DataFrame(per_age)
+    plt.figure(figsize=(6, 3))
+    plt.title("Child contingency control case for effect of pauses + clarification requests")
+    axis = sns.barplot(
+        data=per_age,
+        x="age",
+        y="ratio_intelligible",
+        hue="type",
+    )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel="ratio_intelligible")
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "contingency_children_all_control_case.png"))
+
+
+def perform_contingency_analysis(conversations):
+    # caregiver contingency (all):
+    n_pos_feedback_to_intelligible = len(
+        conversations[conversations.is_intelligible & conversations.pos_feedback]
+    )
+    n_intelligible = len(conversations[conversations.is_intelligible])
 
     n_pos_feedback_to_unintelligible = len(
         conversations[
-            (conversations.is_contingent == False) & conversations.pos_feedback
+            (conversations.is_intelligible == False) & conversations.pos_feedback
         ]
     )
-    n_not_contingent = len(conversations[conversations.is_contingent == False])
+    n_not_intelligible = len(conversations[conversations.is_intelligible == False])
 
-    if n_contingent > 0 and n_not_contingent > 0:
-        contingency_caregiver = (n_pos_feedback_to_contingent / n_contingent) - (
-            n_pos_feedback_to_unintelligible / n_not_contingent
+    if n_intelligible > 0 and n_not_intelligible > 0:
+        contingency_caregiver_all = (n_pos_feedback_to_intelligible / n_intelligible) - (
+            n_pos_feedback_to_unintelligible / n_not_intelligible
         )
     else:
-        contingency_caregiver = np.nan
+        contingency_caregiver_all = np.nan
 
-    # Contingency of child vocalization on previous adult response (positive case):
-    n_follow_up_is_contingent_if_pos_feedback_to_contingent = len(
-        conversations[
-            conversations.follow_up_is_contingent
-            & conversations.is_contingent
-            & conversations.pos_feedback
-        ]
+    # caregiver contingency (timing):
+    n_response_to_intelligible = len(
+        conversations[conversations.is_intelligible & conversations.has_response]
     )
+    n_intelligible = len(conversations[conversations.is_intelligible])
 
-    n_follow_up_is_contingent_if_neg_feedback_to_contingent = len(
+    n_response_to_unintelligible = len(
         conversations[
-            conversations.follow_up_is_contingent
-            & conversations.is_contingent
-            & (conversations.pos_feedback == False)
-        ]
+            (conversations.is_intelligible == False) & conversations.has_response
+            ]
     )
-    n_neg_feedback_to_contingent = len(
-        conversations[
-            conversations.is_contingent & (conversations.pos_feedback == False)
-        ]
-    )
+    n_not_intelligible = len(conversations[conversations.is_intelligible == False])
 
-    if n_pos_feedback_to_contingent > 0 and n_neg_feedback_to_contingent > 0:
-        ratio_follow_up_is_contingent_if_pos_feedback_to_contingent = (
-            n_follow_up_is_contingent_if_pos_feedback_to_contingent
-            / n_pos_feedback_to_contingent
+    if n_intelligible > 0 and n_not_intelligible > 0:
+        contingency_caregiver_timing = (n_response_to_intelligible / n_intelligible) - (
+                n_response_to_unintelligible / n_not_intelligible
         )
-        ratio_follow_up_is_contingent_if_neg_feedback_to_contingent = (
-            n_follow_up_is_contingent_if_neg_feedback_to_contingent
-            / n_neg_feedback_to_contingent
+    else:
+        contingency_caregiver_timing = np.nan
+
+    # Contingency of child vocalization on previous adult response (positive feedback loop):
+    n_follow_up_is_intelligible_if_response_to_intelligible = len(
+        conversations[
+            conversations.is_intelligible
+            & conversations.follow_up_is_intelligible
+            & conversations.has_response
+        ]
+    )
+    n_response_to_intelligible = len(
+        conversations[
+            conversations.is_intelligible
+            & (conversations.has_response)
+        ]
+    )
+
+    n_follow_up_is_intelligible_if_no_response_to_intelligible = len(
+        conversations[
+            conversations.is_intelligible
+            & conversations.follow_up_is_intelligible
+            & (conversations.has_response == False)
+        ]
+    )
+    n_no_response_to_intelligible = len(
+        conversations[
+            conversations.is_intelligible
+            & (conversations.has_response == False)
+        ]
+    )
+
+    if n_response_to_intelligible and n_no_response_to_intelligible:
+        ratio_follow_up_is_intelligible_if_response = (
+            n_follow_up_is_intelligible_if_response_to_intelligible
+            / n_response_to_intelligible
+        )
+        ratio_follow_up_is_intelligible_if_no_response = (
+            n_follow_up_is_intelligible_if_no_response_to_intelligible
+            / n_no_response_to_intelligible
         )
         contingency_children_pos_case = (
-            ratio_follow_up_is_contingent_if_pos_feedback_to_contingent
-            - ratio_follow_up_is_contingent_if_neg_feedback_to_contingent
+            ratio_follow_up_is_intelligible_if_response
+            - ratio_follow_up_is_intelligible_if_no_response
         )
     else:
         contingency_children_pos_case = np.nan
 
     # TODO: filtering out cases with no response
-    conversations = conversations[conversations.speech_act != SPEECH_ACT_NO_FUNCTION]
-    # Negative feedback case:
-    n_neg_feedback_to_unintelligible = len(
-        conversations[
-            (conversations.is_intelligible == False)
-            & (conversations.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_OR_CORRECTION))
+    convs_with_response = conversations[conversations.response_latency < math.inf]
+
+    # Caregiver contingency (speech acts)
+    n_pos_feedback_to_intelligible = len(
+        convs_with_response[convs_with_response.is_intelligible & ~convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST)]
+    )
+    n_intelligible = len(convs_with_response[convs_with_response.is_intelligible])
+
+    n_pos_feedback_to_unintelligible = len(
+        convs_with_response[
+            (convs_with_response.is_intelligible == False) & ~convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST)
         ]
     )
-    n_neg_feedback = len(conversations[conversations.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_OR_CORRECTION)])
+    n_not_intelligible = len(convs_with_response[convs_with_response.is_intelligible == False])
+
+    if n_intelligible > 0 and n_not_intelligible > 0:
+        contingency_caregiver_speech_acts = (n_pos_feedback_to_intelligible / n_intelligible) - (
+                n_pos_feedback_to_unintelligible / n_not_intelligible
+        )
+    else:
+        contingency_caregiver_speech_acts = np.nan
+
+
+
+
+
+    # Negative feedback case:
+    n_neg_feedback_to_unintelligible = len(
+        convs_with_response[
+            (convs_with_response.is_intelligible == False)
+            & (convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST))
+        ]
+    )
+    n_neg_feedback = len(convs_with_response[convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST)])
 
     n_follow_up_unintelligible_if_neg_feedback_to_unintelligible = len(
-        conversations[
-            (conversations.is_intelligible == False)
-            & (conversations.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_OR_CORRECTION))
-            & (conversations.follow_up_is_intelligible == False)
+        convs_with_response[
+            (convs_with_response.is_intelligible == False)
+            & (convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST))
+            & (convs_with_response.follow_up_is_intelligible == False)
         ]
     )
 
     if n_neg_feedback:
         ratio_before_feedback = (n_neg_feedback_to_unintelligible / n_neg_feedback)
+        # print("Ratio before: ", ratio_before_feedback)
         ratio_after_feedback = (n_follow_up_unintelligible_if_neg_feedback_to_unintelligible / n_neg_feedback)
+        # print("Ratio after: ", ratio_after_feedback)
         contingency_children_neg_case = ratio_before_feedback - ratio_after_feedback
     else:
         contingency_children_neg_case = np.nan
 
     # Negative feedback control case:
     n_pos_feedback_to_unintelligible = len(
-        conversations[
-            (conversations.is_intelligible == False)
-            & (~conversations.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_OR_CORRECTION))
+        convs_with_response[
+            (convs_with_response.is_intelligible == False)
+            & (~convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST))
         ]
     )
-    n_pos_feedback = len(conversations[~conversations.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_OR_CORRECTION)])
+    n_pos_feedback = len(convs_with_response[~convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST)])
 
     n_follow_up_unintelligible_if_pos_feedback_to_unintelligible = len(
-        conversations[
-            (conversations.is_intelligible == False)
-            & (~conversations.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_OR_CORRECTION))
-            & (conversations.follow_up_is_intelligible == False)
+        convs_with_response[
+            (convs_with_response.is_intelligible == False)
+            & (~convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST))
+            & (convs_with_response.follow_up_is_intelligible == False)
         ]
     )
 
@@ -381,15 +613,20 @@ def perform_contingency_analysis(conversations):
     else:
         contingency_children_neg_case_control = np.nan
 
-    proportion_contingent = n_contingent / (n_contingent + n_not_contingent)
+    if n_intelligible + n_not_intelligible:
+        proportion_intelligible = n_intelligible / (n_intelligible + n_not_intelligible)
+    else:
+        proportion_intelligible = np.nan
 
     return {
         "age": conversations.age.mean(),
-        "contingency_caregiver": contingency_caregiver,
-        "contingency_children_pos_case": contingency_children_pos_case,
+        "contingency_caregiver_timing": contingency_caregiver_timing,
+        "contingency_caregiver_speech_acts": contingency_caregiver_speech_acts,
+        "contingency_caregiver_all": contingency_caregiver_all,
+        "positive_feedback_loop_timing": contingency_children_pos_case,
         "contingency_children_neg_case": contingency_children_neg_case,
         "contingency_children_neg_case_control": contingency_children_neg_case_control,
-        "proportion_contingent": proportion_contingent,
+        "proportion_intelligible": proportion_intelligible,
     }
 
 
