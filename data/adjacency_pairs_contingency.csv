@@ -1910,8 +1910,10 @@
 "ST","AB","Make a declarative statement.","Approve of appropriate behavior.",1
 "ST","AC","Make a declarative statement.","Answer calls/ show attentiveness to communications.",0
 "ST","AD","Make a declarative statement.","Agree to carry out an act requested or proposed by other.",0
+"ST","AL","Make a declarative statement.","Agree to do something for the last time.",0
 "ST","AN","Make a declarative statement.","Answer in the negative to yes/no question",0
 "ST","AP","Make a declarative statement.","Agree with proposition or proposal expressed by previous speaker",0
+"ST","AQ","Make a declarative statement.","Aggravated question expression of disapproval by restating a question",0
 "ST","CL","Make a declarative statement.","Call attention to hearer by name or by substitute exclamations",1
 "ST","CM","Make a declarative statement.","Commiserate express sympathy for hearer's distress.",1
 "ST","CN","Make a declarative statement.","Count.",1
@@ -1930,16 +1932,19 @@
 "ST","EN","Make a declarative statement.","Express positive emotion.",1
 "ST","EQ","Make a declarative statement.","Eliciting question (e.g. hmm?).",1
 "ST","ET","Make a declarative statement.","Express enthusiasm for hearer's performance.",1
+"ST","EX","Make a declarative statement.","Elicit completion of rote-learned text.",1
 "ST","FP","Make a declarative statement.","Ask for permission to carry out act.",1
 "ST","GI","Make a declarative statement.","Give in/ accept other's insistence or refusal.",0
 "ST","GR","Make a declarative statement.","Give reason/ justify a request for an action refusal or prohibition",1
 "ST","MK","Make a declarative statement.","Mark occurrence of event (thank greet apologize congratulate etc.).",1
+"ST","NA","Make a declarative statement.","Intentionally nonsatisfying answer to question",0
 "ST","OO","Make a declarative statement.","Unintelligible vocalization.",0
 "ST","PA","Make a declarative statement.","Permit hearer to perform act.",0
 "ST","PD","Make a declarative statement.","Promise.",1
 "ST","PF","Make a declarative statement.","Prohibit/forbid/protest hearer's performance of an act",0
 "ST","PM","Make a declarative statement.","Praise for motor acts i.e for nonverbal behavior.",1
 "ST","PR","Make a declarative statement.","Perform verbal move in game.",1
+"ST","QA","Make a declarative statement.","Answer a question with a wh-question.",0
 "ST","QN","Make a declarative statement.","Ask a product-question (wh-question)",1
 "ST","RD","Make a declarative statement.","Refuse to carry out an act requested or proposed by other.",0
 "ST","RP","Make a declarative statement.","Request propose or suggest an action for hearer or for hearer and speaker.",1
@@ -1951,6 +1956,7 @@
 "ST","SI","Make a declarative statement.","State intent to carry out act by speaker.",1
 "ST","SS","Make a declarative statement.","Signal to start performing an act such as running or rolling a ball",1
 "ST","ST","Make a declarative statement.","Make a declarative statement.",1
+"ST","TA","Make a declarative statement.","Answer a limited-alternative question.",0
 "ST","TD","Make a declarative statement.","Threaten to do.",1
 "ST","TO","Make a declarative statement.","Mark transfer of object to hearer",1
 "ST","TQ","Make a declarative statement.","Ask a limited-alternative yes/no question.",1
@@ -1958,6 +1964,8 @@
 "ST","WD","Make a declarative statement.","Warn of danger.",1
 "ST","WS","Make a declarative statement.","Express a wish.",1
 "ST","XA","Make a declarative statement.","Exhibit attentiveness to hearer.",1
+"ST","YA","Make a declarative statement.","Answer a question with a yes/no question.",0
+"ST","YD","Make a declarative statement.","Agree to a declaration.",0
 "ST","YQ","Make a declarative statement.","Ask a yes/no question.",1
 "ST","YY","Make a declarative statement.","Make a word-like utterance without clear function.",0
 "TA","AB","Answer a limited-alternative question.","Approve of appropriate behavior.",1

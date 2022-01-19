@@ -27,7 +27,7 @@ CONTINGENCIES = pd.read_csv(
 
 # Speech acts that relate to nonverbal/external events
 SPEECH_ACTS_NONVERBAL_EVENTS = [
-    "CR",    # Criticize or point out error in nonverbal act.
+    "CR",   # Criticize or point out error in nonverbal act.
     "PM",   # Praise for motor acts i.e for nonverbal behavior.
     "WD",   # Warn of danger.
     "DS",   # Disapprove scold protest disruptive behavior.
@@ -116,9 +116,6 @@ def is_contingent(row):
     # If there was a transition of transcripts, we don't annotate contingency
     if row["prev_transcript_file"] != row["transcript_file"]:
         return None
-    # If there's no change in speaker, we also don't need to annotate contingency
-    if row["prev_speaker_code"] == row["speaker_code"]:
-        return None
     # If any of the speech acts relates to an external event, we can't annotate its contingency
     if row["prev_speech_act"] in SPEECH_ACTS_NONVERBAL_EVENTS or row["speech_act"] in SPEECH_ACTS_NONVERBAL_EVENTS:
         return None
@@ -127,7 +124,11 @@ def is_contingent(row):
     if not row["is_intelligible"]:
         return False
 
-    contingency = CONTINGENCIES[(CONTINGENCIES.source == row.prev_speech_act) & (CONTINGENCIES.target == row.speech_act)]
+    if row["prev_speaker_code"] == row["speaker_code"]:
+        # If there's no change in speaker, we assume that the utterance is contingent if it would be contingent to a statement
+        contingency = CONTINGENCIES[(CONTINGENCIES.source == "ST") & (CONTINGENCIES.target == row.speech_act)]
+    else:
+        contingency = CONTINGENCIES[(CONTINGENCIES.source == row.prev_speech_act) & (CONTINGENCIES.target == row.speech_act)]
     if len(contingency) == 1:
         return bool(contingency.iloc[0]["contingency"])
     else:
