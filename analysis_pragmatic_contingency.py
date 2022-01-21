@@ -220,20 +220,31 @@ def perform_analysis(utterances, args):
     conversations.to_csv(results_dir + "conversations.csv", index=False)
     conversations = pd.read_csv(results_dir + "conversations.csv")
 
+    # Melt is_intellgible variable for CR analyses
+    conversations_melted = conversations.copy()
+    conversations_melted["utterance_is_intelligible"] = conversations_melted["is_intelligible"]
+    del conversations_melted["is_intelligible"]
+    conversations_melted = pd.melt(conversations_melted, id_vars=["response_is_clarification_request", "child_name", "age", "has_response", "pos_feedback"],
+                                   value_vars=['utterance_is_intelligible', 'follow_up_is_intelligible'], var_name='is_follow_up',
+                                   value_name='is_intelligible')
+    conversations_melted["is_follow_up"] = conversations_melted["is_follow_up"].apply(lambda x: x == "follow_up_is_intelligible")
+    conversations_melted.to_csv(results_dir + "conversations_melted.csv", index=False)
+    conversations_melted = pd.read_csv(results_dir + "conversations_melted.csv")
+
     perform_average_and_per_transcript_analysis(
         conversations,
         args,
         perform_contingency_analysis,
     )
 
-    make_plots(conversations, results_dir)
+    make_plots(conversations, conversations_melted, results_dir)
 
     plt.show()
 
     return conversations
 
 
-def make_plots(conversations, results_dir):
+def make_plots(conversations, conversations_melted, results_dir):
     plt.figure(figsize=(12, 6))
     plt.title("Caregiver timing contingency")
     axis = sns.barplot(
@@ -278,7 +289,7 @@ def make_plots(conversations, results_dir):
     plt.figure(figsize=(12, 6))
     plt.title("Child contingency: effect of positive feedback")
     axis = sns.barplot(
-        data=conversations[conversations.is_intelligible == True], # TODO: only [conversations.is_intelligible == True]?
+        data=conversations,
         x="age",
         y="follow_up_is_intelligible",
         hue="has_response",
@@ -291,184 +302,54 @@ def make_plots(conversations, results_dir):
     plt.figure(figsize=(12, 6))
     plt.title("Child contingency: effect of clarification requests")
     axis = sns.barplot(
-        data=conversations[conversations.is_intelligible == False], # TODO: only with responses?
+        data=conversations_melted[conversations_melted.response_is_clarification_request],
         x="age",
-        y="follow_up_is_intelligible",
-        hue="response_is_clarification_request",
+        y="is_intelligible",
+        hue="is_follow_up",
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prob_follow_up_is_intelligible")
+    axis.set(ylabel="prob_is_intelligible")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_clarification_request.png"))
 
-
-    data = conversations[conversations.response_is_clarification_request].groupby("age").agg("mean")
-    per_age = []
-    for age, row in data.iterrows():
-        per_age.append({
-            "age": age,
-            "ratio_intelligible": row["is_intelligible"],
-            "type": "utterances (before clarification request)",
-        })
-        per_age.append({
-            "age": age,
-            "ratio_intelligible": row["follow_up_is_intelligible"],
-            "type": "follow_ups (after clarification request)",
-        })
-    per_age = pd.DataFrame(per_age)
     plt.figure(figsize=(12, 6))
-    plt.title("Child contingency: effect of clarification requests")
+    plt.title("Child contingency: effect of clarification requests: control")
     axis = sns.barplot(
-        data=per_age,
+        data=conversations_melted[~conversations_melted.response_is_clarification_request],
         x="age",
-        y="ratio_intelligible",
-        hue="type",
+        y="is_intelligible",
+        hue="is_follow_up",
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="ratio_intelligible")
+    axis.set(ylabel="prob_is_intelligible")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "contingency_children_clarification_requests.png"))
+    plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_clarification_request_control_condition.png"))
 
-
-    data = conversations[~conversations.response_is_clarification_request].groupby("age").agg("mean")
-    per_age = []
-    for age, row in data.iterrows():
-        per_age.append({
-            "age": age,
-            "ratio_intelligible": row["is_intelligible"],
-            "type": "utterance",
-        })
-        per_age.append({
-            "age": age,
-            "ratio_intelligible": row["follow_up_is_intelligible"],
-            "type": "follow_up",
-        })
-    per_age = pd.DataFrame(per_age)
-    plt.figure(figsize=(12, 6))
-    plt.title("Child contingency control case: effect of other responses")
-    axis = sns.barplot(
-        data=per_age,
-        x="age",
-        y="ratio_intelligible",
-        hue="type",
-    )
-    sns.move_legend(axis, "lower right")
-    axis.set(ylabel="ratio_intelligible")
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "contingency_children_clarification_requests_control_case.png"))
-    #
-    #
-    #
-    # data = conversations[~conversations.has_response].groupby("age").agg("mean")
-    # per_age = []
-    # for age, row in data.iterrows():
-    #     per_age.append({
-    #         "age": age,
-    #         "ratio_intelligible": row["is_intelligible"],
-    #         "type": "utterances (before pause)",
-    #     })
-    #     per_age.append({
-    #         "age": age,
-    #         "ratio_intelligible": row["follow_up_is_intelligible"],
-    #         "type": "follow_ups (after pause)",
-    #     })
-    # per_age = pd.DataFrame(per_age)
     # plt.figure(figsize=(12, 6))
     # plt.title("Child contingency: effect of pauses")
     # axis = sns.barplot(
-    #     data=per_age,
+    #     data=conversations_melted[~conversations_melted.has_response],
     #     x="age",
-    #     y="ratio_intelligible",
-    #     hue="type",
+    #     y="is_intelligible",
+    #     hue="is_follow_up",
     # )
     # sns.move_legend(axis, "lower right")
-    # axis.set(ylabel="ratio_intelligible")
+    # axis.set(ylabel="prob_is_intelligible")
     # plt.tight_layout()
-    # plt.savefig(os.path.join(results_dir, "contingency_children_pauses.png"))
+    # plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_pauses.png"))
     #
-    #
-    # data = conversations[conversations.has_response].groupby("age").agg("mean")
-    # per_age = []
-    # for age, row in data.iterrows():
-    #     per_age.append({
-    #         "age": age,
-    #         "ratio_intelligible": row["is_intelligible"],
-    #         "type": "utterance (before response)",
-    #     })
-    #     per_age.append({
-    #         "age": age,
-    #         "ratio_intelligible": row["follow_up_is_intelligible"],
-    #         "type": "follow_up (after response)",
-    #     })
-    # per_age = pd.DataFrame(per_age)
     # plt.figure(figsize=(12, 6))
-    # plt.title("Child contingency control case: effect of no pause")
+    # plt.title("Child contingency: effect of pauses: control")
     # axis = sns.barplot(
-    #     data=per_age,
+    #     data=conversations_melted[~conversations_melted.has_response],
     #     x="age",
-    #     y="ratio_intelligible",
-    #     hue="type",
+    #     y="is_intelligible",
+    #     hue="is_follow_up",
     # )
     # sns.move_legend(axis, "lower right")
-    # axis.set(ylabel="ratio_intelligible")
+    # axis.set(ylabel="prob_is_intelligible")
     # plt.tight_layout()
-    # plt.savefig(os.path.join(results_dir, "contingency_children_pauses_control_case.png"))
-    #
-    #
-    # data = conversations[~conversations.pos_feedback].groupby("age").agg("mean")
-    # per_age = []
-    # for age, row in data.iterrows():
-    #     per_age.append({
-    #         "age": age,
-    #         "ratio_intelligible": row["is_intelligible"],
-    #         "type": "utterance (before pause or CR)",
-    #     })
-    #     per_age.append({
-    #         "age": age,
-    #         "ratio_intelligible": row["follow_up_is_intelligible"],
-    #         "type": "follow_up (after pause or CR)",
-    #     })
-    # per_age = pd.DataFrame(per_age)
-    # plt.figure(figsize=(12, 6))
-    # plt.title("Child contingency: effect of pauses + clarification requests")
-    # axis = sns.barplot(
-    #     data=per_age,
-    #     x="age",
-    #     y="ratio_intelligible",
-    #     hue="type",
-    # )
-    # sns.move_legend(axis, "lower right")
-    # axis.set(ylabel="ratio_intelligible")
-    # plt.tight_layout()
-    # plt.savefig(os.path.join(results_dir, "contingency_children_all.png"))
-    #
-    #
-    # data = conversations[conversations.pos_feedback].groupby("age").agg("mean")
-    # per_age = []
-    # for age, row in data.iterrows():
-    #     per_age.append({
-    #         "age": age,
-    #         "ratio_intelligible": row["is_intelligible"],
-    #         "type": "utterance (before pause or CR)",
-    #     })
-    #     per_age.append({
-    #         "age": age,
-    #         "ratio_intelligible": row["follow_up_is_intelligible"],
-    #         "type": "follow_up (after pause or CR)",
-    #     })
-    # per_age = pd.DataFrame(per_age)
-    # plt.figure(figsize=(12, 6))
-    # plt.title("Child contingency control case for effect of pauses + clarification requests")
-    # axis = sns.barplot(
-    #     data=per_age,
-    #     x="age",
-    #     y="ratio_intelligible",
-    #     hue="type",
-    # )
-    # sns.move_legend(axis, "lower right")
-    # axis.set(ylabel="ratio_intelligible")
-    # plt.tight_layout()
-    # plt.savefig(os.path.join(results_dir, "contingency_children_all_control_case.png"))
+    # plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_pauses_control_case.png"))
 
 
 def perform_contingency_analysis(conversations):
