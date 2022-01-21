@@ -315,8 +315,10 @@ if __name__ == "__main__":
 
     # Filter by age
     utterances = utterances[
-        (args.min_age <= utterances.age) & (utterances.age <= args.max_age)
+        (args.min_age - AGE_BIN_NUM_MONTHS / 2 <= utterances.age) & (
+                    utterances.age <= args.max_age + AGE_BIN_NUM_MONTHS / 2)
     ]
+
 
     min_age = utterances.age.min()
     max_age = utterances.age.max()
