@@ -49,9 +49,6 @@ SPEECH_ACTS_CLARIFICATION_REQUEST = [
     "RR",   # Request to repeat utterance.
 ]
 
-SPEECH_ACTS_EXCLUDE = []
-# SPEECH_ACTS_EXCLUDE = ["OO", "YY"]
-
 
 def parse_args():
     argparser = argparse.ArgumentParser()
@@ -126,12 +123,6 @@ def parse_args():
     return args
 
 
-def caregiver_feedback_coherent(row):
-    return ((row["is_contingent"] == True) & (row["pos_feedback"] == True)) | (
-        (row["is_contingent"] == False) & (row["pos_feedback"] == False)
-    )
-
-
 def pos_feedback(
     row,
 ):
@@ -152,20 +143,12 @@ def perform_analysis(utterances, args):
         inplace=True,
     )
 
-    conversations.dropna(
-        subset=("is_contingent", "response_is_contingent", "follow_up_is_contingent"),
-        inplace=True,
-    )
-
-    # TODO: how to drop non-speech related after new is_intelligible definition?
-    conversations.dropna(
-        subset=("is_intelligible", "response_is_intelligible", "follow_up_is_intelligible"),
-        inplace=True,
-    )
-
-    conversations = conversations[~conversations.speech_act.isin(SPEECH_ACTS_EXCLUDE)]
-    conversations = conversations[~conversations.response_speech_act.isin(SPEECH_ACTS_EXCLUDE)]
-    conversations = conversations[~conversations.follow_up_speech_act.isin(SPEECH_ACTS_EXCLUDE)]
+    # Drop all non-speech related (but keep dummy responses!)
+    conversations = conversations[
+        conversations.is_speech_related &
+        (conversations.response_is_speech_related | (conversations.response_start_time == math.inf)) &
+        conversations.follow_up_is_speech_related
+    ]
 
     conversations = filter_corpora_based_on_response_latency_length(
         conversations,
@@ -208,11 +191,6 @@ def perform_analysis(utterances, args):
     conversations["age"] = conversations.age.apply(
         age_bin, min_age=args.min_age, max_age=args.max_age, num_months=AGE_BIN_NUM_MONTHS
     )
-
-    # TODO: cleaner way of intelligibility annotation
-    conversations["is_intelligible"] = conversations.speech_act.apply(lambda s: s not in SPEECH_ACTS_NO_FUNCTION)
-    conversations["follow_up_is_intelligible"] = conversations.follow_up_speech_act.apply(
-        lambda s: s not in SPEECH_ACTS_NO_FUNCTION)
 
     results_dir = "results/contingency/"
     os.makedirs(results_dir, exist_ok=True)

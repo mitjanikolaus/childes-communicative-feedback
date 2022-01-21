@@ -10,6 +10,7 @@ from utils import (
     get_paralinguistic_event,
     paralinguistic_event_is_external,
     get_all_paralinguistic_events, ANNOTATED_UTTERANCES_FILE, UTTERANCES_WITH_SPEECH_ACTS_FILE, is_nan,
+    SPEECH_ACTS_NO_FUNCTION,
 )
 from utils import (
     remove_nonspeech_events,
@@ -19,11 +20,6 @@ from utils import (
 DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED = True
 
 DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE = True
-
-# Do not keep default NA handling, because there's a speech act called "NA"!
-CONTINGENCIES = pd.read_csv(
-    "data/adjacency_pairs_contingency.csv", keep_default_na=False
-)
 
 # Speech acts that relate to nonverbal/external events
 SPEECH_ACTS_NONVERBAL_EVENTS = [
@@ -91,6 +87,7 @@ def is_intelligible(
         return label_empty_utterance
 
     utterance_without_nonspeech = remove_nonspeech_events(utterance_without_punctuation)
+    utterance_without_nonspeech = utterance_without_nonspeech.strip()
     if utterance_without_nonspeech == "":
         # By returning None, we can filter out these cases later
         return label_empty_utterance
@@ -110,29 +107,8 @@ def is_intelligible(
     return True
 
 
-def is_contingent(row):
-    if is_nan(row["prev_speech_act"]):
-        return None
-    # If there was a transition of transcripts, we don't annotate contingency
-    if row["prev_transcript_file"] != row["transcript_file"]:
-        return None
-    # If any of the speech acts relates to an external event, we can't annotate its contingency
-    if row["prev_speech_act"] in SPEECH_ACTS_NONVERBAL_EVENTS or row["speech_act"] in SPEECH_ACTS_NONVERBAL_EVENTS:
-        return None
-
-    # If the utterance is not intelligible, it can't be contingent:
-    if not row["is_intelligible"]:
-        return False
-
-    if row["prev_speaker_code"] == row["speaker_code"]:
-        # If there's no change in speaker, we assume that the utterance is contingent if it would be contingent to a statement
-        contingency = CONTINGENCIES[(CONTINGENCIES.source == "ST") & (CONTINGENCIES.target == row.speech_act)]
-    else:
-        contingency = CONTINGENCIES[(CONTINGENCIES.source == row.prev_speech_act) & (CONTINGENCIES.target == row.speech_act)]
-    if len(contingency) == 1:
-        return bool(contingency.iloc[0]["contingency"])
-    else:
-        raise RuntimeError(f"No contingency data for pair: {row.prev_speech_act}-{row.speech_act}")
+def speech_act_is_intelligible(speech_act):
+    return speech_act not in SPEECH_ACTS_NO_FUNCTION
 
 
 def has_multiple_events(utterance):
@@ -167,22 +143,19 @@ def annotate(args):
         )
     )
 
-    utterances = utterances.assign(
-        is_intelligible=utterances.transcript_raw.apply(
-            is_intelligible,
-            label_partially_intelligible=args.label_partially_intelligible,
+    if args.rule_based_intelligibility:
+        utterances = utterances.assign(
+            is_intelligible=utterances.transcript_raw.apply(
+                is_intelligible,
+                label_partially_intelligible=args.label_partially_intelligible,
+            )
         )
-    )
-
-    utterances["prev_speech_act"] = utterances["speech_act"].shift(1)
-    utterances["prev_transcript_file"] = utterances["transcript_file"].shift(1)
-    utterances["prev_speaker_code"] = utterances["speaker_code"].shift(1)
-    utterances = utterances.assign(
-        is_contingent=utterances.apply(
-            is_contingent,
-            axis=1)
-    )
-    utterances.drop(columns=["prev_transcript_file", "prev_speaker_code"], inplace=True)
+    else:
+        utterances = utterances.assign(
+            is_intelligible=utterances.speech_act.apply(
+                speech_act_is_intelligible,
+            )
+        )
 
     return utterances
 
@@ -205,6 +178,11 @@ def parse_args():
         nargs="?",
         default=DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE,
         help="Label for partially intelligible utterances: Set to True to count as intelligible, False to count as unintelligible or None to exclude these utterances from the analysis",
+    )
+    argparser.add_argument(
+        "--rule-based-intelligibility",
+        action="store_true",
+        help="Use rule-based approach to annotate intelligibility"
     )
 
     args = argparser.parse_args()
