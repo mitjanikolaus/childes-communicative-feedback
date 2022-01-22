@@ -155,25 +155,14 @@ def perform_average_and_per_transcript_analysis(
     results = pd.DataFrame(results)
 
     for key, value in results.items():
-        if "proportion" in key:
-            plt.figure()
-            sns.regplot(
-                data=results,
-                x="age",
-                y=key,
-                marker=".",
+        if key not in ["age"]:
+            value = value.dropna()
+            p_value = ztest(
+                value, value=0.0, alternative="larger"
+            )[1]
+            print(
+                f"{key}: {value.mean():.4f} +-{value.std():.4f} p-value:{p_value}"
             )
-            plt.tight_layout()
-        else:
-            if key not in ["age"]:
-                value = value.dropna()
-                p_value = ztest(
-                    value, value=0.0, alternative="larger"
-                )[1]
-                print(
-                    f"{key}: {value.mean():.4f} +-{value.std():.4f} p-value:{p_value}"
-                )
-
 
     return results
 
@@ -237,13 +226,10 @@ def perform_contingency_analysis_speech_relatedness(conversations):
     else:
         contingency_children_pos_case = np.nan
 
-    proportion_speech_related = n_speech / (n_speech + n_non_speech)
-
     return {
         "age": conversations.age.mean(),
         "contingency_caregiver": contingency_caregiver,
         "contingency_children_pos_case": contingency_children_pos_case,
-        "proportion_intelligible": proportion_speech_related,
     }
 
 
@@ -449,6 +435,19 @@ def perform_analysis_speech_relatedness(utterances, args):
     )
     results_dir = "results/reproduce_warlaumont/"
     os.makedirs(results_dir, exist_ok=True)
+
+    proportion_speech_related_per_transcript = conversations.groupby("transcript_file").agg({"is_speech_related": "mean", "age": "mean"})
+    plt.figure()
+    sns.regplot(
+        data=proportion_speech_related_per_transcript,
+        x="age",
+        y="is_speech_related",
+        marker=".",
+        # logx=True,
+    )
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "proportion_speech_related.png"))
+
 
     plt.figure()
     sns.scatterplot(data=results_analysis, x="age", y="contingency_caregiver")

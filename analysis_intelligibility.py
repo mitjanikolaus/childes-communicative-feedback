@@ -225,6 +225,19 @@ def perform_analysis(utterances, args):
 
 
 def make_plots(conversations, conversations_melted, results_dir):
+    proportion_intelligible_per_transcript = conversations.groupby("transcript_file").agg({"is_intelligible": "mean", "age": "mean"})
+    plt.figure(figsize=(12, 6))
+    sns.regplot(
+        data=proportion_intelligible_per_transcript,
+        x="age",
+        y="is_intelligible",
+        marker=".",
+        logx=True,
+    )
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "proportion_intelligible.png"))
+
+
     plt.figure(figsize=(12, 6))
     plt.title("Caregiver timing contingency")
     axis = sns.barplot(
@@ -488,11 +501,6 @@ def perform_intelligibility_analysis(conversations):
     else:
         contingency_children_neg_case_control = np.nan
 
-    if n_intelligible + n_not_intelligible:
-        proportion_intelligible = n_intelligible / (n_intelligible + n_not_intelligible)
-    else:
-        proportion_intelligible = np.nan
-
     return {
         "age": conversations.age.mean(),
         "contingency_caregiver_timing": contingency_caregiver_timing,
@@ -501,7 +509,6 @@ def perform_intelligibility_analysis(conversations):
         "positive_feedback_timing": contingency_children_pos_case,
         "contingency_children_neg_case": contingency_children_neg_case,
         "contingency_children_neg_case_control": contingency_children_neg_case_control,
-        "proportion_intelligible": proportion_intelligible,
     }
 
 
