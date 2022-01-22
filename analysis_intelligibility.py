@@ -6,10 +6,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-
+from statsmodels.stats.weightstats import ztest
 
 from analysis_reproduce_warlaumont import (
-    perform_average_and_per_transcript_analysis,
     str2bool,
     get_micro_conversations,
     has_response,
@@ -185,11 +184,6 @@ def perform_analysis(utterances, args):
         inplace=True,
     )
 
-
-    # Get the number of children in all corpora:
-    num_children = len(conversations.child_name.unique())
-    print(f"Number of children in the analysis: {num_children}")
-
     conversations["age"] = conversations.age.apply(
         age_bin, min_age=args.min_age, max_age=args.max_age, num_months=AGE_BIN_NUM_MONTHS
     )
@@ -211,17 +205,69 @@ def perform_analysis(utterances, args):
     conversations_melted.to_csv(results_dir + "conversations_melted.csv", index=False)
     conversations_melted = pd.read_csv(results_dir + "conversations_melted.csv")
 
-    perform_average_and_per_transcript_analysis(
-        conversations,
-        args,
-        perform_intelligibility_analysis,
-    )
+    ###
+    # Analyses
+    ###
+
+    # Get the number of children in all corpora:
+    num_children = len(conversations.child_name.unique())
+    print(f"Number of children in the analysis: {num_children}")
+    print(f"\nFound {len(conversations)} micro-conversations")
+
+    perform_per_transcript_analyses(conversations)
 
     make_plots(conversations, conversations_melted, results_dir)
 
     plt.show()
 
     return conversations
+
+
+def perform_per_transcript_analyses(conversations):
+    print("Per-transcript analysis: ")
+
+    prop_responses_to_intelligible = conversations[conversations.is_intelligible].groupby("transcript_file").agg(
+        {"has_response": "mean"})
+    prop_responses_to_unintelligible = conversations[~conversations.is_intelligible].groupby("transcript_file").agg(
+        {"has_response": "mean"})
+    contingency_caregiver_timing = prop_responses_to_intelligible - prop_responses_to_unintelligible
+    contingency_caregiver_timing = contingency_caregiver_timing.dropna().values
+    p_value = ztest(
+        contingency_caregiver_timing, value=0.0, alternative="larger"
+    )[1]
+    print(
+        f"contingency_caregiver_timing: {contingency_caregiver_timing.mean():.4f} +-{contingency_caregiver_timing.std():.4f} p-value:{p_value}"
+    )
+
+    convs_with_response = conversations[conversations.has_response]
+    prop_responses_to_intelligible = convs_with_response[convs_with_response.is_intelligible].groupby(
+        "transcript_file").agg(
+        {"response_is_clarification_request": "mean"})
+    prop_responses_to_unintelligible = convs_with_response[convs_with_response.is_intelligible == False].groupby(
+        "transcript_file").agg(
+        {"response_is_clarification_request": "mean"})
+    contingency_caregiver_clarification_requests = prop_responses_to_unintelligible - prop_responses_to_intelligible
+    contingency_caregiver_clarification_requests = contingency_caregiver_clarification_requests.dropna().values
+    p_value = ztest(
+        contingency_caregiver_clarification_requests, value=0.0, alternative="larger"
+    )[1]
+    print(
+        f"contingency_caregiver_clarification_requests: {contingency_caregiver_clarification_requests.mean():.4f} +-{contingency_caregiver_clarification_requests.std():.4f} p-value:{p_value}"
+    )
+
+    prop_follow_up_intelligible_if_response = conversations[conversations.has_response].groupby("transcript_file").agg(
+        {"follow_up_is_intelligible": "mean"})
+    prop_follow_up_intelligible_if_no_response = conversations[conversations.has_response == False].groupby(
+        "transcript_file").agg(
+        {"follow_up_is_intelligible": "mean"})
+    contingency_children = prop_follow_up_intelligible_if_response - prop_follow_up_intelligible_if_no_response
+    contingency_children = contingency_children.dropna().values
+    p_value = ztest(
+        contingency_children, value=0.0, alternative="larger"
+    )[1]
+    print(
+        f"contingency_children_pos_case: {contingency_children.mean():.4f} +-{contingency_children.std():.4f} p-value:{p_value}"
+    )
 
 
 def make_plots(conversations, conversations_melted, results_dir):
@@ -343,173 +389,6 @@ def make_plots(conversations, conversations_melted, results_dir):
     # axis.set(ylabel="prob_is_intelligible")
     # plt.tight_layout()
     # plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_pauses_control_case.png"))
-
-
-def perform_intelligibility_analysis(conversations):
-    # caregiver contingency (all):
-    n_pos_feedback_to_intelligible = len(
-        conversations[conversations.is_intelligible & conversations.pos_feedback]
-    )
-    n_intelligible = len(conversations[conversations.is_intelligible])
-
-    n_pos_feedback_to_unintelligible = len(
-        conversations[
-            (conversations.is_intelligible == False) & conversations.pos_feedback
-        ]
-    )
-    n_not_intelligible = len(conversations[conversations.is_intelligible == False])
-
-    if n_intelligible > 0 and n_not_intelligible > 0:
-        contingency_caregiver_all = (n_pos_feedback_to_intelligible / n_intelligible) - (
-            n_pos_feedback_to_unintelligible / n_not_intelligible
-        )
-    else:
-        contingency_caregiver_all = np.nan
-
-    # caregiver contingency (timing):
-    n_response_to_intelligible = len(
-        conversations[conversations.is_intelligible & conversations.has_response]
-    )
-    n_intelligible = len(conversations[conversations.is_intelligible])
-
-    n_response_to_unintelligible = len(
-        conversations[
-            (conversations.is_intelligible == False) & conversations.has_response
-        ]
-    )
-    n_not_intelligible = len(conversations[conversations.is_intelligible == False])
-
-    if n_intelligible > 0 and n_not_intelligible > 0:
-        contingency_caregiver_timing = (n_response_to_intelligible / n_intelligible) - (
-                n_response_to_unintelligible / n_not_intelligible
-        )
-    else:
-        contingency_caregiver_timing = np.nan
-
-    # Contingency of child vocalization on previous adult response (positive feedback: timing):
-    n_follow_up_is_intelligible_if_response_to_intelligible = len(
-        conversations[
-            conversations.follow_up_is_intelligible
-            & conversations.has_response
-        ]
-    )
-    n_response_to_intelligible = len(
-        conversations[
-            (conversations.has_response)
-        ]
-    )
-
-    n_follow_up_is_intelligible_if_no_response_to_intelligible = len(
-        conversations[
-            conversations.follow_up_is_intelligible
-            & (conversations.has_response == False)
-        ]
-    )
-    n_no_response_to_intelligible = len(
-        conversations[
-            (conversations.has_response == False)
-        ]
-    )
-
-    if n_response_to_intelligible and n_no_response_to_intelligible:
-        ratio_follow_up_is_intelligible_if_response = (
-            n_follow_up_is_intelligible_if_response_to_intelligible
-            / n_response_to_intelligible
-        )
-        ratio_follow_up_is_intelligible_if_no_response = (
-            n_follow_up_is_intelligible_if_no_response_to_intelligible
-            / n_no_response_to_intelligible
-        )
-        contingency_children_pos_case = (
-            ratio_follow_up_is_intelligible_if_response
-            - ratio_follow_up_is_intelligible_if_no_response
-        )
-    else:
-        contingency_children_pos_case = np.nan
-
-    # TODO: filtering out cases with no response
-    convs_with_response = conversations[conversations.has_response]
-
-    # Caregiver contingency (speech acts)
-    n_pos_feedback_to_intelligible = len(
-        convs_with_response[convs_with_response.is_intelligible & ~convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST)]
-    )
-    n_intelligible = len(convs_with_response[convs_with_response.is_intelligible])
-
-    n_pos_feedback_to_unintelligible = len(
-        convs_with_response[
-            (convs_with_response.is_intelligible == False) & ~convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST)
-        ]
-    )
-    n_not_intelligible = len(convs_with_response[convs_with_response.is_intelligible == False])
-
-    if n_intelligible > 0 and n_not_intelligible > 0:
-        contingency_caregiver_speech_acts = (n_pos_feedback_to_intelligible / n_intelligible) - (
-                n_pos_feedback_to_unintelligible / n_not_intelligible
-        )
-    else:
-        contingency_caregiver_speech_acts = np.nan
-
-
-    # Negative feedback case:
-    n_neg_feedback_to_unintelligible = len(
-        convs_with_response[
-            (convs_with_response.is_intelligible == False)
-            & (convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST))
-        ]
-    )
-    n_neg_feedback = len(convs_with_response[convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST)])
-
-    n_follow_up_unintelligible_if_neg_feedback_to_unintelligible = len(
-        convs_with_response[
-            (convs_with_response.is_intelligible == False)
-            & (convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST))
-            & (convs_with_response.follow_up_is_intelligible == False)
-        ]
-    )
-
-    if n_neg_feedback:
-        ratio_before_feedback = (n_neg_feedback_to_unintelligible / n_neg_feedback)
-        # print("Ratio before: ", ratio_before_feedback)
-        ratio_after_feedback = (n_follow_up_unintelligible_if_neg_feedback_to_unintelligible / n_neg_feedback)
-        # print("Ratio after: ", ratio_after_feedback)
-        contingency_children_neg_case = ratio_before_feedback - ratio_after_feedback
-    else:
-        contingency_children_neg_case = np.nan
-
-    # Negative feedback control case:
-    n_pos_feedback_to_unintelligible = len(
-        convs_with_response[
-            (convs_with_response.is_intelligible == False)
-            & (~convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST))
-        ]
-    )
-    n_pos_feedback = len(convs_with_response[~convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST)])
-
-    n_follow_up_unintelligible_if_pos_feedback_to_unintelligible = len(
-        convs_with_response[
-            (convs_with_response.is_intelligible == False)
-            & (~convs_with_response.response_speech_act.isin(SPEECH_ACTS_CLARIFICATION_REQUEST))
-            & (convs_with_response.follow_up_is_intelligible == False)
-        ]
-    )
-
-    if n_pos_feedback:
-        ratio_before_feedback = (n_pos_feedback_to_unintelligible / n_pos_feedback)
-        ratio_after_feedback = (n_follow_up_unintelligible_if_pos_feedback_to_unintelligible / n_pos_feedback)
-        contingency_children_neg_case_control = ratio_before_feedback - ratio_after_feedback
-    else:
-        contingency_children_neg_case_control = np.nan
-
-    return {
-        "age": conversations.age.mean(),
-        "contingency_caregiver_timing": contingency_caregiver_timing,
-        "contingency_caregiver_speech_acts": contingency_caregiver_speech_acts,
-        "contingency_caregiver_all": contingency_caregiver_all,
-        "positive_feedback_timing": contingency_children_pos_case,
-        "contingency_children_neg_case": contingency_children_neg_case,
-        "contingency_children_neg_case_control": contingency_children_neg_case_control,
-    }
 
 
 if __name__ == "__main__":

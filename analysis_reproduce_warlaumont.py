@@ -8,7 +8,6 @@ from multiprocessing import Pool
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import numpy as np
 
 from statsmodels.stats.weightstats import ztest
 from tqdm import tqdm
@@ -124,113 +123,6 @@ def parse_args():
     args = argparser.parse_args()
 
     return args
-
-
-def caregiver_response_contingent_on_speech_relatedness(row):
-    return ((row["is_speech_related"] == True) & (row["has_response"] == True)) | (
-        (row["is_speech_related"] == False) & (row["has_response"] == False)
-    )
-
-
-def perform_average_and_per_transcript_analysis(
-    conversations, args, analysis_function
-):
-    print(f"\nFound {len(conversations)} micro-conversations")
-    print("Overall analysis: ")
-    average_results = analysis_function(conversations)
-    for key, value in average_results.items():
-        if key not in ["age"]:
-            print(f"{key}: {value:.4f}")
-
-    print("Per-transcript analysis: ")
-    results = []
-    for transcript in conversations.transcript_file.unique():
-        conversations_transcript = conversations[
-            conversations.transcript_file == transcript
-        ]
-        if len(conversations_transcript) > args.min_transcript_length:
-            results.append(
-                analysis_function(conversations_transcript)
-            )
-    results = pd.DataFrame(results)
-
-    for key, value in results.items():
-        if key not in ["age"]:
-            value = value.dropna()
-            p_value = ztest(
-                value, value=0.0, alternative="larger"
-            )[1]
-            print(
-                f"{key}: {value.mean():.4f} +-{value.std():.4f} p-value:{p_value}"
-            )
-
-    return results
-
-
-def perform_contingency_analysis_speech_relatedness(conversations):
-    # caregiver contingency
-    n_responses_to_speech = len(
-        conversations[conversations.is_speech_related & conversations.has_response]
-    )
-    n_speech = len(conversations[conversations.is_speech_related])
-
-    n_responses_to_non_speech = len(
-        conversations[
-            (conversations.is_speech_related == False) & conversations.has_response
-        ]
-    )
-    n_non_speech = len(conversations[conversations.is_speech_related == False])
-
-    if n_non_speech > 0 and n_speech > 0:
-        contingency_caregiver = (n_responses_to_speech / n_speech) - (
-            n_responses_to_non_speech / n_non_speech
-        )
-    else:
-        contingency_caregiver = np.nan
-
-    # Contingency of child vocalization on previous adult response (positive case):
-    n_follow_up_is_speech_related_if_response_to_speech_related = len(
-        conversations[
-            conversations.follow_up_is_speech_related
-            & conversations.is_speech_related
-            & conversations.has_response
-        ]
-    )
-
-    n_follow_up_is_speech_related_if_no_response_to_speech_related = len(
-        conversations[
-            conversations.follow_up_is_speech_related
-            & conversations.is_speech_related
-            & (conversations.has_response == False)
-        ]
-    )
-    n_no_responses_to_speech_related = len(
-        conversations[
-            conversations.is_speech_related & (conversations.has_response == False)
-        ]
-    )
-
-    if n_responses_to_speech > 0 and n_no_responses_to_speech_related > 0:
-        ratio_follow_up_is_speech_related_if_response_to_speech_related = (
-            n_follow_up_is_speech_related_if_response_to_speech_related
-            / n_responses_to_speech
-        )
-        ratio_follow_up_is_speech_related_if_no_response_to_speech_related = (
-            n_follow_up_is_speech_related_if_no_response_to_speech_related
-            / n_no_responses_to_speech_related
-        )
-        contingency_children_pos_case = (
-            ratio_follow_up_is_speech_related_if_response_to_speech_related
-            - ratio_follow_up_is_speech_related_if_no_response_to_speech_related
-        )
-    else:
-        contingency_children_pos_case = np.nan
-
-    return {
-        "age": conversations.age.mean(),
-        "contingency_caregiver": contingency_caregiver,
-        "contingency_children_pos_case": contingency_children_pos_case,
-    }
 
 
 def has_response(
@@ -417,26 +309,64 @@ def perform_analysis_speech_relatedness(utterances, args):
 
     conversations = conversations[conversations.corpus.isin(good_corpora)]
 
-    # Get the number of children in all corpora:
-    num_children = len(conversations.child_name.unique())
-    print(f"Number of children in the analysis: {num_children}")
 
-    # Label caregiver responses as contingent on child utterance or not
-    conversations = conversations.assign(
-        caregiver_response_contingent=conversations[
-            ["is_speech_related", "has_response"]
-        ].apply(caregiver_response_contingent_on_speech_relatedness, axis=1)
-    )
-
-    results_analysis = perform_average_and_per_transcript_analysis(
-        conversations,
-        args,
-        perform_contingency_analysis_speech_relatedness,
-    )
     results_dir = "results/reproduce_warlaumont/"
     os.makedirs(results_dir, exist_ok=True)
 
-    proportion_speech_related_per_transcript = conversations.groupby("transcript_file").agg({"is_speech_related": "mean", "age": "mean"})
+    conversations["age"] = conversations.age.apply(
+        age_bin, min_age=args.min_age, max_age=args.max_age, num_months=AGE_BIN_NUM_MONTHS
+    )
+
+    ###
+    # Analyses
+    ###
+
+    # Get the number of children in all corpora:
+    num_children = len(conversations.child_name.unique())
+    print(f"Number of children in the analysis: {num_children}")
+    print(f"\nFound {len(conversations)} micro-conversations")
+
+    perform_per_transcript_analyses(conversations)
+
+    make_plots(conversations, results_dir)
+
+    plt.show()
+
+    return conversations
+
+
+def perform_per_transcript_analyses(conversations):
+    prop_responses_to_speech_related = conversations[conversations.is_speech_related].groupby("transcript_file").agg(
+        {"has_response": "mean"})
+    prop_responses_to_non_speech_related = conversations[conversations.is_speech_related == False].groupby("transcript_file").agg(
+        {"has_response": "mean"})
+    contingency_caregiver_timing = prop_responses_to_speech_related - prop_responses_to_non_speech_related
+    contingency_caregiver_timing = contingency_caregiver_timing.dropna().values
+    p_value = ztest(
+        contingency_caregiver_timing, value=0.0, alternative="larger"
+    )[1]
+    print(
+        f"contingency_caregiver_timing: {contingency_caregiver_timing.mean():.4f} +-{contingency_caregiver_timing.std():.4f} p-value:{p_value}"
+    )
+
+    prop_follow_up_speech_related_if_response_to_speech_related = conversations[conversations.is_speech_related & conversations.has_response].groupby("transcript_file").agg(
+        {"follow_up_is_speech_related": "mean"})
+    prop_follow_up_speech_related_if_no_response_to_speech_related = conversations[conversations.is_speech_related & (conversations.has_response == False)].groupby(
+        "transcript_file").agg(
+        {"follow_up_is_speech_related": "mean"})
+    contingency_children_pos_case = prop_follow_up_speech_related_if_response_to_speech_related - prop_follow_up_speech_related_if_no_response_to_speech_related
+    contingency_children_pos_case = contingency_children_pos_case.dropna().values
+    p_value = ztest(
+        contingency_children_pos_case, value=0.0, alternative="larger"
+    )[1]
+    print(
+        f"contingency_children_pos_case: {contingency_children_pos_case.mean():.4f} +-{contingency_children_pos_case.std():.4f} p-value:{p_value}"
+    )
+
+
+def make_plots(conversations, results_dir):
+    proportion_speech_related_per_transcript = conversations.groupby("transcript_file").agg(
+        {"is_speech_related": "mean", "age": "mean"})
     plt.figure()
     sns.regplot(
         data=proportion_speech_related_per_transcript,
@@ -447,31 +377,6 @@ def perform_analysis_speech_relatedness(utterances, args):
     )
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "proportion_speech_related.png"))
-
-
-    plt.figure()
-    sns.scatterplot(data=results_analysis, x="age", y="contingency_caregiver")
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "dev_contingency_caregivers.png"))
-
-    plt.figure()
-    sns.scatterplot(data=results_analysis, x="age", y="contingency_children_pos_case")
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "dev_contingency_children.png"))
-
-    plt.figure()
-    plt.title("Caregiver contingency")
-    sns.barplot(
-        data=conversations,
-        x="is_speech_related",
-        y="has_response",
-    )
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "contingency_caregivers.png"))
-
-    conversations["age"] = conversations.age.apply(
-        age_bin, min_age=args.min_age, max_age=args.max_age, num_months=AGE_BIN_NUM_MONTHS
-    )
 
     plt.figure(figsize=(6, 3))
     plt.title("Caregiver contingency - per age group")
@@ -486,16 +391,6 @@ def perform_analysis_speech_relatedness(utterances, args):
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_caregivers_per_age.png"))
 
-    plt.figure()
-    plt.title("Child contingency")
-    sns.barplot(
-        data=conversations[conversations.is_speech_related == True],
-        x="has_response",
-        y="follow_up_is_speech_related",
-    )
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "contingency_children.png"))
-
     plt.figure(figsize=(6, 3))
     plt.title("Child contingency - per age group")
     axis = sns.barplot(
@@ -503,16 +398,11 @@ def perform_analysis_speech_relatedness(utterances, args):
         x="age",
         y="follow_up_is_speech_related",
         hue="has_response",
-        ci=None,
     )
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_follow_up_is_speech_related")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"))
-
-    plt.show()
-
-    return conversations
 
 
 if __name__ == "__main__":
