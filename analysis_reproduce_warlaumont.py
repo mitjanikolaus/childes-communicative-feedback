@@ -37,7 +37,7 @@ DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
 
 DEFAULT_MIN_RATIO_NONSPEECH = 0.0
 
-DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 0
+DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 100
 
 # Ages aligned to study of Warlaumont et al.
 DEFAULT_MIN_AGE = 8
@@ -303,6 +303,7 @@ def perform_analysis_speech_relatedness(utterances, args):
 
     conversations = conversations[conversations.corpus.isin(good_corpora)]
 
+    conversations = filter_transcripts_based_on_num_child_utts(conversations, args.min_child_utts_per_transcript)
 
     results_dir = "results/reproduce_warlaumont/"
     os.makedirs(results_dir, exist_ok=True)
@@ -314,7 +315,9 @@ def perform_analysis_speech_relatedness(utterances, args):
     ###
     # Analyses
     ###
-    print(f"\nFound {len(utterances)} micro-conversations")
+    print(f"\nFound {len(conversations)} micro-conversations")
+    print(f"Number of children in the analysis: {len(conversations.child_name.unique())}")
+    print(f"Number of transcripts in the analysis: {len(conversations.transcript_file.unique())}")
 
     perform_per_transcript_analyses(conversations)
 
@@ -422,13 +425,11 @@ if __name__ == "__main__":
         f"Mean of child age in analysis: {mean_age:.1f} (min: {min_age} max: {max_age})"
     )
 
-    utterances = filter_transcripts_based_on_num_child_utts(utterances, args.min_child_utts_per_transcript)
-
-    utterances = filter_corpora_based_on_response_latency_length(
-        utterances,
-        args.response_latency_max_standard_deviations_off,
-        args.min_age,
-        args.max_age,
-    )
+    # utterances = filter_corpora_based_on_response_latency_length(
+    #     utterances,
+    #     args.response_latency_max_standard_deviations_off,
+    #     args.min_age,
+    #     args.max_age,
+    # )
 
     conversations = perform_analysis_speech_relatedness(utterances, args)

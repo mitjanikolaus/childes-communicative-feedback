@@ -452,19 +452,12 @@ def filter_corpora_based_on_response_latency_length(
     print(f"Corpora included in analysis after filtering: {filtered}")
     utterances = utterances[utterances.corpus.isin(filtered)]
 
-    num_children = len(utterances.child_name.unique())
-    print(f"Number of children in the analysis: {num_children}")
-
-    num_transcripts = len(utterances.transcript_file.unique())
-    print(f"Number of transcripts in the analysis: {num_transcripts}")
-
     del utterances["response_latency"]
     return utterances
 
 
-def filter_transcripts_based_on_num_child_utts(utterances, min_child_utts_per_transcript):
-    child_utts = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD]
-    child_utts_per_transcript = child_utts.groupby("transcript_file").size()
+def filter_transcripts_based_on_num_child_utts(conversations, min_child_utts_per_transcript):
+    child_utts_per_transcript = conversations.groupby("transcript_file").size()
     transcripts_enough_utts = child_utts_per_transcript[child_utts_per_transcript > min_child_utts_per_transcript]
 
-    return utterances[utterances.transcript_file.isin(transcripts_enough_utts.index)]
+    return conversations[conversations.transcript_file.isin(transcripts_enough_utts.index)]

@@ -33,7 +33,7 @@ DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
 
 DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES = True
 
-DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 0
+DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 100
 
 # 1 second
 DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
@@ -180,6 +180,8 @@ def perform_analysis(utterances, args):
         inplace=True,
     )
 
+    conversations = filter_transcripts_based_on_num_child_utts(conversations, args.min_child_utts_per_transcript)
+
     conversations["age"] = conversations.age.apply(
         age_bin, min_age=args.min_age, max_age=args.max_age, num_months=AGE_BIN_NUM_MONTHS
     )
@@ -204,7 +206,9 @@ def perform_analysis(utterances, args):
     ###
     # Analyses
     ###
-    print(f"\nFound {len(utterances)} micro-conversations")
+    print(f"\nFound {len(conversations)} micro-conversations")
+    print(f"Number of children in the analysis: {len(conversations.child_name.unique())}")
+    print(f"Number of transcripts in the analysis: {len(conversations.transcript_file.unique())}")
 
     perform_per_transcript_analyses(conversations)
 
@@ -402,13 +406,11 @@ if __name__ == "__main__":
         (args.min_age - AGE_BIN_NUM_MONTHS/2 <= utterances.age) & (utterances.age <= args.max_age + AGE_BIN_NUM_MONTHS/2)
     ]
 
-    utterances = filter_transcripts_based_on_num_child_utts(utterances, args.min_child_utts_per_transcript)
-
-    utterances = filter_corpora_based_on_response_latency_length(
-        utterances,
-        args.response_latency_max_standard_deviations_off,
-        args.min_age,
-        args.max_age,
-    )
+    # utterances = filter_corpora_based_on_response_latency_length(
+    #     utterances,
+    #     args.response_latency_max_standard_deviations_off,
+    #     args.min_age,
+    #     args.max_age,
+    # )
 
     conversations = perform_analysis(utterances, args)
