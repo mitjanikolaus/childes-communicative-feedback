@@ -6,20 +6,6 @@ import pylangacq
 
 from utils import clean_utterance, POS_PUNCTUATION, PREPROCESSED_UTTERANCES_FILE
 
-SPEAKER_CODE_CHILD = "CHI"
-
-SPEAKER_CODES_CAREGIVER = [
-    "MOT",
-    "FAT",
-    "DAD",
-    "MOM",
-    "GRA",
-    "GRF",
-    "GRM",
-    "GMO",
-    "GFA",
-    "CAR",
-]
 # Corpora that are conversational (have child AND caregiver transcripts), are English, and have timing information
 CANDIDATE_CORPORA = [
     "Edinburgh",

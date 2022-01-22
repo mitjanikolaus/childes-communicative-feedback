@@ -4,6 +4,22 @@ import os
 import re
 
 import pandas as pd
+import numpy as np
+
+SPEAKER_CODE_CHILD = "CHI"
+
+SPEAKER_CODES_CAREGIVER = [
+    "MOT",
+    "FAT",
+    "DAD",
+    "MOM",
+    "GRA",
+    "GRF",
+    "GRM",
+    "GMO",
+    "GFA",
+    "CAR",
+]
 
 PREPROCESSED_UTTERANCES_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances.p"
@@ -393,7 +409,7 @@ def remove_babbling(utterance):
 
 
 def filter_corpora_based_on_response_latency_length(
-    conversations, standard_deviations_off
+    utterances, standard_deviations_off, min_age, max_age
 ):
     print(f"Filtering corpora based on average response latency")
 
@@ -403,54 +419,52 @@ def filter_corpora_based_on_response_latency_length(
     # Use only non-clinical data:
     latency_data = latency_data[latency_data["clinical group"] == "Healthy"]
 
+    # Use only child-caregiver interactional data:
+    latency_data = latency_data[latency_data["interactor_rough"] != "Stranger"]
+
     # Use only data of the target age range:
-    min_age = conversations.age.min()
-    max_age = conversations.age.max()
     latency_data = latency_data[
         (latency_data.mean_age_infants_months >= min_age)
         & (latency_data.mean_age_infants_months <= max_age)
     ]
 
-    mean_latency = latency_data.adult_response_latency.mean()
-    std_mean_latency = latency_data.adult_response_latency.std()
+    mean_latency = np.concatenate([latency_data.infant_response_latency.dropna().values, latency_data.adult_response_latency.dropna().values]).mean()
+    std_mean_latency = np.concatenate([latency_data.infant_response_latency.dropna().values, latency_data.adult_response_latency.dropna().values]).std()
     print(
         f"Mean of response latency in meta-analysis: {mean_latency:.1f} +/- {std_mean_latency:.1f}"
-    )
-
-    min_age = latency_data.mean_age_infants_months.min()
-    max_age = latency_data.mean_age_infants_months.max()
-    mean_age = latency_data.mean_age_infants_months.mean()
-    print(
-        f"Mean of child age in meta-analysis: {mean_age:.1f} (min: {min_age} max: {max_age})"
     )
 
     # Filter corpora to be in range of mean +/- 1 standard deviation
     filtered = []
     print("Response latencies:")
-    for corpus in conversations.corpus.unique():
-        mean = conversations[
-            (conversations.corpus == corpus)
-            & (conversations.response_latency < math.inf)
-        ].response_latency.values.mean()
-        print(f"{corpus}: {mean:.1f}")
+
+    utterances["response_latency"] = utterances["start_time_next"] - utterances["end_time"]
+    corpus_means = utterances.groupby("corpus").agg({"response_latency": "mean"})
+    for corpus, row in corpus_means.iterrows():
+        print(f"{corpus}: {row['response_latency']:.1f}")
         if (
             mean_latency - standard_deviations_off * std_mean_latency
-            < mean
+            < row['response_latency']
             < mean_latency + standard_deviations_off * std_mean_latency
         ):
             filtered.append(corpus)
 
     print(f"Corpora included in analysis after filtering: {filtered}")
-    conversations = conversations[conversations.corpus.isin(filtered)]
-    return conversations
+    utterances = utterances[utterances.corpus.isin(filtered)]
+
+    num_children = len(utterances.child_name.unique())
+    print(f"Number of children in the analysis: {num_children}")
+
+    num_transcripts = len(utterances.transcript_file.unique())
+    print(f"Number of transcripts in the analysis: {num_transcripts}")
+
+    del utterances["response_latency"]
+    return utterances
 
 
-def get_binomial_test_data(column_name_1, column_name_2):
-    data = []
+def filter_transcripts_based_on_num_child_utts(utterances, min_child_utts_per_transcript):
+    child_utts = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD]
+    child_utts_per_transcript = child_utts.groupby("transcript_file").size()
+    transcripts_enough_utts = child_utts_per_transcript[child_utts_per_transcript > min_child_utts_per_transcript]
 
-    data.append({column_name_1: 0, column_name_2: 0})
-    data.append({column_name_1: 0, column_name_2: 1})
-    data.append({column_name_1: 1, column_name_2: 0})
-    data.append({column_name_1: 1, column_name_2: 1})
-
-    return pd.DataFrame(data)
+    return utterances[utterances.transcript_file.isin(transcripts_enough_utts.index)]

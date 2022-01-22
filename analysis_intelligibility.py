@@ -19,6 +19,7 @@ from preprocess import (
 from utils import (
     age_bin,
     filter_corpora_based_on_response_latency_length, ANNOTATED_UTTERANCES_FILE, SPEECH_ACTS_NO_FUNCTION,
+    filter_transcripts_based_on_num_child_utts,
 )
 
 DEFAULT_RESPONSE_THRESHOLD = 1000
@@ -32,13 +33,13 @@ DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
 
 DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES = True
 
-DEFAULT_MIN_TRANSCRIPT_LENGTH = 0
+DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 10
 
 # 1 second
 DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
-# 10 seconds
-DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
+# 60 seconds
+DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 60 * 1000  # ms
 
 # Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words
 DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
@@ -87,9 +88,9 @@ def parse_args():
         default=DEFAULT_MAX_AGE,
     )
     argparser.add_argument(
-        "--min-transcript-length",
+        "--min-child-utts-per-transcript",
         type=int,
-        default=DEFAULT_MIN_TRANSCRIPT_LENGTH,
+        default=DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT,
     )
     argparser.add_argument(
         "--response-latency-max-standard-deviations-off",
@@ -150,11 +151,6 @@ def perform_analysis(utterances, args):
         conversations.follow_up_is_speech_related
     ]
 
-    conversations = filter_corpora_based_on_response_latency_length(
-        conversations,
-        args.response_latency_max_standard_deviations_off,
-    )
-
     conversations = conversations.assign(
         has_response=conversations.apply(
             has_response,
@@ -208,11 +204,7 @@ def perform_analysis(utterances, args):
     ###
     # Analyses
     ###
-
-    # Get the number of children in all corpora:
-    num_children = len(conversations.child_name.unique())
-    print(f"Number of children in the analysis: {num_children}")
-    print(f"\nFound {len(conversations)} micro-conversations")
+    print(f"\nFound {len(utterances)} micro-conversations")
 
     perform_per_transcript_analyses(conversations)
 
@@ -410,11 +402,13 @@ if __name__ == "__main__":
         (args.min_age - AGE_BIN_NUM_MONTHS/2 <= utterances.age) & (utterances.age <= args.max_age + AGE_BIN_NUM_MONTHS/2)
     ]
 
-    min_age = utterances.age.min()
-    max_age = utterances.age.max()
-    mean_age = utterances.age.mean()
-    print(
-        f"Mean of child age in analysis: {mean_age:.1f} (min: {min_age} max: {max_age})"
+    utterances = filter_transcripts_based_on_num_child_utts(utterances, args.min_child_utts_per_transcript)
+
+    utterances = filter_corpora_based_on_response_latency_length(
+        utterances,
+        args.response_latency_max_standard_deviations_off,
+        args.min_age,
+        args.max_age,
     )
 
     conversations = perform_analysis(utterances, args)

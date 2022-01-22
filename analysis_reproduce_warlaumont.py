@@ -16,12 +16,11 @@ from annotate import ANNOTATED_UTTERANCES_FILE
 from utils import (
     filter_corpora_based_on_response_latency_length,
     age_bin,
-    str2bool, SPEECH_ACT_NO_FUNCTION,
+    str2bool, SPEECH_ACT_NO_FUNCTION, filter_transcripts_based_on_num_child_utts, SPEAKER_CODE_CHILD,
+    SPEAKER_CODES_CAREGIVER,
 )
 from preprocess import (
     CANDIDATE_CORPORA,
-    SPEAKER_CODE_CHILD,
-    SPEAKER_CODES_CAREGIVER,
 )
 
 DEFAULT_RESPONSE_THRESHOLD = 1000
@@ -29,8 +28,8 @@ DEFAULT_RESPONSE_THRESHOLD = 1000
 # 1 second
 DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 
-# 10 seconds
-DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
+# 60 seconds
+DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 60 * 1000  # ms
 
 DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
 
@@ -38,7 +37,7 @@ DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
 
 DEFAULT_MIN_RATIO_NONSPEECH = 0.0
 
-DEFAULT_MIN_TRANSCRIPT_LENGTH = 0
+DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 10
 
 # Ages aligned to study of Warlaumont et al.
 DEFAULT_MIN_AGE = 8
@@ -78,9 +77,9 @@ def parse_args():
         default=DEFAULT_MAX_AGE,
     )
     argparser.add_argument(
-        "--min-transcript-length",
+        "--min-child-utts-per-transcript",
         type=int,
-        default=DEFAULT_MIN_TRANSCRIPT_LENGTH,
+        default=DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT,
     )
     argparser.add_argument(
         "--min-ratio-nonspeech",
@@ -274,11 +273,6 @@ def perform_analysis_speech_relatedness(utterances, args):
         inplace=True,
     )
 
-    conversations = filter_corpora_based_on_response_latency_length(
-        conversations,
-        args.response_latency_max_standard_deviations_off,
-    )
-
     conversations = conversations.assign(
         has_response=conversations.apply(
             has_response,
@@ -320,11 +314,7 @@ def perform_analysis_speech_relatedness(utterances, args):
     ###
     # Analyses
     ###
-
-    # Get the number of children in all corpora:
-    num_children = len(conversations.child_name.unique())
-    print(f"Number of children in the analysis: {num_children}")
-    print(f"\nFound {len(conversations)} micro-conversations")
+    print(f"\nFound {len(utterances)} micro-conversations")
 
     perform_per_transcript_analyses(conversations)
 
@@ -430,6 +420,15 @@ if __name__ == "__main__":
     mean_age = utterances.age.mean()
     print(
         f"Mean of child age in analysis: {mean_age:.1f} (min: {min_age} max: {max_age})"
+    )
+
+    utterances = filter_transcripts_based_on_num_child_utts(utterances, args.min_child_utts_per_transcript)
+
+    utterances = filter_corpora_based_on_response_latency_length(
+        utterances,
+        args.response_latency_max_standard_deviations_off,
+        args.min_age,
+        args.max_age,
     )
 
     conversations = perform_analysis_speech_relatedness(utterances, args)
