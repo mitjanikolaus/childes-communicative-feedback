@@ -41,8 +41,10 @@ DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 # 60 seconds
 DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 60 * 1000  # ms
 
-# Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words
-DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
+# Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words and
+# should be excluded when annotating intelligibility based on rules.
+# DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
+DEFAULT_EXCLUDED_CORPORA = []
 
 # currently not used to exclude corpora, just stored for reference:
 CORPORA_NOT_LONGITUDINAL = ["Gleason", "Rollins", "Edinburgh"]
