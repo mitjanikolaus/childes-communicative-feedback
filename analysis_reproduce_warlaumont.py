@@ -377,7 +377,7 @@ def make_plots(conversations, results_dir):
         # logx=True,
     )
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "proportion_speech_related.png"))
+    plt.savefig(os.path.join(results_dir, "proportion_speech_related.png"), dpi=300)
 
     plt.figure(figsize=(6, 3))
     plt.title("Caregiver contingency - per age group")
@@ -390,7 +390,7 @@ def make_plots(conversations, results_dir):
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_caregiver_response")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "contingency_caregivers_per_age.png"))
+    plt.savefig(os.path.join(results_dir, "contingency_caregivers_per_age.png"), dpi=300)
 
     plt.figure(figsize=(6, 3))
     plt.title("Child contingency - per age group")
@@ -403,7 +403,7 @@ def make_plots(conversations, results_dir):
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_follow_up_is_speech_related")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"))
+    plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"), dpi=300)
 
 
 if __name__ == "__main__":

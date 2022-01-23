@@ -270,7 +270,7 @@ def perform_per_transcript_analyses(conversations):
 
 def make_plots(conversations, conversations_melted, results_dir):
     proportion_intelligible_per_transcript = conversations.groupby("transcript_file").agg({"utt_is_intelligible": "mean", "age": "mean"})
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(6, 3))
     sns.regplot(
         data=proportion_intelligible_per_transcript,
         x="age",
@@ -279,10 +279,10 @@ def make_plots(conversations, conversations_melted, results_dir):
         logx=True,
     )
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "proportion_intelligible.png"))
+    plt.savefig(os.path.join(results_dir, "proportion_intelligible.png"), dpi=300)
 
 
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(6, 3))
     plt.title("Caregiver timing contingency")
     axis = sns.barplot(
         data=conversations,
@@ -293,11 +293,11 @@ def make_plots(conversations, conversations_melted, results_dir):
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_response")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_quality_timing.png"))
+    plt.savefig(os.path.join(results_dir, "cf_quality_timing.png"), dpi=300)
 
     conversations_with_response = conversations[conversations.has_response]
 
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(6, 3))
     plt.title("Caregiver clarification request contingency")
     axis = sns.barplot(
         data=conversations_with_response,
@@ -308,9 +308,9 @@ def make_plots(conversations, conversations_melted, results_dir):
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_clarification_request")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_quality_clarification_request.png"))
+    plt.savefig(os.path.join(results_dir, "cf_quality_clarification_request.png"), dpi=300)
 
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(6, 3))
     plt.title("Caregiver contingency: timing + clarification requests")
     axis = sns.barplot(
         data=conversations,
@@ -321,9 +321,9 @@ def make_plots(conversations, conversations_melted, results_dir):
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_pos_feedback")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_quality_all.png"))
+    plt.savefig(os.path.join(results_dir, "cf_quality_all.png"), dpi=300)
 
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(6, 3))
     plt.title("Child contingency: effect of positive feedback")
     axis = sns.barplot(
         data=conversations,
@@ -334,9 +334,9 @@ def make_plots(conversations, conversations_melted, results_dir):
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_follow_up_is_intelligible")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_effect_pos_feedback_timing.png"))
+    plt.savefig(os.path.join(results_dir, "cf_effect_pos_feedback_timing.png"), dpi=300)
 
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(6, 3))
     plt.title("Child contingency: effect of clarification requests")
     axis = sns.barplot(
         data=conversations_melted[conversations_melted.response_is_clarification_request],
@@ -347,9 +347,9 @@ def make_plots(conversations, conversations_melted, results_dir):
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_is_intelligible")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_clarification_request.png"))
+    plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_clarification_request.png"), dpi=300)
 
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(6, 3))
     plt.title("Child contingency: effect of clarification requests: control")
     axis = sns.barplot(
         data=conversations_melted[~conversations_melted.response_is_clarification_request],
@@ -360,9 +360,9 @@ def make_plots(conversations, conversations_melted, results_dir):
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_is_intelligible")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_clarification_request_control_condition.png"))
+    plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_clarification_request_control_condition.png"), dpi=300)
 
-    # plt.figure(figsize=(12, 6))
+    # plt.figure(figsize=(6, 3))
     # plt.title("Child contingency: effect of pauses")
     # axis = sns.barplot(
     #     data=conversations_melted[~conversations_melted.has_response],
@@ -373,9 +373,9 @@ def make_plots(conversations, conversations_melted, results_dir):
     # sns.move_legend(axis, "lower right")
     # axis.set(ylabel="prob_is_intelligible")
     # plt.tight_layout()
-    # plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_pauses.png"))
+    # plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_pauses.png"), dpi=300)
     #
-    # plt.figure(figsize=(12, 6))
+    # plt.figure(figsize=(6, 3))
     # plt.title("Child contingency: effect of pauses: control")
     # axis = sns.barplot(
     #     data=conversations_melted[~conversations_melted.has_response],
@@ -386,7 +386,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     # sns.move_legend(axis, "lower right")
     # axis.set(ylabel="prob_is_intelligible")
     # plt.tight_layout()
-    # plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_pauses_control_case.png"))
+    # plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_pauses_control_case.png"), dpi=300)
 
 
 if __name__ == "__main__":
