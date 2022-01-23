@@ -18,7 +18,7 @@ from preprocess import (
 )
 from utils import (
     age_bin,
-    filter_corpora_based_on_response_latency_length, ANNOTATED_UTTERANCES_FILE, SPEECH_ACTS_NO_FUNCTION,
+    filter_corpora_based_on_response_latency_length, ANNOTATED_UTTERANCES_FILE,
     filter_transcripts_based_on_num_child_utts,
 )
 
@@ -209,6 +209,7 @@ def perform_analysis(utterances, args):
     # Analyses
     ###
     print(f"\nFound {len(conversations)} micro-conversations")
+    print(f"Number of corpora in the analysis: {len(conversations.corpus.unique())}")
     print(f"Number of children in the analysis: {len(conversations.child_name.unique())}")
     print(f"Number of transcripts in the analysis: {len(conversations.transcript_file.unique())}")
 
@@ -279,9 +280,9 @@ def make_plots(conversations, conversations_melted, results_dir):
         logx=True,
     )
     plt.tight_layout()
-    axis.set(ylabel="prop_intelligible")
+    axis.set(xlabel="age (months)", ylabel="prop_intelligible")
+    axis.set_xticks(np.arange(conversations.age.min(), conversations.age.max()+1, step=AGE_BIN_NUM_MONTHS))
     plt.savefig(os.path.join(results_dir, "proportion_intelligible.png"), dpi=300)
-
 
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
@@ -291,7 +292,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         hue="utt_is_intelligible",
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prop_has_response")
+    axis.set(xlabel="age (months)", ylabel="prop_has_response")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_quality_timing.png"), dpi=300)
 
@@ -304,8 +305,8 @@ def make_plots(conversations, conversations_melted, results_dir):
         y="response_is_clarification_request",
         hue="utt_is_intelligible",
     )
-    sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prop_clarification_request")
+    sns.move_legend(axis, "upper right")
+    axis.set(xlabel="age (months)", ylabel="prop_clarification_request")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_quality_clarification_request.png"), dpi=300)
 
@@ -317,7 +318,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         hue="utt_is_intelligible",
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prop_pos_feedback")
+    axis.set(xlabel="age (months)", ylabel="prop_pos_feedback")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_quality_all.png"), dpi=300)
 
@@ -329,7 +330,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         hue="has_response",
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prop_follow_up_is_intelligible")
+    axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_intelligible")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_effect_pos_feedback_timing.png"), dpi=300)
 
@@ -341,7 +342,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         hue="is_follow_up",
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prop_is_intelligible")
+    axis.set(xlabel="age (months)", ylabel="prop_is_intelligible")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_effect_clarification_request.png"), dpi=300)
 
@@ -353,7 +354,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         hue="is_follow_up",
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prop_is_intelligible")
+    axis.set(xlabel="age (months)", ylabel="prop_is_intelligible")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_effect_no_clarification_request.png"), dpi=300)
 
@@ -386,7 +387,7 @@ if __name__ == "__main__":
 
     # Filter by age
     utterances = utterances[
-        (args.min_age - AGE_BIN_NUM_MONTHS/2 <= utterances.age) & (utterances.age <= args.max_age + AGE_BIN_NUM_MONTHS/2)
+        (args.min_age <= utterances.age) & (utterances.age <= args.max_age)
     ]
 
     # utterances = filter_corpora_based_on_response_latency_length(

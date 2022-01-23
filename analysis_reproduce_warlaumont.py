@@ -7,6 +7,7 @@ from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 import seaborn as sns
 
 from statsmodels.stats.weightstats import ztest
@@ -39,8 +40,9 @@ DEFAULT_MIN_RATIO_NONSPEECH = 0.0
 
 DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 100
 
-# Ages aligned to study of Warlaumont et al.
-DEFAULT_MIN_AGE = 8
+# Ages aligned to study of Warlaumont et al. or to our study (minimum 10 months)
+DEFAULT_MIN_AGE = 10
+# DEFAULT_MIN_AGE = 8
 DEFAULT_MAX_AGE = 48
 
 AGE_BIN_NUM_MONTHS = 6
@@ -324,6 +326,7 @@ def perform_analysis_speech_relatedness(utterances, args):
     # Analyses
     ###
     print(f"\nFound {len(conversations)} micro-conversations")
+    print(f"Number of corpora in the analysis: {len(conversations.corpus.unique())}")
     print(f"Number of children in the analysis: {len(conversations.child_name.unique())}")
     print(f"Number of transcripts in the analysis: {len(conversations.transcript_file.unique())}")
 
@@ -376,7 +379,8 @@ def make_plots(conversations, results_dir):
         marker=".",
         logx=True,
     )
-    axis.set(ylabel="prop_speech_related")
+    axis.set(xlabel="age (months)", ylabel="prop_speech_related")
+    axis.set_xticks(np.arange(conversations.age.min(), conversations.age.max()+1, step=AGE_BIN_NUM_MONTHS))
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "proportion_speech_related.png"), dpi=300)
 
@@ -389,7 +393,7 @@ def make_plots(conversations, results_dir):
         hue="utt_is_speech_related",
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prop_caregiver_response")
+    axis.set(xlabel="age (months)", ylabel="prop_caregiver_response")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_caregivers_per_age.png"), dpi=300)
 
@@ -402,7 +406,7 @@ def make_plots(conversations, results_dir):
         hue="has_response",
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prop_follow_up_is_speech_related")
+    axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_speech_related")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"), dpi=300)
 
@@ -423,8 +427,7 @@ if __name__ == "__main__":
 
     # Filter by age
     utterances = utterances[
-        (args.min_age - AGE_BIN_NUM_MONTHS / 2 <= utterances.age) & (
-                    utterances.age <= args.max_age + AGE_BIN_NUM_MONTHS / 2)
+        (args.min_age <= utterances.age) & (utterances.age <= args.max_age)
     ]
 
     min_age = utterances.age.min()
