@@ -343,7 +343,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prop_is_intelligible")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_clarification_request.png"), dpi=300)
+    plt.savefig(os.path.join(results_dir, "cf_effect_clarification_request.png"), dpi=300)
 
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
@@ -355,31 +355,19 @@ def make_plots(conversations, conversations_melted, results_dir):
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prop_is_intelligible")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_clarification_request_control_condition.png"), dpi=300)
+    plt.savefig(os.path.join(results_dir, "cf_effect_no_clarification_request.png"), dpi=300)
 
-    # plt.figure(figsize=(6, 3))
-    # axis = sns.barplot(
-    #     data=conversations_melted[~conversations_melted.has_response],
-    #     x="age",
-    #     y="utt_is_intelligible",
-    #     hue="is_follow_up",
-    # )
-    # sns.move_legend(axis, "lower right")
-    # axis.set(ylabel="prob_is_intelligible")
-    # plt.tight_layout()
-    # plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_pauses.png"), dpi=300)
-    #
-    # plt.figure(figsize=(6, 3))
-    # axis = sns.barplot(
-    #     data=conversations_melted[~conversations_melted.has_response],
-    #     x="age",
-    #     y="utt_is_intelligible",
-    #     hue="is_follow_up",
-    # )
-    # sns.move_legend(axis, "lower right")
-    # axis.set(ylabel="prob_is_intelligible")
-    # plt.tight_layout()
-    # plt.savefig(os.path.join(results_dir, "cf_effect_neg_feedback_pauses_control_case.png"), dpi=300)
+    plt.figure(figsize=(6, 3))
+    axis = sns.barplot(
+        data=conversations_melted[conversations_melted.has_response],
+        x="response_is_clarification_request",
+        y="is_intelligible",
+        hue="is_follow_up",
+    )
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel="prob_is_intelligible")
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "cf_effect_clarification_request_control.png"), dpi=300)
 
 
 if __name__ == "__main__":
