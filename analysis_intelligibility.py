@@ -148,7 +148,7 @@ def perform_analysis(utterances, args):
 
     # Drop all non-speech related (but keep dummy responses!)
     conversations = conversations[
-        conversations.is_speech_related &
+        conversations.utt_is_speech_related &
         (conversations.response_is_speech_related | (conversations.response_start_time == math.inf)) &
         conversations.follow_up_is_speech_related
     ]
@@ -196,8 +196,8 @@ def perform_analysis(utterances, args):
 
     # Melt is_intellgible variable for CR analyses
     conversations_melted = conversations.copy()
-    conversations_melted["utterance_is_intelligible"] = conversations_melted["is_intelligible"]
-    del conversations_melted["is_intelligible"]
+    conversations_melted["utterance_is_intelligible"] = conversations_melted["utt_is_intelligible"]
+    del conversations_melted["utt_is_intelligible"]
     conversations_melted = pd.melt(conversations_melted, id_vars=["response_is_clarification_request", "child_name", "age", "has_response", "pos_feedback"],
                                    value_vars=['utterance_is_intelligible', 'follow_up_is_intelligible'], var_name='is_follow_up',
                                    value_name='is_intelligible')
@@ -224,9 +224,9 @@ def perform_analysis(utterances, args):
 def perform_per_transcript_analyses(conversations):
     print("Per-transcript analysis: ")
 
-    prop_responses_to_intelligible = conversations[conversations.is_intelligible].groupby("transcript_file").agg(
+    prop_responses_to_intelligible = conversations[conversations.utt_is_intelligible].groupby("transcript_file").agg(
         {"has_response": "mean"})
-    prop_responses_to_unintelligible = conversations[~conversations.is_intelligible].groupby("transcript_file").agg(
+    prop_responses_to_unintelligible = conversations[~conversations.utt_is_intelligible].groupby("transcript_file").agg(
         {"has_response": "mean"})
     contingency_caregiver_timing = prop_responses_to_intelligible - prop_responses_to_unintelligible
     contingency_caregiver_timing = contingency_caregiver_timing.dropna().values
@@ -238,10 +238,10 @@ def perform_per_transcript_analyses(conversations):
     )
 
     convs_with_response = conversations[conversations.has_response]
-    prop_responses_to_intelligible = convs_with_response[convs_with_response.is_intelligible].groupby(
+    prop_responses_to_intelligible = convs_with_response[convs_with_response.utt_is_intelligible].groupby(
         "transcript_file").agg(
         {"response_is_clarification_request": "mean"})
-    prop_responses_to_unintelligible = convs_with_response[convs_with_response.is_intelligible == False].groupby(
+    prop_responses_to_unintelligible = convs_with_response[convs_with_response.utt_is_intelligible == False].groupby(
         "transcript_file").agg(
         {"response_is_clarification_request": "mean"})
     contingency_caregiver_clarification_requests = prop_responses_to_unintelligible - prop_responses_to_intelligible
@@ -269,12 +269,12 @@ def perform_per_transcript_analyses(conversations):
 
 
 def make_plots(conversations, conversations_melted, results_dir):
-    proportion_intelligible_per_transcript = conversations.groupby("transcript_file").agg({"is_intelligible": "mean", "age": "mean"})
+    proportion_intelligible_per_transcript = conversations.groupby("transcript_file").agg({"utt_is_intelligible": "mean", "age": "mean"})
     plt.figure(figsize=(12, 6))
     sns.regplot(
         data=proportion_intelligible_per_transcript,
         x="age",
-        y="is_intelligible",
+        y="utt_is_intelligible",
         marker=".",
         logx=True,
     )
@@ -288,7 +288,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         data=conversations,
         x="age",
         y="has_response",
-        hue="is_intelligible",
+        hue="utt_is_intelligible",
     )
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_response")
@@ -303,7 +303,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         data=conversations_with_response,
         x="age",
         y="response_is_clarification_request",
-        hue="is_intelligible",
+        hue="utt_is_intelligible",
     )
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_clarification_request")
@@ -316,7 +316,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         data=conversations,
         x="age",
         y="pos_feedback",
-        hue="is_intelligible",
+        hue="utt_is_intelligible",
     )
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_pos_feedback")
@@ -367,7 +367,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     # axis = sns.barplot(
     #     data=conversations_melted[~conversations_melted.has_response],
     #     x="age",
-    #     y="is_intelligible",
+    #     y="utt_is_intelligible",
     #     hue="is_follow_up",
     # )
     # sns.move_legend(axis, "lower right")
@@ -380,7 +380,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     # axis = sns.barplot(
     #     data=conversations_melted[~conversations_melted.has_response],
     #     x="age",
-    #     y="is_intelligible",
+    #     y="utt_is_intelligible",
     #     hue="is_follow_up",
     # )
     # sns.move_legend(axis, "lower right")

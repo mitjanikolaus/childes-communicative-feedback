@@ -149,7 +149,13 @@ DUMMY_RESPONSE = {
         "speech_act": SPEECH_ACT_NO_FUNCTION,
     }
 
-KEEP_KEYS = ["transcript_raw", "start_time", "is_speech_related", "is_intelligible", "speech_act"]
+KEEP_KEYS = ["transcript_raw", "start_time", "end_time", "is_speech_related", "is_intelligible", "speech_act"]
+
+
+def update_dict_with_prefix(dict, prefix, keys_to_be_updated=KEEP_KEYS):
+    dict_updated = {key: value for key, value in dict.items() if key not in KEEP_KEYS}
+    dict_updated.update({prefix + key: dict[key] for key in keys_to_be_updated})
+    return dict_updated
 
 
 def get_dict_with_prefix(series, prefix, keep_keys=KEEP_KEYS):
@@ -175,6 +181,7 @@ def get_micro_conversations_for_transcript(utterances_transcript, args):
         ]
         if len(following_utts_child) > 0:
             conversation = utterances_transcript.loc[candidate_id].to_dict()
+            conversation = update_dict_with_prefix(conversation, "utt_")
 
             response = get_dict_with_prefix(utterances_transcript.loc[candidate_id + 1], "response_")
             conversation.update(response)
@@ -208,6 +215,7 @@ def get_micro_conversations_for_transcript(utterances_transcript, args):
         ]
         if len(following_utts_child) > 0:
             conversation = utterances_transcript.loc[candidate_id].to_dict()
+            conversation = update_dict_with_prefix(conversation, "utt_")
 
             response = get_dict_with_prefix(DUMMY_RESPONSE, "response_")
             conversation.update(response)
@@ -238,8 +246,8 @@ def get_micro_conversations(utterances, args):
 
     conversations = pd.DataFrame(list(itertools.chain(*results)))
 
-    conversations["response_latency"] = conversations["response_start_time"] - conversations["end_time"]
-    conversations["response_latency_follow_up"] = conversations["follow_up_start_time"] - conversations["end_time"]
+    conversations["response_latency"] = conversations["response_start_time"] - conversations["utt_end_time"]
+    conversations["response_latency_follow_up"] = conversations["follow_up_start_time"] - conversations["utt_end_time"]
 
     # disregard conversations with follow up too far in the future
     conversations = conversations[
@@ -269,7 +277,7 @@ def perform_analysis_speech_relatedness(utterances, args):
     )
 
     conversations.dropna(
-        subset=("is_speech_related", "response_is_speech_related", "follow_up_is_speech_related"),
+        subset=("utt_is_speech_related", "response_is_speech_related", "follow_up_is_speech_related"),
         inplace=True,
     )
 
@@ -283,7 +291,7 @@ def perform_analysis_speech_relatedness(utterances, args):
     )
 
     counter_non_speech = Counter(
-        conversations[conversations.is_speech_related == False].transcript_raw.values
+        conversations[conversations.utt_is_speech_related == False].utt_transcript_raw.values
     )
     print("Most common non-speech related sounds: ")
     print(counter_non_speech.most_common(20))
@@ -293,8 +301,8 @@ def perform_analysis_speech_relatedness(utterances, args):
     print("Ratios nonspeech/speech for each corpus:")
     for corpus in conversations.corpus.unique():
         d_corpus = conversations[conversations.corpus == corpus]
-        ratio = len(d_corpus[d_corpus.is_speech_related == False]) / len(
-            d_corpus[d_corpus.is_speech_related == True]
+        ratio = len(d_corpus[d_corpus.utt_is_speech_related == False]) / len(
+            d_corpus[d_corpus.utt_is_speech_related == True]
         )
         if ratio > args.min_ratio_nonspeech:
             good_corpora.append(corpus)
@@ -329,9 +337,9 @@ def perform_analysis_speech_relatedness(utterances, args):
 
 
 def perform_per_transcript_analyses(conversations):
-    prop_responses_to_speech_related = conversations[conversations.is_speech_related].groupby("transcript_file").agg(
+    prop_responses_to_speech_related = conversations[conversations.utt_is_speech_related].groupby("transcript_file").agg(
         {"has_response": "mean"})
-    prop_responses_to_non_speech_related = conversations[conversations.is_speech_related == False].groupby("transcript_file").agg(
+    prop_responses_to_non_speech_related = conversations[conversations.utt_is_speech_related == False].groupby("transcript_file").agg(
         {"has_response": "mean"})
     contingency_caregiver_timing = prop_responses_to_speech_related - prop_responses_to_non_speech_related
     contingency_caregiver_timing = contingency_caregiver_timing.dropna().values
@@ -342,9 +350,9 @@ def perform_per_transcript_analyses(conversations):
         f"contingency_caregiver_timing: {contingency_caregiver_timing.mean():.4f} +-{contingency_caregiver_timing.std():.4f} p-value:{p_value}"
     )
 
-    prop_follow_up_speech_related_if_response_to_speech_related = conversations[conversations.is_speech_related & conversations.has_response].groupby("transcript_file").agg(
+    prop_follow_up_speech_related_if_response_to_speech_related = conversations[conversations.utt_is_speech_related & conversations.has_response].groupby("transcript_file").agg(
         {"follow_up_is_speech_related": "mean"})
-    prop_follow_up_speech_related_if_no_response_to_speech_related = conversations[conversations.is_speech_related & (conversations.has_response == False)].groupby(
+    prop_follow_up_speech_related_if_no_response_to_speech_related = conversations[conversations.utt_is_speech_related & (conversations.has_response == False)].groupby(
         "transcript_file").agg(
         {"follow_up_is_speech_related": "mean"})
     contingency_children_pos_case = prop_follow_up_speech_related_if_response_to_speech_related - prop_follow_up_speech_related_if_no_response_to_speech_related
@@ -359,12 +367,12 @@ def perform_per_transcript_analyses(conversations):
 
 def make_plots(conversations, results_dir):
     proportion_speech_related_per_transcript = conversations.groupby("transcript_file").agg(
-        {"is_speech_related": "mean", "age": "mean"})
+        {"utt_is_speech_related": "mean", "age": "mean"})
     plt.figure()
     sns.regplot(
         data=proportion_speech_related_per_transcript,
         x="age",
-        y="is_speech_related",
+        y="utt_is_speech_related",
         marker=".",
         # logx=True,
     )
@@ -377,7 +385,7 @@ def make_plots(conversations, results_dir):
         data=conversations,
         x="age",
         y="has_response",
-        hue="is_speech_related",
+        hue="utt_is_speech_related",
     )
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prob_caregiver_response")
@@ -387,7 +395,7 @@ def make_plots(conversations, results_dir):
     plt.figure(figsize=(6, 3))
     plt.title("Child contingency - per age group")
     axis = sns.barplot(
-        data=conversations[conversations.is_speech_related == True],
+        data=conversations[conversations.utt_is_speech_related == True],
         x="age",
         y="follow_up_is_speech_related",
         hue="has_response",
