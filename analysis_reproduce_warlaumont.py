@@ -368,14 +368,15 @@ def perform_per_transcript_analyses(conversations):
 def make_plots(conversations, results_dir):
     proportion_speech_related_per_transcript = conversations.groupby("transcript_file").agg(
         {"utt_is_speech_related": "mean", "age": "mean"})
-    plt.figure()
-    sns.regplot(
+    plt.figure(figsize=(6, 3))
+    axis = sns.regplot(
         data=proportion_speech_related_per_transcript,
         x="age",
         y="utt_is_speech_related",
         marker=".",
-        # logx=True,
+        logx=True,
     )
+    axis.set(ylabel="prop_speech_related")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "proportion_speech_related.png"), dpi=300)
 
@@ -388,7 +389,7 @@ def make_plots(conversations, results_dir):
         hue="utt_is_speech_related",
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prob_caregiver_response")
+    axis.set(ylabel="prop_caregiver_response")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_caregivers_per_age.png"), dpi=300)
 
@@ -401,7 +402,7 @@ def make_plots(conversations, results_dir):
         hue="has_response",
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prob_follow_up_is_speech_related")
+    axis.set(ylabel="prop_follow_up_is_speech_related")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"), dpi=300)
 
