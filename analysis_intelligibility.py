@@ -1,6 +1,7 @@
 import argparse
 import math
 import os
+from collections import Counter
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -212,6 +213,12 @@ def perform_analysis(utterances, args):
     print(f"Number of corpora in the analysis: {len(conversations.corpus.unique())}")
     print(f"Number of children in the analysis: {len(conversations.child_name.unique())}")
     print(f"Number of transcripts in the analysis: {len(conversations.transcript_file.unique())}")
+
+    counter_cr = Counter(
+        conversations[conversations.response_is_clarification_request].response_transcript_raw.values
+    )
+    print("Most common clarification requests: ")
+    print(counter_cr.most_common(20))
 
     perform_per_transcript_analyses(conversations)
 
