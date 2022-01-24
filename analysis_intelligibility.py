@@ -199,10 +199,17 @@ def perform_analysis(utterances, args):
     conversations_melted = conversations.copy()
     conversations_melted["utterance_is_intelligible"] = conversations_melted["utt_is_intelligible"]
     del conversations_melted["utt_is_intelligible"]
-    conversations_melted = pd.melt(conversations_melted, id_vars=["response_is_clarification_request", "child_name", "age", "has_response", "pos_feedback"],
-                                   value_vars=['utterance_is_intelligible', 'follow_up_is_intelligible'], var_name='is_follow_up',
+    conversations_melted = pd.melt(conversations_melted.reset_index(),
+                                   id_vars=["index", "response_is_clarification_request", "child_name", "age",
+                                            "has_response",
+                                            "pos_feedback"],
+                                   value_vars=['utterance_is_intelligible', 'follow_up_is_intelligible'],
+                                   var_name='is_follow_up',
                                    value_name='is_intelligible')
-    conversations_melted["is_follow_up"] = conversations_melted["is_follow_up"].apply(lambda x: x == "follow_up_is_intelligible")
+    conversations_melted["is_follow_up"] = conversations_melted["is_follow_up"].apply(
+        lambda x: x == "follow_up_is_intelligible")
+    conversations_melted["conversation_id"] = conversations_melted["index"]
+    del conversations_melted["index"]
     conversations_melted.to_csv(results_dir + "conversations_melted.csv", index=False)
     conversations_melted = pd.read_csv(results_dir + "conversations_melted.csv")
 
@@ -341,9 +348,10 @@ def make_plots(conversations, conversations_melted, results_dir):
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_effect_pos_feedback_timing.png"), dpi=300)
 
+    conversations_melted_with_response = conversations_melted[conversations_melted.has_response]
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations_melted[conversations_melted.response_is_clarification_request],
+        data=conversations_melted_with_response[conversations_melted_with_response.response_is_clarification_request],
         x="age",
         y="is_intelligible",
         hue="is_follow_up",
@@ -355,7 +363,7 @@ def make_plots(conversations, conversations_melted, results_dir):
 
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations_melted[~conversations_melted.response_is_clarification_request],
+        data=conversations_melted_with_response[~conversations_melted_with_response.response_is_clarification_request],
         x="age",
         y="is_intelligible",
         hue="is_follow_up",
@@ -367,7 +375,7 @@ def make_plots(conversations, conversations_melted, results_dir):
 
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations_melted[conversations_melted.has_response],
+        data=conversations_melted_with_response,
         x="response_is_clarification_request",
         y="is_intelligible",
         hue="is_follow_up",
