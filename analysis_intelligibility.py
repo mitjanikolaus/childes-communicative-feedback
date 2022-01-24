@@ -319,7 +319,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         y="response_is_clarification_request",
         hue="utt_is_intelligible",
     )
-    sns.move_legend(axis, "upper right")
+    sns.move_legend(axis, "upper left")
     axis.set(xlabel="age (months)", ylabel="prop_clarification_request")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_quality_clarification_request.png"), dpi=300)
@@ -356,22 +356,10 @@ def make_plots(conversations, conversations_melted, results_dir):
         y="is_intelligible",
         hue="is_follow_up",
     )
-    sns.move_legend(axis, "lower right")
+    sns.move_legend(axis, "upper left")
     axis.set(xlabel="age (months)", ylabel="prop_is_intelligible")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_effect_clarification_request.png"), dpi=300)
-
-    plt.figure(figsize=(6, 3))
-    axis = sns.barplot(
-        data=conversations_melted_with_response[~conversations_melted_with_response.response_is_clarification_request],
-        x="age",
-        y="is_intelligible",
-        hue="is_follow_up",
-    )
-    sns.move_legend(axis, "lower right")
-    axis.set(xlabel="age (months)", ylabel="prop_is_intelligible")
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_effect_no_clarification_request.png"), dpi=300)
 
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
@@ -381,7 +369,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         hue="is_follow_up",
     )
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prob_is_intelligible")
+    axis.set(ylabel="prop_is_intelligible")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_effect_clarification_request_control.png"), dpi=300)
 
