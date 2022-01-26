@@ -318,6 +318,8 @@ def perform_analysis_speech_relatedness(utterances, args):
     results_dir = "results/reproduce_warlaumont/"
     os.makedirs(results_dir, exist_ok=True)
 
+    conversations.to_csv(results_dir + "conversations.csv", index=False)
+
     conversations["age"] = conversations.age.apply(
         age_bin, min_age=args.min_age, max_age=args.max_age, num_months=AGE_BIN_NUM_MONTHS
     )
@@ -377,7 +379,7 @@ def make_plots(conversations, results_dir):
         x="age",
         y="utt_is_speech_related",
         marker=".",
-        logx=True,
+        logistic=True,
     )
     axis.set(xlabel="age (months)", ylabel="prop_speech_related")
     axis.set_xticks(np.arange(conversations.age.min(), conversations.age.max()+1, step=AGE_BIN_NUM_MONTHS))

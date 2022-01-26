@@ -290,8 +290,8 @@ def make_plots(conversations, conversations_melted, results_dir):
         data=proportion_intelligible_per_transcript,
         x="age",
         y="utt_is_intelligible",
+        logistic=True,
         marker=".",
-        logx=True,
     )
     plt.tight_layout()
     axis.set(xlabel="age (months)", ylabel="prop_intelligible")
