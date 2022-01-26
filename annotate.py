@@ -10,7 +10,7 @@ from utils import (
     get_paralinguistic_event,
     paralinguistic_event_is_external,
     get_all_paralinguistic_events, ANNOTATED_UTTERANCES_FILE, UTTERANCES_WITH_SPEECH_ACTS_FILE, is_nan,
-    SPEECH_ACTS_NO_FUNCTION,
+    SPEECH_ACTS_NO_FUNCTION, RULE_BASED_ANNOTATED_UTTERANCES_FILE,
 )
 from utils import (
     remove_nonspeech_events,
@@ -195,5 +195,6 @@ if __name__ == "__main__":
 
     annotated_utts = annotate(args)
 
-    os.makedirs(os.path.dirname(ANNOTATED_UTTERANCES_FILE), exist_ok=True)
-    annotated_utts.to_pickle(ANNOTATED_UTTERANCES_FILE)
+    out_dir = RULE_BASED_ANNOTATED_UTTERANCES_FILE if args.rule_based_intelligibility else ANNOTATED_UTTERANCES_FILE
+    os.makedirs(os.path.dirname(out_dir), exist_ok=True)
+    annotated_utts.to_pickle(out_dir)
