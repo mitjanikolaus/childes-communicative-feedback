@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import pylangacq
 
-from utils import clean_utterance, POS_PUNCTUATION, PREPROCESSED_UTTERANCES_FILE
+from utils import clean_utterance, POS_PUNCTUATION, PREPROCESSED_UTTERANCES_FILE, SPEAKER_CODE_CHILD
 
 # Corpora that are conversational (have child AND caregiver transcripts), are English, and have timing information
 CANDIDATE_CORPORA = [
