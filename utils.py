@@ -344,6 +344,7 @@ def remove_punctuation(utterance):
         cleaned_utterance = re.sub(r"[,\"„”]", "", utterance)
         cleaned_utterance = re.sub(r"''", "", cleaned_utterance)
         cleaned_utterance = re.sub(r"[\.!\?]+\s*$", "", cleaned_utterance)
+        cleaned_utterance = re.sub(r"  ", " ", cleaned_utterance)
     except TypeError as e:
         print(utterance)
         raise e
