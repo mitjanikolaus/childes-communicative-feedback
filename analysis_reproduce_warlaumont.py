@@ -32,7 +32,8 @@ DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
 # 60 seconds
 DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 60 * 1000  # ms
 
-DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
+# Set to -1 to skip filtering
+DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = -1
 
 DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
 
@@ -274,12 +275,8 @@ def perform_analysis_speech_relatedness(utterances, args):
     conversations = get_micro_conversations(utterances, args)
 
     conversations.dropna(
-        subset=("response_latency", "response_latency_follow_up"),
-        inplace=True,
-    )
-
-    conversations.dropna(
-        subset=("utt_is_speech_related", "response_is_speech_related", "follow_up_is_speech_related"),
+        subset=("response_latency", "response_latency_follow_up",
+                "utt_is_speech_related", "response_is_speech_related", "follow_up_is_speech_related"),
         inplace=True,
     )
 
@@ -290,6 +287,14 @@ def perform_analysis_speech_relatedness(utterances, args):
             response_latency=args.response_latency,
             count_only_speech_related_responses=args.count_only_speech_related_responses,
         )
+    )
+
+    conversations = filter_corpora_based_on_response_latency_length(
+        conversations,
+        args.response_latency_max_standard_deviations_off,
+        args.min_age,
+        args.max_age,
+        args.max_response_latency_follow_up
     )
 
     counter_non_speech = Counter(
@@ -400,9 +405,9 @@ def make_plots(conversations, results_dir):
     plt.savefig(os.path.join(results_dir, "contingency_caregivers_per_age.png"), dpi=300)
 
     plt.figure(figsize=(6, 3))
-    plt.title("Child contingency - per age group")
+    plt.title("Child contingency")
     axis = sns.barplot(
-        data=conversations[conversations.utt_is_speech_related == True],
+        data=conversations,
         x="age",
         y="follow_up_is_speech_related",
         hue="has_response",
@@ -410,7 +415,20 @@ def make_plots(conversations, results_dir):
     sns.move_legend(axis, "lower right")
     axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_speech_related")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "contingency_children_per_age.png"), dpi=300)
+    plt.savefig(os.path.join(results_dir, "contingency_children.png"), dpi=300)
+
+    plt.figure(figsize=(6, 3))
+    plt.title("Child contingency")
+    axis = sns.barplot(
+        data=conversations[conversations.utt_is_speech_related],
+        x="age",
+        y="follow_up_is_speech_related",
+        hue="has_response",
+    )
+    sns.move_legend(axis, "lower right")
+    axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_speech_related")
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "contingency_children_pos_case.png"), dpi=300)
 
 
 if __name__ == "__main__":
@@ -438,12 +456,5 @@ if __name__ == "__main__":
     print(
         f"Mean of child age in analysis: {mean_age:.1f} (min: {min_age} max: {max_age})"
     )
-
-    # utterances = filter_corpora_based_on_response_latency_length(
-    #     utterances,
-    #     args.response_latency_max_standard_deviations_off,
-    #     args.min_age,
-    #     args.max_age,
-    # )
 
     conversations = perform_analysis_speech_relatedness(utterances, args)

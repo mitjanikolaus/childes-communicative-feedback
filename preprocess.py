@@ -4,7 +4,8 @@ import os
 import pandas as pd
 import pylangacq
 
-from utils import clean_utterance, POS_PUNCTUATION, PREPROCESSED_UTTERANCES_FILE, SPEAKER_CODE_CHILD
+from utils import clean_utterance, is_empty, POS_PUNCTUATION, PREPROCESSED_UTTERANCES_FILE, SPEAKER_CODE_CHILD, \
+    get_all_paralinguistic_events, remove_punctuation, get_paralinguistic_event, paralinguistic_event_is_external
 
 # Corpora that are conversational (have child AND caregiver transcripts), are English, and have timing information
 CANDIDATE_CORPORA = [
@@ -125,6 +126,20 @@ def preprocess_utterances(corpus, transcripts):
     return utterances
 
 
+def has_multiple_events(utterance):
+    return len(get_all_paralinguistic_events(utterance)) > 1
+
+
+def is_external_event(utterance):
+    utterance = remove_punctuation(utterance)
+
+    event = get_paralinguistic_event(utterance)
+    if event and paralinguistic_event_is_external(event) and utterance == event:
+        return True
+
+    return False
+
+
 def preprocess_transcripts():
     all_utterances = []
     for corpus in CANDIDATE_CORPORA:
@@ -141,6 +156,12 @@ def preprocess_transcripts():
         all_utterances.append(utterances_corpus)
 
     all_utterances = pd.concat(all_utterances, ignore_index=True)
+
+    all_utterances.dropna(subset=("transcript_raw",),inplace=True)
+
+    all_utterances = all_utterances[~all_utterances.transcript_raw.apply(has_multiple_events)]
+    all_utterances = all_utterances[~all_utterances.transcript_raw.apply(is_external_event)]
+    all_utterances = all_utterances[~all_utterances.transcript_raw.apply(is_empty)]
 
     return all_utterances
 

@@ -18,11 +18,28 @@ The CHILDES corpus data is loaded using [my fork of the pylangacq repo](https://
 (The original repo can be found here: [pylangacq](https://github.com/jacksonllee/pylangacq))
 
 To preprocess the data, install the [pylangacq](https://github.com/mitjanikolaus/pylangacq) library
-and run `preprocess.py`.
+and run:
+```
+preprocess.py
+```
 
-Afterwards the utterances need to be annotated with speech acts: [Automatic speech act annotation](https://github.com/mitjanikolaus/childes-speech-acts/tree/new-data-loading).
+Afterwards the utterances need to be annotated with speech acts. Using the method `crf_annotate` from the following
+repo: [Automatic speech act annotation](https://github.com/mitjanikolaus/childes-speech-acts/tree/new-data-loading).
+```
+crf_annotate --model checkpoints/crf_full_train --data ~/data/communicative_feedback/utterances.p --out ~/data/communicative_feedback/utterances_with_speech_acts.p --use-pos --use-bi-grams --use-repetitions
+```
 
-Finally, run `annotate.py` to annotate speech-relatedness and intelligibility.
+Finally, annotate speech-relatedness and intelligibility:
+```
+annotate.py
+```
+
+## Analyses
+
+The scripts `analysis_reproduce_warlaumont.py` and `analysis_intelligibility` perform the respective analyses and
+produce the plots.
+
+The notebook `analysis_intelligibility_glm.ipynb` is used for the GLM analyses, which are performed with R.
 
 ## Acknowledgements
 Thanks to the authors of the pylangacq repo: 

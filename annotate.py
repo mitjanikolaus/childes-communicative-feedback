@@ -7,9 +7,7 @@ from utils import (
     remove_punctuation,
     str2bool,
     remove_babbling,
-    get_paralinguistic_event,
-    paralinguistic_event_is_external,
-    get_all_paralinguistic_events, ANNOTATED_UTTERANCES_FILE, UTTERANCES_WITH_SPEECH_ACTS_FILE, is_nan,
+    ANNOTATED_UTTERANCES_FILE, UTTERANCES_WITH_SPEECH_ACTS_FILE,
     SPEECH_ACTS_NO_FUNCTION, RULE_BASED_ANNOTATED_UTTERANCES_FILE,
 )
 from utils import (
@@ -19,7 +17,7 @@ from utils import (
 
 DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED = True
 
-DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE = True
+DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE = False
 
 # Speech acts that relate to nonverbal/external events
 SPEECH_ACTS_NONVERBAL_EVENTS = [
@@ -34,23 +32,13 @@ SPEECH_ACTS_NONVERBAL_EVENTS = [
 ]
 
 
-def is_empty(utterance):
-    utterance = remove_punctuation(utterance)
-    return utterance == ""
-
-
 def is_speech_related(
     utterance,
     label_partially_speech_related=DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED,
     label_unintelligible=None,
-    label_empty_utterance=None,
 ):
     """Label utterances as speech or non-speech."""
     utterance_without_punctuation = remove_punctuation(utterance)
-    if utterance_without_punctuation == "":
-        # By returning None, we can filter out these cases later
-        return label_empty_utterance
-
     utt_without_nonspeech = remove_nonspeech_events(utterance_without_punctuation)
 
     utt_without_nonspeech = utt_without_nonspeech.strip()
@@ -79,17 +67,12 @@ def is_speech_related(
 def is_intelligible(
     utterance,
     label_partially_intelligible=DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE,
-    label_empty_utterance=None,
+    label_empty_utterance=False,
 ):
     utterance_without_punctuation = remove_punctuation(utterance)
-    if utterance_without_punctuation == "":
-        # By returning None, we can filter out these cases later
-        return label_empty_utterance
-
     utterance_without_nonspeech = remove_nonspeech_events(utterance_without_punctuation)
     utterance_without_nonspeech = utterance_without_nonspeech.strip()
     if utterance_without_nonspeech == "":
-        # By returning None, we can filter out these cases later
         return label_empty_utterance
 
     utt_without_babbling = remove_babbling(utterance_without_nonspeech)
@@ -111,30 +94,8 @@ def speech_act_is_intelligible(speech_act):
     return speech_act not in SPEECH_ACTS_NO_FUNCTION
 
 
-def has_multiple_events(utterance):
-    return len(get_all_paralinguistic_events(utterance)) > 1
-
-
-def is_external_event(utterance):
-    utterance = remove_punctuation(utterance)
-
-    event = get_paralinguistic_event(utterance)
-    if event and paralinguistic_event_is_external(event) and utterance == event:
-        return True
-
-    return False
-
-
 def annotate(args):
     utterances = pd.read_pickle(UTTERANCES_WITH_SPEECH_ACTS_FILE)
-
-    utterances.dropna(
-        subset=("transcript_raw",),
-        inplace=True,
-    )
-
-    utterances = utterances[~utterances.transcript_raw.apply(has_multiple_events)]
-    utterances = utterances[~utterances.transcript_raw.apply(is_external_event)]
 
     utterances = utterances.assign(
         is_speech_related=utterances.transcript_raw.apply(

@@ -20,7 +20,7 @@ from preprocess import (
 from utils import (
     age_bin,
     filter_corpora_based_on_response_latency_length, ANNOTATED_UTTERANCES_FILE,
-    filter_transcripts_based_on_num_child_utts,
+    filter_transcripts_based_on_num_child_utts, RULE_BASED_ANNOTATED_UTTERANCES_FILE,
 )
 
 DEFAULT_RESPONSE_THRESHOLD = 1000
@@ -30,22 +30,23 @@ DEFAULT_MAX_AGE = 48
 
 AGE_BIN_NUM_MONTHS = 6
 
-DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = 1
+# Set to -1 to skip filtering
+DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = -1
 
 DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES = True
 
 DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 100
 
 # 1 second
-DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
+DEFAULT_MAX_NEG_RESPONSE_LATENCY = -10 * 1000  # ms
 
-# 60 seconds
-DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 60 * 1000  # ms
+# 10 seconds
+DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
 
 # Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words and
 # should be excluded when annotating intelligibility based on rules.
-# DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
-DEFAULT_EXCLUDED_CORPORA = []
+DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
+# DEFAULT_EXCLUDED_CORPORA = ["Providence"]
 
 # currently not used to exclude corpora, just stored for reference:
 CORPORA_NOT_LONGITUDINAL = ["Gleason", "Rollins", "Edinburgh"]
@@ -58,6 +59,11 @@ SPEECH_ACTS_CLARIFICATION_REQUEST = [
 
 def parse_args():
     argparser = argparse.ArgumentParser()
+    argparser.add_argument(
+        "--rule-based-intelligibility",
+        action="store_true",
+        help="Use utterances annotated using rule-based approach."
+    )
     argparser.add_argument(
         "--corpora",
         nargs="+",
@@ -129,6 +135,19 @@ def parse_args():
     return args
 
 
+CAREGIVER_NAMES = {"dad", "daddy", "dada", "mom", "mum", "mommy", "mummy", "mama", "mamma"}
+
+
+def response_is_clarification_request(micro_conv):
+    if micro_conv["response_speech_act"] in SPEECH_ACTS_CLARIFICATION_REQUEST:
+        words = set([w.lower() for w in micro_conv["utt_transcript_raw"].split(" ")][:-1])
+        if len(words) <= 1 and len(words & CAREGIVER_NAMES) > 0:
+            return False
+        else:
+            return True
+    return False
+
+
 def pos_feedback(
     row,
 ):
@@ -139,20 +158,44 @@ def pos_feedback(
     return True
 
 
+def melt_is_intelligible_variable(conversations):
+    conversations_melted = conversations.copy()
+    conversations_melted["utterance_is_intelligible"] = conversations_melted["utt_is_intelligible"]
+    del conversations_melted["utt_is_intelligible"]
+    conversations_melted = pd.melt(conversations_melted.reset_index(),
+                                   id_vars=["index", "response_is_clarification_request", "child_name", "age",
+                                            "has_response",
+                                            "pos_feedback"],
+                                   value_vars=['utterance_is_intelligible', 'follow_up_is_intelligible'],
+                                   var_name='is_follow_up',
+                                   value_name='is_intelligible')
+    conversations_melted["is_follow_up"] = conversations_melted["is_follow_up"].apply(
+        lambda x: x == "follow_up_is_intelligible")
+    conversations_melted["conversation_id"] = conversations_melted["index"]
+    del conversations_melted["index"]
+    return conversations_melted
+
+
 def perform_analysis(utterances, args):
+    # Discard non-speech, but keep uncertain (xxx, labelled as NA)
+    utterances = utterances[utterances.is_speech_related != False]
+
     conversations = get_micro_conversations(utterances, args)
+
+    conversations.to_csv("results/conversations_raw.csv", index=False)
 
     conversations.dropna(
         subset=("response_latency", "response_latency_follow_up"),
         inplace=True,
     )
 
-    # Drop all non-speech related (but keep dummy responses!)
-    conversations = conversations[
-        conversations.utt_is_speech_related &
-        (conversations.response_is_speech_related | (conversations.response_start_time == math.inf)) &
-        conversations.follow_up_is_speech_related
-    ]
+    conversations = filter_corpora_based_on_response_latency_length(
+        conversations,
+        args.response_latency_max_standard_deviations_off,
+        args.min_age,
+        args.max_age,
+        args.max_response_latency_follow_up,
+    )
 
     conversations = conversations.assign(
         has_response=conversations.apply(
@@ -196,20 +239,7 @@ def perform_analysis(utterances, args):
     conversations = pd.read_csv(results_dir + "conversations.csv")
 
     # Melt is_intellgible variable for CR analyses
-    conversations_melted = conversations.copy()
-    conversations_melted["utterance_is_intelligible"] = conversations_melted["utt_is_intelligible"]
-    del conversations_melted["utt_is_intelligible"]
-    conversations_melted = pd.melt(conversations_melted.reset_index(),
-                                   id_vars=["index", "response_is_clarification_request", "child_name", "age",
-                                            "has_response",
-                                            "pos_feedback"],
-                                   value_vars=['utterance_is_intelligible', 'follow_up_is_intelligible'],
-                                   var_name='is_follow_up',
-                                   value_name='is_intelligible')
-    conversations_melted["is_follow_up"] = conversations_melted["is_follow_up"].apply(
-        lambda x: x == "follow_up_is_intelligible")
-    conversations_melted["conversation_id"] = conversations_melted["index"]
-    del conversations_melted["index"]
+    conversations_melted = melt_is_intelligible_variable(conversations)
     conversations_melted.to_csv(results_dir + "conversations_melted.csv", index=False)
     conversations_melted = pd.read_csv(results_dir + "conversations_melted.csv")
 
@@ -225,6 +255,12 @@ def perform_analysis(utterances, args):
         conversations[conversations.response_is_clarification_request].response_transcript_raw.values
     )
     print("Most common clarification requests: ")
+    print(counter_cr.most_common(20))
+
+    counter_cr = Counter(
+        conversations[conversations.utt_is_intelligible == False].utt_transcript_raw.values
+    )
+    print("Most common unintelligible utterances: ")
     print(counter_cr.most_common(20))
 
     perform_per_transcript_analyses(conversations)
@@ -268,12 +304,12 @@ def perform_per_transcript_analyses(conversations):
         f"contingency_caregiver_clarification_requests: {contingency_caregiver_clarification_requests.mean():.4f} +-{contingency_caregiver_clarification_requests.std():.4f} p-value:{p_value}"
     )
 
-    prop_follow_up_intelligible_if_response = conversations[conversations.has_response].groupby("transcript_file").agg(
+    prop_follow_up_intelligible_if_response_to_intelligible = conversations[conversations.has_response & conversations.utt_is_intelligible].groupby("transcript_file").agg(
         {"follow_up_is_intelligible": "mean"})
-    prop_follow_up_intelligible_if_no_response = conversations[conversations.has_response == False].groupby(
+    prop_follow_up_intelligible_if_no_response_to_intelligible = conversations[(conversations.has_response == False) & conversations.utt_is_intelligible].groupby(
         "transcript_file").agg(
         {"follow_up_is_intelligible": "mean"})
-    contingency_children = prop_follow_up_intelligible_if_response - prop_follow_up_intelligible_if_no_response
+    contingency_children = prop_follow_up_intelligible_if_response_to_intelligible - prop_follow_up_intelligible_if_no_response_to_intelligible
     contingency_children = contingency_children.dropna().values
     p_value = ztest(
         contingency_children, value=0.0, alternative="larger"
@@ -348,6 +384,18 @@ def make_plots(conversations, conversations_melted, results_dir):
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_effect_pos_feedback_timing.png"), dpi=300)
 
+    plt.figure(figsize=(6, 3))
+    axis = sns.barplot(
+        data=conversations[conversations.utt_is_intelligible],
+        x="age",
+        y="follow_up_is_intelligible",
+        hue="has_response",
+    )
+    sns.move_legend(axis, "lower right")
+    axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_intelligible")
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, "cf_effect_pos_feedback_on_intelligible_timing.png"), dpi=300)
+
     conversations_melted_with_response = conversations_melted[conversations_melted.has_response]
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
@@ -379,7 +427,8 @@ if __name__ == "__main__":
 
     print(args)
 
-    utterances = pd.read_pickle(ANNOTATED_UTTERANCES_FILE)
+    file_path = RULE_BASED_ANNOTATED_UTTERANCES_FILE if args.rule_based_intelligibility else ANNOTATED_UTTERANCES_FILE
+    utterances = pd.read_pickle(file_path)
 
     print("Excluding corpora: ", args.excluded_corpora)
     utterances = utterances[~utterances.corpus.isin(args.excluded_corpora)]
@@ -392,12 +441,5 @@ if __name__ == "__main__":
     utterances = utterances[
         (args.min_age <= utterances.age) & (utterances.age <= args.max_age)
     ]
-
-    # utterances = filter_corpora_based_on_response_latency_length(
-    #     utterances,
-    #     args.response_latency_max_standard_deviations_off,
-    #     args.min_age,
-    #     args.max_age,
-    # )
 
     conversations = perform_analysis(utterances, args)

@@ -1,10 +1,9 @@
 import argparse
-import math
 import os
 import re
 
+import enchant
 import pandas as pd
-import numpy as np
 
 SPEAKER_CODE_CHILD = "CHI"
 
@@ -26,11 +25,14 @@ PREPROCESSED_UTTERANCES_FILE = os.path.expanduser(
 )
 
 UTTERANCES_WITH_SPEECH_ACTS_FILE = os.path.expanduser(
-    "~/data/communicative_feedback/utterances_annotated_with_speech_acts.p"
+    "~/data/communicative_feedback/utterances_with_speech_acts.p"
 )
 
 ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances_annotated.p"
+)
+RULE_BASED_ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
+    "~/data/communicative_feedback/utterances_annotated_rule_based.p"
 )
 
 SPEECH_ACT_NO_FUNCTION = "YY"
@@ -47,7 +49,7 @@ IS_TRAILING_OFF = lambda word: word == "+..."
 IS_TRAILING_OFF_2 = lambda word: word == "+.."
 IS_EXCLUDED_WORD = lambda word: "@x:" in word
 IS_PAUSE = lambda word: bool(re.match(r"\(\d*?\.*\d*?\)", word))
-IS_OMITTED_WORD = lambda word: word == "0"
+IS_OMITTED_WORD = lambda word: word.startswith("0")
 IS_SATELLITE_MARKER = lambda word: word == "‡"
 IS_QUOTATION_MARKER = lambda word: word in ['+"/', '+"/.', '+"', '+".']
 IS_UNKNOWN_CODE = lambda word: word == "zzz"
@@ -97,7 +99,7 @@ def is_simple_event(word):
 
 
 def is_laughter(word):
-    return word in ["haha", "hahaha", "hahahaha"]
+    return word in ["haha", "hahaha", "hahahaha", "hehehe", "heehee", "hehe", "hohoho", "hhh", "hah"]
 
 
 def word_is_speech_related(word):
@@ -105,6 +107,9 @@ def word_is_speech_related(word):
         return paralinguistic_event_is_speech_related(word)
 
     if is_laughter(word):
+        return False
+
+    if word.lower() in OTHER_NONSPEECH:
         return False
 
     return True
@@ -150,6 +155,11 @@ def paralinguistic_event_is_speech_related(event):
     ):
         return True
     return False
+
+
+def is_empty(utterance):
+    utterance = remove_punctuation(utterance)
+    return utterance == ""
 
 
 def paralinguistic_event_is_external(event):
@@ -216,9 +226,11 @@ def remove_nonspeech_events(utterance):
         if paralinguistic_event_is_speech_related(event):
             keep_event = event
         else:
+            if utterance == "":
+                return ""
             # For cases like "mm [=! squeal]":
             words = utterance.strip().split(" ")
-            if len(words) == 1 and words[0].lower() not in VOCAB and not is_babbling(words[0]):
+            if len(words) == 1 and not is_word(words[0]) and not is_babbling(words[0]) and not word_is_speech_related(words[0]):
                 return ""
 
     words = utterance.strip().split(" ")
@@ -269,6 +281,7 @@ def clean_utterance(utterance):
     utterance = re.sub(r"↓", "", utterance)
     utterance = re.sub(r"→", "", utterance)
     utterance = re.sub(r"↑", "", utterance)
+    utterance = re.sub(r"↗", "", utterance)
     # Remove inhalations
     utterance = re.sub(r"∙", "", utterance)
 
@@ -307,6 +320,7 @@ def clean_utterance(utterance):
             word = word.replace("⌊", "").replace("⌋", "")
             word = word.replace("⌈", "").replace("⌉", "")
             word = word.replace("°", "")
+            word = word.replace("“", "")
             # compound words
             word = word.replace("_", " ")
             word = word.replace("+", " ")
@@ -349,12 +363,24 @@ CODE_INTERJECTION = "@i"
 CODE_PHONOLGICAL_CONSISTENT_FORM = "@p"
 CODE_PHONOLOGICAL_FRAGMENT = "&"
 
-OTHER_BABBLING = ["da", "ba", "baa", "babaa", "ababa", "bada", "dada", "gagaa", "gaga"]
+OTHER_BABBLING = ["da", "ba", "baba", "baa", "babaa", "ababa", "bada", "gagaa", "gaga", "ow", "ay", "pss", "ugh", "bum", "brrr", "oop", "huh", "miaow", "moo", "woof", "grr"]
+OTHER_NONSPEECH = ["ouch", "wee", "yack", "ugh", "woah", "oy", "ee", "hee", "whoo", "oo", "hoo", "ew", "oof", "baaee", "ewok", "ewoks", "urgh", "ow", "heh"]
 
-
-VOCAB = set(
+# VOCAB_NLTK = set(words.words())
+VOCAB_CUSTOM = set(
     pd.read_csv("data/childes_custom_vocab.csv", header=None, names=["word"]).word
 )
+
+DICT_ENCHANT = enchant.Dict("en_US")
+
+
+def is_word(word):
+    word = word.lower()
+    if word in VOCAB_CUSTOM:
+        return True
+    if DICT_ENCHANT.check(word):
+        return True
+    return False
 
 
 def is_babbling(word):
@@ -370,12 +396,11 @@ def is_babbling(word):
         or word.lower() in OTHER_BABBLING
         or (
             word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
-            and word.lower().replace(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION, "")
-            not in VOCAB
+            and not is_word(word.replace(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION, ""))
         )
         or (
             word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM)
-            and word.lower().replace(CODE_PHONOLGICAL_CONSISTENT_FORM, "") not in VOCAB
+            and not is_word(word.replace(CODE_PHONOLGICAL_CONSISTENT_FORM, ""))
         )
     ):
         return True
@@ -391,14 +416,16 @@ def remove_babbling(utterance):
         if paralinguistic_event_is_intelligible(event):
             keep_event = event
         else:
+            if utterance == "":
+                return ""
             # For cases like "mm [=! babbling]":
             words = utterance.strip().split(" ")
-            if len(words) == 1 and words[0].lower() not in VOCAB:
+            if len(words) == 1 and not is_word(words[0]):
                 return ""
 
     words = utterance.strip().split(" ")
     filtered_utterance = [
-        word for word in words if not (is_babbling(word) or is_excluded_code(word))
+        word for word in words if not (word == "" or is_babbling(word) or is_excluded_code(word))
     ]
 
     if keep_event:
@@ -409,8 +436,12 @@ def remove_babbling(utterance):
 
 
 def filter_corpora_based_on_response_latency_length(
-    utterances, standard_deviations_off, min_age, max_age
+    conversations, standard_deviations_off, min_age, max_age, max_response_latency
 ):
+    if standard_deviations_off == -1:
+        print(f"Not filtering corpora based on average response latency")
+        return conversations
+
     print(f"Filtering corpora based on average response latency")
 
     # Calculate mean and stddev of response latency using data from Nguyen, Versyp, Cox, Fusaroli (2021)
@@ -419,17 +450,14 @@ def filter_corpora_based_on_response_latency_length(
     # Use only non-clinical data:
     latency_data = latency_data[latency_data["clinical group"] == "Healthy"]
 
-    # Use only child-caregiver interactional data:
-    latency_data = latency_data[latency_data["interactor_rough"] != "Stranger"]
-
     # Use only data of the target age range:
     latency_data = latency_data[
         (latency_data.mean_age_infants_months >= min_age)
         & (latency_data.mean_age_infants_months <= max_age)
     ]
 
-    mean_latency = np.concatenate([latency_data.infant_response_latency.dropna().values, latency_data.adult_response_latency.dropna().values]).mean()
-    std_mean_latency = np.concatenate([latency_data.infant_response_latency.dropna().values, latency_data.adult_response_latency.dropna().values]).std()
+    mean_latency = latency_data.adult_response_latency.dropna().mean()
+    std_mean_latency = latency_data.adult_response_latency.dropna().std()
     print(
         f"Mean of response latency in meta-analysis: {mean_latency:.1f} +/- {std_mean_latency:.1f}"
     )
@@ -438,8 +466,10 @@ def filter_corpora_based_on_response_latency_length(
     filtered = []
     print("Response latencies:")
 
-    utterances["response_latency"] = utterances["start_time_next"] - utterances["end_time"]
-    corpus_means = utterances.groupby("corpus").agg({"response_latency": "mean"})
+    # Exclude conversations without responses (as they have infinite latency)
+    conversations_with_responses = conversations[conversations.response_latency < max_response_latency]
+
+    corpus_means = conversations_with_responses.groupby("corpus").agg({"response_latency": "mean"})
     for corpus, row in corpus_means.iterrows():
         print(f"{corpus}: {row['response_latency']:.1f}")
         if (
@@ -450,10 +480,8 @@ def filter_corpora_based_on_response_latency_length(
             filtered.append(corpus)
 
     print(f"Corpora included in analysis after filtering: {filtered}")
-    utterances = utterances[utterances.corpus.isin(filtered)]
-
-    del utterances["response_latency"]
-    return utterances
+    conversations = conversations[conversations.corpus.isin(filtered)]
+    return conversations
 
 
 def filter_transcripts_based_on_num_child_utts(conversations, min_child_utts_per_transcript):
