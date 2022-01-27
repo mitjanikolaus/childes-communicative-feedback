@@ -31,7 +31,7 @@ crf_annotate --model checkpoints/crf_full_train --data ~/data/communicative_feed
 
 Finally, annotate speech-relatedness and intelligibility:
 ```
-annotate.py
+annotate.py --rule-based-intelligibility
 ```
 
 ## Analyses
