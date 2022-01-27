@@ -37,11 +37,11 @@ DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES = True
 
 DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 10
 
-# 1 second
-DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
-
 # 10 seconds
-DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 10 * 1000  # ms
+DEFAULT_MAX_NEG_RESPONSE_LATENCY = -10 * 1000  # ms
+
+# 1 minute
+DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 1 * 60 * 1000
 
 # Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words and
 # should be excluded when annotating intelligibility based on rules.
@@ -165,8 +165,7 @@ def melt_is_intelligible_variable(conversations):
     del conversations_melted["utt_is_intelligible"]
     conversations_melted = pd.melt(conversations_melted.reset_index(),
                                    id_vars=["index", "response_is_clarification_request", "child_name", "age",
-                                            "has_response",
-                                            "pos_feedback"],
+                                            "transcript_file", "has_response", "pos_feedback"],
                                    value_vars=['utterance_is_intelligible', 'follow_up_is_intelligible'],
                                    var_name='is_follow_up',
                                    value_name='is_intelligible')
@@ -335,9 +334,11 @@ def make_plots(conversations, conversations_melted, results_dir):
     axis.set_xticks(np.arange(conversations.age.min(), conversations.age.max()+1, step=AGE_BIN_NUM_MONTHS))
     plt.savefig(os.path.join(results_dir, "proportion_intelligible.png"), dpi=300)
 
+    data = conversations.groupby(["transcript_file", "utt_is_intelligible"], as_index=False).agg(
+        {"has_response": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations,
+        data=data,
         x="age",
         y="has_response",
         hue="utt_is_intelligible",
@@ -349,9 +350,11 @@ def make_plots(conversations, conversations_melted, results_dir):
 
     conversations_with_response = conversations[conversations.has_response]
 
+    data = conversations_with_response.groupby(["transcript_file", "utt_is_intelligible"], as_index=False).agg(
+        {"response_is_clarification_request": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations_with_response,
+        data=data,
         x="age",
         y="response_is_clarification_request",
         hue="utt_is_intelligible",
@@ -361,9 +364,11 @@ def make_plots(conversations, conversations_melted, results_dir):
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_quality_clarification_request.png"), dpi=300)
 
+    data = conversations.groupby(["transcript_file", "utt_is_intelligible"], as_index=False).agg(
+        {"pos_feedback": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations,
+        data=data,
         x="age",
         y="pos_feedback",
         hue="utt_is_intelligible",
@@ -373,9 +378,11 @@ def make_plots(conversations, conversations_melted, results_dir):
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_quality_all.png"), dpi=300)
 
+    data = conversations.groupby(["transcript_file", "has_response"], as_index=False).agg(
+        {"follow_up_is_intelligible": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations,
+        data=data,
         x="age",
         y="follow_up_is_intelligible",
         hue="has_response",
@@ -385,9 +392,11 @@ def make_plots(conversations, conversations_melted, results_dir):
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_effect_pos_feedback_timing.png"), dpi=300)
 
+    data = conversations[conversations.utt_is_intelligible].groupby(["transcript_file", "has_response"], as_index=False).agg(
+        {"follow_up_is_intelligible": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations[conversations.utt_is_intelligible],
+        data=data,
         x="age",
         y="follow_up_is_intelligible",
         hue="has_response",
@@ -398,24 +407,33 @@ def make_plots(conversations, conversations_melted, results_dir):
     plt.savefig(os.path.join(results_dir, "cf_effect_pos_feedback_on_intelligible_timing.png"), dpi=300)
 
     conversations_melted_with_response = conversations_melted[conversations_melted.has_response]
+    conversations_melted_cr = conversations_melted_with_response[conversations_melted_with_response.response_is_clarification_request]
+    data = conversations_melted_cr.groupby(["transcript_file", "is_follow_up"], as_index=False).agg(
+        {"is_intelligible": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations_melted_with_response[conversations_melted_with_response.response_is_clarification_request],
+        data=data,
         x="age",
         y="is_intelligible",
         hue="is_follow_up",
+        linewidth=1,
+        edgecolor="w",
     )
     sns.move_legend(axis, "upper left")
     axis.set(xlabel="age (months)", ylabel="prop_is_intelligible")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_effect_clarification_request.png"), dpi=300)
 
+    data = conversations_melted_with_response.groupby(["transcript_file", "is_follow_up", "response_is_clarification_request"], as_index=False).agg(
+        {"is_intelligible": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations_melted_with_response,
+        data=data,
         x="response_is_clarification_request",
         y="is_intelligible",
         hue="is_follow_up",
+        linewidth=1,
+        edgecolor="w",
     )
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prop_is_intelligible")
