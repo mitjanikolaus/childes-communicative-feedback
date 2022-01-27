@@ -364,10 +364,9 @@ CODE_INTERJECTION = "@i"
 CODE_PHONOLGICAL_CONSISTENT_FORM = "@p"
 CODE_PHONOLOGICAL_FRAGMENT = "&"
 
-OTHER_BABBLING = ["da", "ba", "baba", "baa", "babaa", "ababa", "bada", "gagaa", "gaga", "ow", "ay", "pss", "ugh", "bum", "brrr", "oop", "huh", "miaow", "moo", "woof", "grr"]
+OTHER_BABBLING = ["da", "ba", "baba", "baa", "babaa", "ababa", "bada", "gagaa", "gaga", "ow", "ay", "pss", "ugh", "bum", "brrr", "oop", "er"]
 OTHER_NONSPEECH = ["ouch", "wee", "yack", "ugh", "woah", "oy", "ee", "hee", "whoo", "oo", "hoo", "ew", "oof", "baaee", "ewok", "ewoks", "urgh", "ow", "heh"]
 
-# VOCAB_NLTK = set(words.words())
 VOCAB_CUSTOM = set(
     pd.read_csv("data/childes_custom_vocab.csv", header=None, names=["word"]).word
 )
