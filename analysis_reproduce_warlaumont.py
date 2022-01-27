@@ -26,11 +26,11 @@ from preprocess import (
 
 DEFAULT_RESPONSE_THRESHOLD = 1000
 
-# 1 second
-DEFAULT_MAX_NEG_RESPONSE_LATENCY = -1 * 1000  # ms
+# 10 seconds
+DEFAULT_MAX_NEG_RESPONSE_LATENCY = -10 * 1000  # ms
 
-# 60 seconds
-DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 60 * 1000  # ms
+# 1 minute
+DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 1 * 60 * 1000  # ms
 
 # Set to -1 to skip filtering
 DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = -1
@@ -39,7 +39,7 @@ DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
 
 DEFAULT_MIN_RATIO_NONSPEECH = 0.0
 
-DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 100
+DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 10
 
 # Ages aligned to study of Warlaumont et al. or to our study (minimum 10 months)
 DEFAULT_MIN_AGE = 10
@@ -263,8 +263,8 @@ def get_micro_conversations(utterances, args):
     # Disregard conversations with too long negative pauses
     conversations = conversations[
         (
-                conversations.response_latency
-                > args.max_neg_response_latency
+            conversations.response_latency
+            > args.max_neg_response_latency
         )
     ]
 
@@ -391,39 +391,51 @@ def make_plots(conversations, results_dir):
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "proportion_speech_related.png"), dpi=300)
 
+    data = conversations.groupby(["transcript_file", "utt_is_speech_related"], as_index=False).agg(
+        {"has_response": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
-    plt.title("Caregiver contingency - per age group")
+    plt.title("Caregiver contingency")
     axis = sns.barplot(
-        data=conversations,
+        data=data,
         x="age",
         y="has_response",
         hue="utt_is_speech_related",
+        linewidth=1,
+        edgecolor="w",
     )
     sns.move_legend(axis, "lower right")
     axis.set(xlabel="age (months)", ylabel="prop_caregiver_response")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_caregivers_per_age.png"), dpi=300)
 
+    data = conversations.groupby(["transcript_file", "has_response"], as_index=False).agg(
+        {"follow_up_is_speech_related": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     plt.title("Child contingency")
     axis = sns.barplot(
-        data=conversations,
+        data=data,
         x="age",
         y="follow_up_is_speech_related",
         hue="has_response",
+        linewidth=1,
+        edgecolor="w",
     )
     sns.move_legend(axis, "lower right")
     axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_speech_related")
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "contingency_children.png"), dpi=300)
 
+    data = conversations[conversations.utt_is_speech_related].groupby(["transcript_file", "has_response"], as_index=False).agg(
+        {"follow_up_is_speech_related": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     plt.title("Child contingency")
     axis = sns.barplot(
-        data=conversations[conversations.utt_is_speech_related],
+        data=data,
         x="age",
         y="follow_up_is_speech_related",
         hue="has_response",
+        linewidth=1,
+        edgecolor="w",
     )
     sns.move_legend(axis, "lower right")
     axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_speech_related")
