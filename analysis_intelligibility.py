@@ -211,8 +211,8 @@ def perform_analysis(utterances, args):
     )
 
     conversations = conversations.assign(
-        response_is_clarification_request=conversations.response_speech_act.apply(
-            lambda sa: sa in SPEECH_ACTS_CLARIFICATION_REQUEST)
+        response_is_clarification_request=conversations.apply(
+            response_is_clarification_request, axis=1)
     )
 
     conversations = conversations.assign(
