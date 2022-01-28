@@ -17,8 +17,8 @@ def make_proportion_plots(conversations, results_dir):
         y="utt_is_intelligible",
         logistic=True,
         marker=".",
-        line_kws={"color": sns.color_palette("tab10")[5]},
-        scatter_kws={"alpha": 0.2, "s": 20, "color": sns.color_palette("tab10")[5]}
+        line_kws={"color": sns.color_palette("tab10")[1]},
+        scatter_kws={"alpha": 0.2, "s": 20, "color": sns.color_palette("tab10")[1]}
     )
     proportion_speech_related_per_transcript = conversations.groupby("transcript_file").agg(
         {"utt_is_speech_related": "mean", "age": "mean"})
@@ -28,8 +28,8 @@ def make_proportion_plots(conversations, results_dir):
         y="utt_is_speech_related",
         marker=".",
         logistic=True,
-        line_kws={"color": sns.color_palette("tab10")[9]},
-        scatter_kws={"alpha": 0.2, "s": 20, "color": sns.color_palette("tab10")[9]}
+        line_kws={"color": sns.color_palette("tab10")[7]},
+        scatter_kws={"alpha": 0.2, "s": 20, "color": sns.color_palette("tab10")[7]}
     )
     axis.set(xlabel="age (months)", ylabel="")
     axis.legend(labels=['proportion_intelligible', 'proportion_speech_related'], loc="lower right")

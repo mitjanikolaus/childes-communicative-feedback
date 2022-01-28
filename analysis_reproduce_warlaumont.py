@@ -403,6 +403,9 @@ def make_plots(conversations, results_dir):
         linewidth=1,
         edgecolor="w",
     )
+    legend = axis.legend()
+    legend.texts[0].set_text("non-speech-related")
+    legend.texts[1].set_text("speech-related")
     sns.move_legend(axis, "lower right")
     axis.set(xlabel="age (months)", ylabel="prop_caregiver_response")
     plt.tight_layout()
@@ -419,7 +422,11 @@ def make_plots(conversations, results_dir):
         hue="has_response",
         linewidth=1,
         edgecolor="w",
+        palette=sns.color_palette()[2:],
     )
+    legend = axis.legend()
+    legend.texts[0].set_text("no response")
+    legend.texts[1].set_text("response")
     sns.move_legend(axis, "lower right")
     axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_speech_related")
     plt.tight_layout()
@@ -436,7 +443,11 @@ def make_plots(conversations, results_dir):
         hue="has_response",
         linewidth=1,
         edgecolor="w",
+        palette=sns.color_palette()[2:],
     )
+    legend = axis.legend()
+    legend.texts[0].set_text("no response")
+    legend.texts[1].set_text("response")
     sns.move_legend(axis, "lower right")
     axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_speech_related")
     plt.tight_layout()

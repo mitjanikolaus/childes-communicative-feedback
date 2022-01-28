@@ -345,6 +345,9 @@ def make_plots(conversations, conversations_melted, results_dir):
         linewidth=1,
         edgecolor="w",
     )
+    legend = axis.legend()
+    legend.texts[0].set_text("unintelligible")
+    legend.texts[1].set_text("intelligible")
     sns.move_legend(axis, "lower right")
     axis.set(xlabel="age (months)", ylabel="prop_has_response")
     plt.tight_layout()
@@ -363,6 +366,9 @@ def make_plots(conversations, conversations_melted, results_dir):
         linewidth=1,
         edgecolor="w",
     )
+    legend = axis.legend()
+    legend.texts[0].set_text("unintelligible")
+    legend.texts[1].set_text("intelligible")
     sns.move_legend(axis, "upper left")
     axis.set(xlabel="age (months)", ylabel="prop_clarification_request")
     plt.tight_layout()
@@ -379,6 +385,9 @@ def make_plots(conversations, conversations_melted, results_dir):
         linewidth=1,
         edgecolor="w",
     )
+    legend = axis.legend()
+    legend.texts[0].set_text("unintelligible")
+    legend.texts[1].set_text("intelligible")
     sns.move_legend(axis, "lower right")
     axis.set(xlabel="age (months)", ylabel="prop_pos_feedback")
     plt.tight_layout()
@@ -394,7 +403,11 @@ def make_plots(conversations, conversations_melted, results_dir):
         hue="has_response",
         linewidth=1,
         edgecolor="w",
+        palette=sns.color_palette()[2:],
     )
+    legend = axis.legend()
+    legend.texts[0].set_text("no response")
+    legend.texts[1].set_text("response")
     sns.move_legend(axis, "lower right")
     axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_intelligible")
     plt.tight_layout()
@@ -410,7 +423,11 @@ def make_plots(conversations, conversations_melted, results_dir):
         hue="has_response",
         linewidth=1,
         edgecolor="w",
+        palette=sns.color_palette()[2:],
     )
+    legend = axis.legend()
+    legend.texts[0].set_text("no response")
+    legend.texts[1].set_text("response")
     sns.move_legend(axis, "lower right")
     axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_intelligible")
     plt.tight_layout()
@@ -428,7 +445,11 @@ def make_plots(conversations, conversations_melted, results_dir):
         hue="is_follow_up",
         linewidth=1,
         edgecolor="w",
+        palette=sns.color_palette()[4:],
     )
+    legend = axis.legend()
+    legend.texts[0].set_text("utterance")
+    legend.texts[1].set_text("follow-up")
     sns.move_legend(axis, "upper left")
     axis.set(xlabel="age (months)", ylabel="prop_is_intelligible")
     plt.tight_layout()
@@ -444,7 +465,11 @@ def make_plots(conversations, conversations_melted, results_dir):
         hue="is_follow_up",
         linewidth=1,
         edgecolor="w",
+        palette=sns.color_palette()[4:],
     )
+    legend = axis.legend()
+    legend.texts[0].set_text("utterance")
+    legend.texts[1].set_text("follow-up")
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prop_is_intelligible")
     plt.tight_layout()
