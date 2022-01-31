@@ -377,7 +377,7 @@ def perform_per_transcript_analyses(conversations):
 def make_plots(conversations, conversations_melted, results_dir):
     proportion_intelligible_per_transcript = conversations.groupby(
         "transcript_file"
-    ).agg({"utt_is_intelligible": "mean", "age": "mean"})
+    ).agg({"utt_is_intelligible": "mean", "age": "min"})
     plt.figure(figsize=(6, 3))
     axis = sns.regplot(
         data=proportion_intelligible_per_transcript,
@@ -399,7 +399,7 @@ def make_plots(conversations, conversations_melted, results_dir):
 
     data = conversations.groupby(
         ["transcript_file", "utt_is_intelligible"], as_index=False
-    ).agg({"has_response": "mean", "age": "mean"})
+    ).agg({"has_response": "mean", "age": "min"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
         data=data,
@@ -421,7 +421,7 @@ def make_plots(conversations, conversations_melted, results_dir):
 
     data = conversations_with_response.groupby(
         ["transcript_file", "utt_is_intelligible"], as_index=False
-    ).agg({"response_is_clarification_request": "mean", "age": "mean"})
+    ).agg({"response_is_clarification_request": "mean", "age": "min"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
         data=data,
@@ -443,7 +443,7 @@ def make_plots(conversations, conversations_melted, results_dir):
 
     data = conversations.groupby(
         ["transcript_file", "utt_is_intelligible"], as_index=False
-    ).agg({"pos_feedback": "mean", "age": "mean"})
+    ).agg({"pos_feedback": "mean", "age": "min"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
         data=data,
@@ -463,7 +463,7 @@ def make_plots(conversations, conversations_melted, results_dir):
 
     data = conversations.groupby(
         ["transcript_file", "has_response"], as_index=False
-    ).agg({"follow_up_is_intelligible": "mean", "age": "mean"})
+    ).agg({"follow_up_is_intelligible": "mean", "age": "min"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
         data=data,
@@ -485,7 +485,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     data = (
         conversations[conversations.utt_is_intelligible]
         .groupby(["transcript_file", "has_response"], as_index=False)
-        .agg({"follow_up_is_intelligible": "mean", "age": "mean"})
+        .agg({"follow_up_is_intelligible": "mean", "age": "min"})
     )
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
@@ -516,7 +516,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     ]
     data = conversations_melted_cr.groupby(
         ["transcript_file", "is_follow_up"], as_index=False
-    ).agg({"is_intelligible": "mean", "age": "mean"})
+    ).agg({"is_intelligible": "mean", "age": "min"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
         data=data,

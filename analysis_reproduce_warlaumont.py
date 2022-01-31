@@ -416,7 +416,7 @@ def perform_per_transcript_analyses(conversations):
 def make_plots(conversations, results_dir):
     proportion_speech_related_per_transcript = conversations.groupby(
         "transcript_file"
-    ).agg({"utt_is_speech_related": "mean", "age": "mean"})
+    ).agg({"utt_is_speech_related": "mean", "age": "min"})
     plt.figure(figsize=(6, 3))
     axis = sns.regplot(
         data=proportion_speech_related_per_transcript,
@@ -438,7 +438,7 @@ def make_plots(conversations, results_dir):
 
     data = conversations.groupby(
         ["transcript_file", "utt_is_speech_related"], as_index=False
-    ).agg({"has_response": "mean", "age": "mean"})
+    ).agg({"has_response": "mean", "age": "min"})
     plt.figure(figsize=(6, 3))
     plt.title("Caregiver contingency")
     axis = sns.barplot(
@@ -461,7 +461,7 @@ def make_plots(conversations, results_dir):
 
     data = conversations.groupby(
         ["transcript_file", "has_response"], as_index=False
-    ).agg({"follow_up_is_speech_related": "mean", "age": "mean"})
+    ).agg({"follow_up_is_speech_related": "mean", "age": "min"})
     plt.figure(figsize=(6, 3))
     plt.title("Child contingency")
     axis = sns.barplot(
@@ -484,7 +484,7 @@ def make_plots(conversations, results_dir):
     data = (
         conversations[conversations.utt_is_speech_related]
         .groupby(["transcript_file", "has_response"], as_index=False)
-        .agg({"follow_up_is_speech_related": "mean", "age": "mean"})
+        .agg({"follow_up_is_speech_related": "mean", "age": "min"})
     )
     plt.figure(figsize=(6, 3))
     plt.title("Child contingency")
