@@ -7,8 +7,8 @@ from utils import (
     remove_punctuation,
     str2bool,
     remove_babbling,
-    ANNOTATED_UTTERANCES_FILE, UTTERANCES_WITH_SPEECH_ACTS_FILE,
-    SPEECH_ACTS_NO_FUNCTION,
+    ANNOTATED_UTTERANCES_FILE,
+    UTTERANCES_WITH_SPEECH_ACTS_FILE,
 )
 from utils import (
     remove_nonspeech_events,
@@ -21,14 +21,14 @@ DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE = False
 
 # Speech acts that relate to nonverbal/external events
 SPEECH_ACTS_NONVERBAL_EVENTS = [
-    "CR",   # Criticize or point out error in nonverbal act.
-    "PM",   # Praise for motor acts i.e for nonverbal behavior.
-    "WD",   # Warn of danger.
-    "DS",   # Disapprove scold protest disruptive behavior.
-    "AB",   # Approve of appropriate behavior.
-    "TO",   # Mark transfer of object to hearer
-    "ET",   # Express enthusiasm for hearer's performance.
-    "ED",   # Exclaim in disapproval.
+    "CR",  # Criticize or point out error in nonverbal act.
+    "PM",  # Praise for motor acts i.e for nonverbal behavior.
+    "WD",  # Warn of danger.
+    "DS",  # Disapprove scold protest disruptive behavior.
+    "AB",  # Approve of appropriate behavior.
+    "TO",  # Mark transfer of object to hearer
+    "ET",  # Express enthusiasm for hearer's performance.
+    "ED",  # Exclaim in disapproval.
 ]
 
 
@@ -88,10 +88,6 @@ def is_intelligible(
         return label_partially_intelligible
 
     return True
-
-
-def speech_act_is_intelligible(speech_act):
-    return speech_act not in SPEECH_ACTS_NO_FUNCTION
 
 
 def annotate(args):

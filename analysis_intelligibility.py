@@ -18,7 +18,8 @@ from preprocess import (
 )
 from utils import (
     age_bin,
-    filter_corpora_based_on_response_latency_length, ANNOTATED_UTTERANCES_FILE,
+    filter_corpora_based_on_response_latency_length,
+    ANNOTATED_UTTERANCES_FILE,
     filter_transcripts_based_on_num_child_utts,
 )
 
@@ -50,8 +51,8 @@ DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
 CORPORA_NOT_LONGITUDINAL = ["Gleason", "Rollins", "Edinburgh"]
 
 SPEECH_ACTS_CLARIFICATION_REQUEST = [
-    "EQ",   # Eliciting question (e.g. hmm?).
-    "RR",   # Request to repeat utterance.
+    "EQ",  # Eliciting question (e.g. hmm?).
+    "RR",  # Request to repeat utterance.
 ]
 
 
@@ -128,13 +129,25 @@ def parse_args():
     return args
 
 
-CAREGIVER_NAMES = {"dad", "daddy", "dada", "mom", "mum", "mommy", "mummy", "mama", "mamma"}
+CAREGIVER_NAMES = {
+    "dad",
+    "daddy",
+    "dada",
+    "mom",
+    "mum",
+    "mommy",
+    "mummy",
+    "mama",
+    "mamma",
+}
 
 
 def response_is_clarification_request(micro_conv):
     if micro_conv["has_response"]:
         if micro_conv["response_speech_act"] in SPEECH_ACTS_CLARIFICATION_REQUEST:
-            words = set([w.lower() for w in micro_conv["utt_transcript_raw"].split(" ")][:-1])
+            words = set(
+                [w.lower() for w in micro_conv["utt_transcript_raw"].split(" ")][:-1]
+            )
             # If the initial utterance is just a call for attention, the response is not a clarification request.
             if len(words) <= 1 and len(words & CAREGIVER_NAMES) > 0:
                 return False
@@ -155,16 +168,28 @@ def pos_feedback(
 
 def melt_is_intelligible_variable(conversations):
     conversations_melted = conversations.copy()
-    conversations_melted["utterance_is_intelligible"] = conversations_melted["utt_is_intelligible"]
+    conversations_melted["utterance_is_intelligible"] = conversations_melted[
+        "utt_is_intelligible"
+    ]
     del conversations_melted["utt_is_intelligible"]
-    conversations_melted = pd.melt(conversations_melted.reset_index(),
-                                   id_vars=["index", "response_is_clarification_request", "child_name", "age",
-                                            "transcript_file", "has_response", "pos_feedback"],
-                                   value_vars=['utterance_is_intelligible', 'follow_up_is_intelligible'],
-                                   var_name='is_follow_up',
-                                   value_name='is_intelligible')
+    conversations_melted = pd.melt(
+        conversations_melted.reset_index(),
+        id_vars=[
+            "index",
+            "response_is_clarification_request",
+            "child_name",
+            "age",
+            "transcript_file",
+            "has_response",
+            "pos_feedback",
+        ],
+        value_vars=["utterance_is_intelligible", "follow_up_is_intelligible"],
+        var_name="is_follow_up",
+        value_name="is_intelligible",
+    )
     conversations_melted["is_follow_up"] = conversations_melted["is_follow_up"].apply(
-        lambda x: x == "follow_up_is_intelligible")
+        lambda x: x == "follow_up_is_intelligible"
+    )
     conversations_melted["conversation_id"] = conversations_melted["index"]
     del conversations_melted["index"]
     return conversations_melted
@@ -206,7 +231,8 @@ def perform_analysis(utterances, args):
 
     conversations = conversations.assign(
         response_is_clarification_request=conversations.apply(
-            response_is_clarification_request, axis=1)
+            response_is_clarification_request, axis=1
+        )
     )
 
     conversations = conversations.assign(
@@ -220,10 +246,15 @@ def perform_analysis(utterances, args):
         inplace=True,
     )
 
-    conversations = filter_transcripts_based_on_num_child_utts(conversations, args.min_child_utts_per_transcript)
+    conversations = filter_transcripts_based_on_num_child_utts(
+        conversations, args.min_child_utts_per_transcript
+    )
 
     conversations["age"] = conversations.age.apply(
-        age_bin, min_age=args.min_age, max_age=args.max_age, num_months=AGE_BIN_NUM_MONTHS
+        age_bin,
+        min_age=args.min_age,
+        max_age=args.max_age,
+        num_months=AGE_BIN_NUM_MONTHS,
     )
 
     results_dir = "results/intelligibility/"
@@ -242,17 +273,25 @@ def perform_analysis(utterances, args):
     ###
     print(f"\nFound {len(conversations)} micro-conversations")
     print(f"Number of corpora in the analysis: {len(conversations.corpus.unique())}")
-    print(f"Number of children in the analysis: {len(conversations.child_name.unique())}")
-    print(f"Number of transcripts in the analysis: {len(conversations.transcript_file.unique())}")
+    print(
+        f"Number of children in the analysis: {len(conversations.child_name.unique())}"
+    )
+    print(
+        f"Number of transcripts in the analysis: {len(conversations.transcript_file.unique())}"
+    )
 
     counter_cr = Counter(
-        conversations[conversations.response_is_clarification_request].response_transcript_raw.values
+        conversations[
+            conversations.response_is_clarification_request
+        ].response_transcript_raw.values
     )
     print("Most common clarification requests: ")
     print(counter_cr.most_common(20))
 
     counter_cr = Counter(
-        conversations[conversations.utt_is_intelligible == False].utt_transcript_raw.values
+        conversations[
+            conversations.utt_is_intelligible == False
+        ].utt_transcript_raw.values
     )
     print("Most common unintelligible utterances: ")
     print(counter_cr.most_common(20))
@@ -269,28 +308,42 @@ def perform_analysis(utterances, args):
 def perform_per_transcript_analyses(conversations):
     print("Per-transcript analysis: ")
 
-    prop_responses_to_intelligible = conversations[conversations.utt_is_intelligible].groupby("transcript_file").agg(
-        {"has_response": "mean"})
-    prop_responses_to_unintelligible = conversations[~conversations.utt_is_intelligible].groupby("transcript_file").agg(
-        {"has_response": "mean"})
-    contingency_caregiver_timing = prop_responses_to_intelligible - prop_responses_to_unintelligible
+    prop_responses_to_intelligible = (
+        conversations[conversations.utt_is_intelligible]
+        .groupby("transcript_file")
+        .agg({"has_response": "mean"})
+    )
+    prop_responses_to_unintelligible = (
+        conversations[~conversations.utt_is_intelligible]
+        .groupby("transcript_file")
+        .agg({"has_response": "mean"})
+    )
+    contingency_caregiver_timing = (
+        prop_responses_to_intelligible - prop_responses_to_unintelligible
+    )
     contingency_caregiver_timing = contingency_caregiver_timing.dropna().values
-    p_value = ztest(
-        contingency_caregiver_timing, value=0.0, alternative="larger"
-    )[1]
+    p_value = ztest(contingency_caregiver_timing, value=0.0, alternative="larger")[1]
     print(
         f"contingency_caregiver_timing: {contingency_caregiver_timing.mean():.4f} +-{contingency_caregiver_timing.std():.4f} p-value:{p_value}"
     )
 
     convs_with_response = conversations[conversations.has_response]
-    prop_responses_to_intelligible = convs_with_response[convs_with_response.utt_is_intelligible].groupby(
-        "transcript_file").agg(
-        {"response_is_clarification_request": "mean"})
-    prop_responses_to_unintelligible = convs_with_response[convs_with_response.utt_is_intelligible == False].groupby(
-        "transcript_file").agg(
-        {"response_is_clarification_request": "mean"})
-    contingency_caregiver_clarification_requests = prop_responses_to_unintelligible - prop_responses_to_intelligible
-    contingency_caregiver_clarification_requests = contingency_caregiver_clarification_requests.dropna().values
+    prop_responses_to_intelligible = (
+        convs_with_response[convs_with_response.utt_is_intelligible]
+        .groupby("transcript_file")
+        .agg({"response_is_clarification_request": "mean"})
+    )
+    prop_responses_to_unintelligible = (
+        convs_with_response[convs_with_response.utt_is_intelligible == False]
+        .groupby("transcript_file")
+        .agg({"response_is_clarification_request": "mean"})
+    )
+    contingency_caregiver_clarification_requests = (
+        prop_responses_to_unintelligible - prop_responses_to_intelligible
+    )
+    contingency_caregiver_clarification_requests = (
+        contingency_caregiver_clarification_requests.dropna().values
+    )
     p_value = ztest(
         contingency_caregiver_clarification_requests, value=0.0, alternative="larger"
     )[1]
@@ -298,23 +351,33 @@ def perform_per_transcript_analyses(conversations):
         f"contingency_caregiver_clarification_requests: {contingency_caregiver_clarification_requests.mean():.4f} +-{contingency_caregiver_clarification_requests.std():.4f} p-value:{p_value}"
     )
 
-    prop_follow_up_intelligible_if_response_to_intelligible = conversations[conversations.has_response & conversations.utt_is_intelligible].groupby("transcript_file").agg(
-        {"follow_up_is_intelligible": "mean"})
-    prop_follow_up_intelligible_if_no_response_to_intelligible = conversations[(conversations.has_response == False) & conversations.utt_is_intelligible].groupby(
-        "transcript_file").agg(
-        {"follow_up_is_intelligible": "mean"})
-    contingency_children = prop_follow_up_intelligible_if_response_to_intelligible - prop_follow_up_intelligible_if_no_response_to_intelligible
+    prop_follow_up_intelligible_if_response_to_intelligible = (
+        conversations[conversations.has_response & conversations.utt_is_intelligible]
+        .groupby("transcript_file")
+        .agg({"follow_up_is_intelligible": "mean"})
+    )
+    prop_follow_up_intelligible_if_no_response_to_intelligible = (
+        conversations[
+            (conversations.has_response == False) & conversations.utt_is_intelligible
+        ]
+        .groupby("transcript_file")
+        .agg({"follow_up_is_intelligible": "mean"})
+    )
+    contingency_children = (
+        prop_follow_up_intelligible_if_response_to_intelligible
+        - prop_follow_up_intelligible_if_no_response_to_intelligible
+    )
     contingency_children = contingency_children.dropna().values
-    p_value = ztest(
-        contingency_children, value=0.0, alternative="larger"
-    )[1]
+    p_value = ztest(contingency_children, value=0.0, alternative="larger")[1]
     print(
         f"contingency_children_pos_case: {contingency_children.mean():.4f} +-{contingency_children.std():.4f} p-value:{p_value}"
     )
 
 
 def make_plots(conversations, conversations_melted, results_dir):
-    proportion_intelligible_per_transcript = conversations.groupby("transcript_file").agg({"utt_is_intelligible": "mean", "age": "mean"})
+    proportion_intelligible_per_transcript = conversations.groupby(
+        "transcript_file"
+    ).agg({"utt_is_intelligible": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.regplot(
         data=proportion_intelligible_per_transcript,
@@ -325,11 +388,18 @@ def make_plots(conversations, conversations_melted, results_dir):
     )
     plt.tight_layout()
     axis.set(xlabel="age (months)", ylabel="prop_intelligible")
-    axis.set_xticks(np.arange(conversations.age.min(), conversations.age.max()+1, step=AGE_BIN_NUM_MONTHS))
+    axis.set_xticks(
+        np.arange(
+            conversations.age.min(),
+            conversations.age.max() + 1,
+            step=AGE_BIN_NUM_MONTHS,
+        )
+    )
     plt.savefig(os.path.join(results_dir, "proportion_intelligible.png"), dpi=300)
 
-    data = conversations.groupby(["transcript_file", "utt_is_intelligible"], as_index=False).agg(
-        {"has_response": "mean", "age": "mean"})
+    data = conversations.groupby(
+        ["transcript_file", "utt_is_intelligible"], as_index=False
+    ).agg({"has_response": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
         data=data,
@@ -349,8 +419,9 @@ def make_plots(conversations, conversations_melted, results_dir):
 
     conversations_with_response = conversations[conversations.has_response]
 
-    data = conversations_with_response.groupby(["transcript_file", "utt_is_intelligible"], as_index=False).agg(
-        {"response_is_clarification_request": "mean", "age": "mean"})
+    data = conversations_with_response.groupby(
+        ["transcript_file", "utt_is_intelligible"], as_index=False
+    ).agg({"response_is_clarification_request": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
         data=data,
@@ -366,10 +437,13 @@ def make_plots(conversations, conversations_melted, results_dir):
     sns.move_legend(axis, "upper left")
     axis.set(xlabel="age (months)", ylabel="prop_clarification_request")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_quality_clarification_request.png"), dpi=300)
+    plt.savefig(
+        os.path.join(results_dir, "cf_quality_clarification_request.png"), dpi=300
+    )
 
-    data = conversations.groupby(["transcript_file", "utt_is_intelligible"], as_index=False).agg(
-        {"pos_feedback": "mean", "age": "mean"})
+    data = conversations.groupby(
+        ["transcript_file", "utt_is_intelligible"], as_index=False
+    ).agg({"pos_feedback": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
         data=data,
@@ -387,8 +461,9 @@ def make_plots(conversations, conversations_melted, results_dir):
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_quality_all.png"), dpi=300)
 
-    data = conversations.groupby(["transcript_file", "has_response"], as_index=False).agg(
-        {"follow_up_is_intelligible": "mean", "age": "mean"})
+    data = conversations.groupby(
+        ["transcript_file", "has_response"], as_index=False
+    ).agg({"follow_up_is_intelligible": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
         data=data,
@@ -407,8 +482,11 @@ def make_plots(conversations, conversations_melted, results_dir):
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "cf_effect_pos_feedback_timing.png"), dpi=300)
 
-    data = conversations[conversations.utt_is_intelligible].groupby(["transcript_file", "has_response"], as_index=False).agg(
-        {"follow_up_is_intelligible": "mean", "age": "mean"})
+    data = (
+        conversations[conversations.utt_is_intelligible]
+        .groupby(["transcript_file", "has_response"], as_index=False)
+        .agg({"follow_up_is_intelligible": "mean", "age": "mean"})
+    )
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
         data=data,
@@ -425,12 +503,20 @@ def make_plots(conversations, conversations_melted, results_dir):
     sns.move_legend(axis, "lower right")
     axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_intelligible")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_effect_pos_feedback_on_intelligible_timing.png"), dpi=300)
+    plt.savefig(
+        os.path.join(results_dir, "cf_effect_pos_feedback_on_intelligible_timing.png"),
+        dpi=300,
+    )
 
-    conversations_melted_with_response = conversations_melted[conversations_melted.has_response]
-    conversations_melted_cr = conversations_melted_with_response[conversations_melted_with_response.response_is_clarification_request]
-    data = conversations_melted_cr.groupby(["transcript_file", "is_follow_up"], as_index=False).agg(
-        {"is_intelligible": "mean", "age": "mean"})
+    conversations_melted_with_response = conversations_melted[
+        conversations_melted.has_response
+    ]
+    conversations_melted_cr = conversations_melted_with_response[
+        conversations_melted_with_response.response_is_clarification_request
+    ]
+    data = conversations_melted_cr.groupby(
+        ["transcript_file", "is_follow_up"], as_index=False
+    ).agg({"is_intelligible": "mean", "age": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
         data=data,
@@ -447,10 +533,14 @@ def make_plots(conversations, conversations_melted, results_dir):
     sns.move_legend(axis, "upper left")
     axis.set(xlabel="age (months)", ylabel="prop_is_intelligible")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_effect_clarification_request.png"), dpi=300)
+    plt.savefig(
+        os.path.join(results_dir, "cf_effect_clarification_request.png"), dpi=300
+    )
 
-    data = conversations_melted_with_response.groupby(["transcript_file", "is_follow_up", "response_is_clarification_request"], as_index=False).agg(
-        {"is_intelligible": "mean"})
+    data = conversations_melted_with_response.groupby(
+        ["transcript_file", "is_follow_up", "response_is_clarification_request"],
+        as_index=False,
+    ).agg({"is_intelligible": "mean"})
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
         data=data,
@@ -467,7 +557,10 @@ def make_plots(conversations, conversations_melted, results_dir):
     sns.move_legend(axis, "lower right")
     axis.set(ylabel="prop_is_intelligible")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_effect_clarification_request_control.png"), dpi=300)
+    plt.savefig(
+        os.path.join(results_dir, "cf_effect_clarification_request_control.png"),
+        dpi=300,
+    )
 
 
 if __name__ == "__main__":

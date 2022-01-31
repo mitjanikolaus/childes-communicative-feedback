@@ -4,8 +4,17 @@ import os
 import pandas as pd
 import pylangacq
 
-from utils import clean_utterance, is_empty, POS_PUNCTUATION, PREPROCESSED_UTTERANCES_FILE, SPEAKER_CODE_CHILD, \
-    get_all_paralinguistic_events, remove_punctuation, get_paralinguistic_event, paralinguistic_event_is_external
+from utils import (
+    clean_utterance,
+    is_empty,
+    POS_PUNCTUATION,
+    PREPROCESSED_UTTERANCES_FILE,
+    SPEAKER_CODE_CHILD,
+    get_all_paralinguistic_events,
+    remove_punctuation,
+    get_paralinguistic_event,
+    paralinguistic_event_is_external,
+)
 
 # Corpora that are conversational (have child AND caregiver transcripts), are English, and have timing information
 CANDIDATE_CORPORA = [
@@ -89,8 +98,14 @@ def preprocess_utterances(corpus, transcripts):
                     "utterance_id": id,
                     "speaker_code": utt.participant,
                     "transcript_raw": utt.tiers[utt.participant],
-                    "tokens": [t.word.lower() for t in utt.tokens if t.word != "CLITIC"],
-                    "pos": [get_pos_tag(t.pos) for t in utt.tokens if t.pos not in POS_PUNCTUATION],
+                    "tokens": [
+                        t.word.lower() for t in utt.tokens if t.word != "CLITIC"
+                    ],
+                    "pos": [
+                        get_pos_tag(t.pos)
+                        for t in utt.tokens
+                        if t.pos not in POS_PUNCTUATION
+                    ],
                     "start_time": utt.time_marks[0] if utt.time_marks else None,
                     "end_time": utt.time_marks[1] if utt.time_marks else None,
                     "age": round(age),
@@ -157,10 +172,14 @@ def preprocess_transcripts():
 
     all_utterances = pd.concat(all_utterances, ignore_index=True)
 
-    all_utterances.dropna(subset=("transcript_raw",),inplace=True)
+    all_utterances.dropna(subset=("transcript_raw",), inplace=True)
 
-    all_utterances = all_utterances[~all_utterances.transcript_raw.apply(has_multiple_events)]
-    all_utterances = all_utterances[~all_utterances.transcript_raw.apply(is_external_event)]
+    all_utterances = all_utterances[
+        ~all_utterances.transcript_raw.apply(has_multiple_events)
+    ]
+    all_utterances = all_utterances[
+        ~all_utterances.transcript_raw.apply(is_external_event)
+    ]
     all_utterances = all_utterances[~all_utterances.transcript_raw.apply(is_empty)]
 
     return all_utterances

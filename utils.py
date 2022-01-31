@@ -36,7 +36,21 @@ SPEECH_ACT_NO_FUNCTION = "YY"
 SPEECH_ACTS_NO_FUNCTION = ["YY", "OO"]
 
 
-POS_PUNCTUATION = [".", "?", "...", "!", "+/", "+/?", "" "...?", ",", "-", "+\"/.", "+...", "++/.", "+/."]
+POS_PUNCTUATION = [
+    ".",
+    "?",
+    "...",
+    "!",
+    "+/",
+    "+/?",
+    "" "...?",
+    ",",
+    "-",
+    '+"/.',
+    "+...",
+    "++/.",
+    "+/.",
+]
 
 # codes that will be excluded from analysis
 IS_UNTRANSCRIBED = lambda word: "www" in word
@@ -88,7 +102,9 @@ def is_excluded_code(word):
 
 
 def age_bin(age, min_age, max_age, num_months):
-    return min(max_age, max(min_age, int((age + num_months / 2) / num_months) * num_months))
+    return min(
+        max_age, max(min_age, int((age + num_months / 2) / num_months) * num_months)
+    )
 
 
 def is_simple_event(word):
@@ -96,7 +112,17 @@ def is_simple_event(word):
 
 
 def is_laughter(word):
-    return word in ["haha", "hahaha", "hahahaha", "hehehe", "heehee", "hehe", "hohoho", "hhh", "hah"]
+    return word in [
+        "haha",
+        "hahaha",
+        "hahahaha",
+        "hehehe",
+        "heehee",
+        "hehe",
+        "hohoho",
+        "hhh",
+        "hah",
+    ]
 
 
 def word_is_speech_related(word):
@@ -227,7 +253,12 @@ def remove_nonspeech_events(utterance):
                 return ""
             # For cases like "mm [=! squeal]":
             words = utterance.strip().split(" ")
-            if len(words) == 1 and not is_word(words[0]) and not is_babbling(words[0]) and not word_is_speech_related(words[0]):
+            if (
+                len(words) == 1
+                and not is_word(words[0])
+                and not is_babbling(words[0])
+                and not word_is_speech_related(words[0])
+            ):
                 return ""
 
     words = utterance.strip().split(" ")
@@ -361,8 +392,46 @@ CODE_INTERJECTION = "@i"
 CODE_PHONOLGICAL_CONSISTENT_FORM = "@p"
 CODE_PHONOLOGICAL_FRAGMENT = "&"
 
-OTHER_BABBLING = ["da", "ba", "baba", "baa", "babaa", "ababa", "bada", "gagaa", "gaga", "ow", "ay", "pss", "ugh", "bum", "brrr", "oop", "er"]
-OTHER_NONSPEECH = ["ouch", "wee", "yack", "ugh", "woah", "oy", "ee", "hee", "whoo", "oo", "hoo", "ew", "oof", "baaee", "ewok", "ewoks", "urgh", "ow", "heh"]
+OTHER_BABBLING = [
+    "da",
+    "ba",
+    "baba",
+    "baa",
+    "babaa",
+    "ababa",
+    "bada",
+    "gagaa",
+    "gaga",
+    "ow",
+    "ay",
+    "pss",
+    "ugh",
+    "bum",
+    "brrr",
+    "oop",
+    "er",
+]
+OTHER_NONSPEECH = [
+    "ouch",
+    "wee",
+    "yack",
+    "ugh",
+    "woah",
+    "oy",
+    "ee",
+    "hee",
+    "whoo",
+    "oo",
+    "hoo",
+    "ew",
+    "oof",
+    "baaee",
+    "ewok",
+    "ewoks",
+    "urgh",
+    "ow",
+    "heh",
+]
 
 VOCAB_CUSTOM = set(
     pd.read_csv("data/childes_custom_vocab.csv", header=None, names=["word"]).word
@@ -422,7 +491,9 @@ def remove_babbling(utterance):
 
     words = utterance.strip().split(" ")
     filtered_utterance = [
-        word for word in words if not (word == "" or is_babbling(word) or is_excluded_code(word))
+        word
+        for word in words
+        if not (word == "" or is_babbling(word) or is_excluded_code(word))
     ]
 
     if keep_event:
@@ -464,14 +535,18 @@ def filter_corpora_based_on_response_latency_length(
     print("Response latencies:")
 
     # Exclude conversations without responses (as they have infinite latency)
-    conversations_with_responses = conversations[conversations.response_latency < max_response_latency]
+    conversations_with_responses = conversations[
+        conversations.response_latency < max_response_latency
+    ]
 
-    corpus_means = conversations_with_responses.groupby("corpus").agg({"response_latency": "mean"})
+    corpus_means = conversations_with_responses.groupby("corpus").agg(
+        {"response_latency": "mean"}
+    )
     for corpus, row in corpus_means.iterrows():
         print(f"{corpus}: {row['response_latency']:.1f}")
         if (
             mean_latency - standard_deviations_off * std_mean_latency
-            < row['response_latency']
+            < row["response_latency"]
             < mean_latency + standard_deviations_off * std_mean_latency
         ):
             filtered.append(corpus)
@@ -481,8 +556,14 @@ def filter_corpora_based_on_response_latency_length(
     return conversations
 
 
-def filter_transcripts_based_on_num_child_utts(conversations, min_child_utts_per_transcript):
+def filter_transcripts_based_on_num_child_utts(
+    conversations, min_child_utts_per_transcript
+):
     child_utts_per_transcript = conversations.groupby("transcript_file").size()
-    transcripts_enough_utts = child_utts_per_transcript[child_utts_per_transcript > min_child_utts_per_transcript]
+    transcripts_enough_utts = child_utts_per_transcript[
+        child_utts_per_transcript > min_child_utts_per_transcript
+    ]
 
-    return conversations[conversations.transcript_file.isin(transcripts_enough_utts.index)]
+    return conversations[
+        conversations.transcript_file.isin(transcripts_enough_utts.index)
+    ]
