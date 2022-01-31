@@ -42,6 +42,30 @@ produce the plots.
 The notebooks `analysis_warlaumont_glm.ipynb` and `analysis_intelligibility_glm.ipynb` are used for the GLM analyses,
 which are performed with R.
 
+
+## Annotation Scheme
+
+### Intelligibility
+
+The [CHAT coding scheme](https://talkbank.org/manuals/CHAT.pdf) offers multple ways to transcribe unintelligible
+utterances. Here we list all cases that were most commonly used (the different corpora considered in our study make very
+varying use of the different codes).
+
+| Code       | Description                                                                                                                                |
+|------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| xxx        | Unintelligible Speech                                                                                                                      |
+| yyy        | Phonological Coding                                                                                                                        |
+| @p         | Phonological Fragments (see above), e.g., bababa@p                                                                                         |
+| \&         | Phonological Fragments (see above), e.g., \&baba                                                                                           |
+| @b         | Babbling, e.g., bababa@b                                                                                                                   |
+| \&=event   | Format used to transcribe ``simple events'', sometimes used for unintelligible speech: \&=babbling, \&=vocalizes                           |
+| [=! event] | Format used to transcribe ``paralinguistic events'', sometimes used for unintelligible speech: [=! babbling], [=! voc]                     |
+| word | Sometimes babbling is not explicitely, marked, but just transcribed as a normal word. We catch the most common cases e.g., "baba", "bababa" |
+
+
+
+
+
 ## Acknowledgements
 Thanks to the authors of the pylangacq repo: 
 
