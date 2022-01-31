@@ -139,13 +139,14 @@ CAREGIVER_NAMES = {"dad", "daddy", "dada", "mom", "mum", "mommy", "mummy", "mama
 
 
 def response_is_clarification_request(micro_conv):
-    if micro_conv["response_speech_act"] in SPEECH_ACTS_CLARIFICATION_REQUEST:
-        words = set([w.lower() for w in micro_conv["utt_transcript_raw"].split(" ")][:-1])
-        # If the initial utterance is just a call for attention, the response is not a clarification request.
-        if len(words) <= 1 and len(words & CAREGIVER_NAMES) > 0:
-            return False
-        else:
-            return True
+    if micro_conv["has_response"]:
+        if micro_conv["response_speech_act"] in SPEECH_ACTS_CLARIFICATION_REQUEST:
+            words = set([w.lower() for w in micro_conv["utt_transcript_raw"].split(" ")][:-1])
+            # If the initial utterance is just a call for attention, the response is not a clarification request.
+            if len(words) <= 1 and len(words & CAREGIVER_NAMES) > 0:
+                return False
+            else:
+                return True
     return False
 
 
