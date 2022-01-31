@@ -7,6 +7,9 @@
 All CHILDES corpora listed in 'preprocess.py' need to be downloaded from the
 [CHILDES database](https://childes.talkbank.org/) and extracted to `~/data/CHILDES/`.
 
+The following corpora were used in the analyses:
+Bernstein, Bloom, Braunwald, Brent, Edinburgh, Gleason, MPI-EVA-Manchester, MacWhinney, McCune, McMillan, Nelson, NewmanRatner, Peters, Providence, Rollins, Sachs, Snow, Soderstrom, Thomas, Tommerdahl, VanHouten, Weist
+
 ### Turn taking meta-analysis
 The [data](data/MA%20turn-taking.csv) of the [systematic review on turn-taking](https://psyarxiv.com/3bak6) was 
 downloaded from the corresponding
