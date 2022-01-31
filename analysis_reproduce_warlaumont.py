@@ -471,7 +471,7 @@ def make_plots(conversations, results_dir):
         hue="has_response",
         linewidth=1,
         edgecolor="w",
-        palette=sns.color_palette()[2:],
+        palette=sns.color_palette(),
     )
     legend = axis.legend()
     legend.texts[0].set_text("no response")
@@ -495,7 +495,7 @@ def make_plots(conversations, results_dir):
         hue="has_response",
         linewidth=1,
         edgecolor="w",
-        palette=sns.color_palette()[2:],
+        palette=sns.color_palette(),
     )
     legend = axis.legend()
     legend.texts[0].set_text("no response")

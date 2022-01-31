@@ -30,8 +30,8 @@ def make_proportion_plots(conversations, results_dir):
         y="utt_is_speech_related",
         marker=".",
         logistic=True,
-        line_kws={"color": sns.color_palette("tab10")[7]},
-        scatter_kws={"alpha": 0.2, "s": 20, "color": sns.color_palette("tab10")[7]},
+        line_kws={"color": sns.color_palette("tab10")[0]},
+        scatter_kws={"alpha": 0.2, "s": 20, "color": sns.color_palette("tab10")[0]},
     )
     axis.set(xlabel="age (months)", ylabel="")
     axis.legend(
