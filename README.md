@@ -31,7 +31,7 @@ crf_annotate --model checkpoints/crf_full_train --data ~/data/communicative_feed
 
 Finally, annotate speech-relatedness and intelligibility:
 ```
-annotate.py --rule-based-intelligibility
+annotate.py
 ```
 
 ## Analyses
@@ -39,7 +39,8 @@ annotate.py --rule-based-intelligibility
 The scripts `analysis_reproduce_warlaumont.py` and `analysis_intelligibility` perform the respective analyses and
 produce the plots.
 
-The notebook `analysis_intelligibility_glm.ipynb` is used for the GLM analyses, which are performed with R.
+The notebooks `analysis_warlaumont_glm.ipynb` and `analysis_intelligibility_glm.ipynb` are used for the GLM analyses,
+which are performed with R.
 
 ## Acknowledgements
 Thanks to the authors of the pylangacq repo: 

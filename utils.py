@@ -31,9 +31,6 @@ UTTERANCES_WITH_SPEECH_ACTS_FILE = os.path.expanduser(
 ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances_annotated.p"
 )
-RULE_BASED_ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
-    "~/data/communicative_feedback/utterances_annotated_rule_based.p"
-)
 
 SPEECH_ACT_NO_FUNCTION = "YY"
 SPEECH_ACTS_NO_FUNCTION = ["YY", "OO"]

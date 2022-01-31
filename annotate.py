@@ -8,7 +8,7 @@ from utils import (
     str2bool,
     remove_babbling,
     ANNOTATED_UTTERANCES_FILE, UTTERANCES_WITH_SPEECH_ACTS_FILE,
-    SPEECH_ACTS_NO_FUNCTION, RULE_BASED_ANNOTATED_UTTERANCES_FILE,
+    SPEECH_ACTS_NO_FUNCTION,
 )
 from utils import (
     remove_nonspeech_events,
@@ -104,19 +104,12 @@ def annotate(args):
         )
     )
 
-    if args.rule_based_intelligibility:
-        utterances = utterances.assign(
-            is_intelligible=utterances.transcript_raw.apply(
-                is_intelligible,
-                label_partially_intelligible=args.label_partially_intelligible,
-            )
+    utterances = utterances.assign(
+        is_intelligible=utterances.transcript_raw.apply(
+            is_intelligible,
+            label_partially_intelligible=args.label_partially_intelligible,
         )
-    else:
-        utterances = utterances.assign(
-            is_intelligible=utterances.speech_act.apply(
-                speech_act_is_intelligible,
-            )
-        )
+    )
 
     return utterances
 
@@ -140,11 +133,6 @@ def parse_args():
         default=DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE,
         help="Label for partially intelligible utterances: Set to True to count as intelligible, False to count as unintelligible or None to exclude these utterances from the analysis",
     )
-    argparser.add_argument(
-        "--rule-based-intelligibility",
-        action="store_true",
-        help="Use rule-based approach to annotate intelligibility"
-    )
 
     args = argparser.parse_args()
 
@@ -156,6 +144,5 @@ if __name__ == "__main__":
 
     annotated_utts = annotate(args)
 
-    out_dir = RULE_BASED_ANNOTATED_UTTERANCES_FILE if args.rule_based_intelligibility else ANNOTATED_UTTERANCES_FILE
-    os.makedirs(os.path.dirname(out_dir), exist_ok=True)
-    annotated_utts.to_pickle(out_dir)
+    os.makedirs(os.path.dirname(ANNOTATED_UTTERANCES_FILE), exist_ok=True)
+    annotated_utts.to_pickle(ANNOTATED_UTTERANCES_FILE)

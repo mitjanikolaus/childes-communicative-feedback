@@ -1,5 +1,4 @@
 import argparse
-import math
 import os
 from collections import Counter
 
@@ -20,7 +19,7 @@ from preprocess import (
 from utils import (
     age_bin,
     filter_corpora_based_on_response_latency_length, ANNOTATED_UTTERANCES_FILE,
-    filter_transcripts_based_on_num_child_utts, RULE_BASED_ANNOTATED_UTTERANCES_FILE,
+    filter_transcripts_based_on_num_child_utts,
 )
 
 DEFAULT_RESPONSE_THRESHOLD = 1000
@@ -46,7 +45,6 @@ DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 1 * 60 * 1000
 # Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words and
 # should be excluded when annotating intelligibility based on rules.
 DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
-# DEFAULT_EXCLUDED_CORPORA = ["Providence"]
 
 # currently not used to exclude corpora, just stored for reference:
 CORPORA_NOT_LONGITUDINAL = ["Gleason", "Rollins", "Edinburgh"]
@@ -59,11 +57,6 @@ SPEECH_ACTS_CLARIFICATION_REQUEST = [
 
 def parse_args():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument(
-        "--rule-based-intelligibility",
-        action="store_true",
-        help="Use utterances annotated using rule-based approach."
-    )
     argparser.add_argument(
         "--corpora",
         nargs="+",
@@ -482,8 +475,7 @@ if __name__ == "__main__":
 
     print(args)
 
-    file_path = RULE_BASED_ANNOTATED_UTTERANCES_FILE if args.rule_based_intelligibility else ANNOTATED_UTTERANCES_FILE
-    utterances = pd.read_pickle(file_path)
+    utterances = pd.read_pickle(ANNOTATED_UTTERANCES_FILE)
 
     print("Excluding corpora: ", args.excluded_corpora)
     utterances = utterances[~utterances.corpus.isin(args.excluded_corpora)]
