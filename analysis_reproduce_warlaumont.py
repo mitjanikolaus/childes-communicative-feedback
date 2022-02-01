@@ -384,10 +384,12 @@ def perform_per_transcript_analyses(conversations):
     contingency_caregiver_timing = (
         prop_responses_to_speech_related - prop_responses_to_non_speech_related
     )
-    contingency_caregiver_timing = contingency_caregiver_timing.dropna().values
-    p_value = ztest(contingency_caregiver_timing, value=0.0, alternative="larger")[1]
+    contingency_caregiver_timing = contingency_caregiver_timing.dropna()
+    mean = contingency_caregiver_timing.has_response.mean()
+    standard_error = contingency_caregiver_timing.has_response.sem()
+    p_value = ztest(contingency_caregiver_timing.values, value=0.0, alternative="larger")[1]
     print(
-        f"contingency_caregiver_timing: {contingency_caregiver_timing.mean():.4f} +-{contingency_caregiver_timing.std():.4f} p-value:{p_value}"
+        f"contingency_caregiver_timing: {mean:.4f} SE: {standard_error:.4f} p-value:{p_value}"
     )
 
     prop_follow_up_speech_related_if_response_to_speech_related = (
@@ -406,10 +408,12 @@ def perform_per_transcript_analyses(conversations):
         prop_follow_up_speech_related_if_response_to_speech_related
         - prop_follow_up_speech_related_if_no_response_to_speech_related
     )
-    contingency_children_pos_case = contingency_children_pos_case.dropna().values
-    p_value = ztest(contingency_children_pos_case, value=0.0, alternative="larger")[1]
+    contingency_children_pos_case = contingency_children_pos_case.dropna()
+    mean = contingency_children_pos_case.follow_up_is_speech_related.mean()
+    standard_error = contingency_children_pos_case.follow_up_is_speech_related.sem()
+    p_value = ztest(contingency_children_pos_case.values, value=0.0, alternative="larger")[1]
     print(
-        f"contingency_children_pos_case: {contingency_children_pos_case.mean():.4f} +-{contingency_children_pos_case.std():.4f} p-value:{p_value}"
+        f"contingency_children_pos_case: {mean:.4f} SE: {standard_error:.4f} p-value:{p_value}"
     )
 
 
