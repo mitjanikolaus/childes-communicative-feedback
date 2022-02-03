@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 
-from statsmodels.stats.weightstats import ztest
+from scipy.stats import ttest_1samp
 from tqdm import tqdm
 
 from annotate import ANNOTATED_UTTERANCES_FILE
@@ -387,7 +387,7 @@ def perform_per_transcript_analyses(conversations):
     contingency_caregiver_timing = contingency_caregiver_timing.dropna()
     mean = contingency_caregiver_timing.has_response.mean()
     standard_error = contingency_caregiver_timing.has_response.sem()
-    p_value = ztest(contingency_caregiver_timing.values, value=0.0, alternative="larger")[1]
+    p_value = ttest_1samp(contingency_caregiver_timing.values, popmean=0, alternative="greater")[1]
     print(
         f"contingency_caregiver_timing: {mean:.4f} SE: {standard_error:.4f} p-value:{p_value}"
     )
@@ -411,7 +411,7 @@ def perform_per_transcript_analyses(conversations):
     contingency_children_pos_case = contingency_children_pos_case.dropna()
     mean = contingency_children_pos_case.follow_up_is_speech_related.mean()
     standard_error = contingency_children_pos_case.follow_up_is_speech_related.sem()
-    p_value = ztest(contingency_children_pos_case.values, value=0.0, alternative="larger")[1]
+    p_value = ttest_1samp(contingency_children_pos_case.values, popmean=0, alternative="greater")[1]
     print(
         f"contingency_children_pos_case: {mean:.4f} SE: {standard_error:.4f} p-value:{p_value}"
     )
