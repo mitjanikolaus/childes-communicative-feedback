@@ -337,17 +337,17 @@ def perform_analysis_speech_relatedness(utterances, args):
         conversations, args.min_child_utts_per_transcript
     )
 
-    results_dir = "results/reproduce_warlaumont/"
-    os.makedirs(results_dir, exist_ok=True)
-
-    conversations.to_csv(results_dir + "conversations.csv", index=False)
-
     conversations["age"] = conversations.age.apply(
         age_bin,
         min_age=args.min_age,
         max_age=args.max_age,
         num_months=AGE_BIN_NUM_MONTHS,
     )
+
+    results_dir = "results/reproduce_warlaumont/"
+    os.makedirs(results_dir, exist_ok=True)
+
+    conversations.to_csv(results_dir + "conversations.csv", index=False)
 
     ###
     # Analyses
