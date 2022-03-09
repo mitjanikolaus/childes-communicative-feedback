@@ -29,6 +29,8 @@ def glm_child_behavior_timing(convs):
 
 if __name__ == "__main__":
     conversations = pd.read_csv("results/reproduce_warlaumont/conversations.csv")
+    pd.set_option('display.width', 1000)
+    pd.set_option('display.max_columns', 15)
 
     # normalize age
     min_age, max_age, mean_age = conversations.age.min(), conversations.age.max(), conversations.age.mean()

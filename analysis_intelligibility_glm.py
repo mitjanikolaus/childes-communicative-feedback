@@ -92,6 +92,8 @@ def glm_child_behavior_clarification_requests(convs):
 
 if __name__ == "__main__":
     conversations = pd.read_csv("results/intelligibility/conversations.csv")
+    pd.set_option('display.width', 1000)
+    pd.set_option('display.max_columns', 15)
 
     conversations_melted = melt_is_intelligible_variable(conversations)
 
