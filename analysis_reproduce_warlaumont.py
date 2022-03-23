@@ -51,7 +51,9 @@ DEFAULT_MAX_AGE = 48
 
 AGE_BIN_NUM_MONTHS = 6
 
-DEFAULT_EXCLUDED_CORPORA = []
+# Providence: Some non-speech vocalizations such as laughter are incorrectly transcribed as 'yyy', and the timing
+# information is of very poor quality
+DEFAULT_EXCLUDED_CORPORA = ["Providence"]
 
 
 def parse_args():
@@ -323,9 +325,7 @@ def perform_analysis_speech_relatedness(utterances, args):
     print("Ratios nonspeech/speech for each corpus:")
     for corpus in conversations.corpus.unique():
         d_corpus = conversations[conversations.corpus == corpus]
-        ratio = len(d_corpus[d_corpus.utt_is_speech_related == False]) / len(
-            d_corpus[d_corpus.utt_is_speech_related == True]
-        )
+        ratio = len(d_corpus[d_corpus.utt_is_speech_related == False]) / len(d_corpus)
         if ratio > args.min_ratio_nonspeech:
             good_corpora.append(corpus)
         print(f"{corpus}: {ratio:.5f}")
