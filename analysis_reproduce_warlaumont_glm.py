@@ -9,7 +9,9 @@ def glm_caregiver_behavior_timing(convs):
     assert convs.has_response.dtype == bool
     mod = Lmer('has_response ~ utt_is_speech_related * age + (1 | child_name)', family='binomial', data=convs)
     print("=" * 50 + "\nCaregiver responses: Timing\n" + "=" * 50)
-    print(mod.fit())
+    fitted = mod.fit()
+    print(fitted)
+    print(fitted[["Estimate", "SE", "Sig"]])
 
 
 def glm_child_behavior_timing(convs):
@@ -24,7 +26,9 @@ def glm_child_behavior_timing(convs):
     assert convs.follow_up_is_speech_related.dtype == bool
     mod = Lmer('follow_up_is_speech_related ~ has_response * age + (1 | child_name)', family='binomial', data=convs)
     print("=" * 50 + "\nChild behavior: Effect of timing\n" + "=" * 50)
-    print(mod.fit())
+    fitted = mod.fit()
+    print(fitted)
+    print(fitted[["Estimate", "SE", "Sig"]])
 
 
 if __name__ == "__main__":

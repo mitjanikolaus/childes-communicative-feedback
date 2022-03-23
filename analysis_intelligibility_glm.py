@@ -11,7 +11,9 @@ def glm_caregiver_behavior_timing(convs):
     assert convs.has_response.dtype == bool
     mod = Lmer('has_response ~ utt_is_intelligible * age + (1 | child_name)', family='binomial', data=convs)
     print("=" * 50 + "\nCaregiver responses: Timing\n" + "=" * 50)
-    print(mod.fit())
+    fitted = mod.fit()
+    print(fitted)
+    print(fitted[["Estimate", "SE", "Sig"]])
 
 
 def glm_caregiver_behavior_clarification_requests(convs):
@@ -24,7 +26,9 @@ def glm_caregiver_behavior_clarification_requests(convs):
     mod = Lmer('response_is_clarification_request ~ utt_is_intelligible * age + (1 | child_name)', family='binomial',
                data=convs_with_response)
     print("=" * 50 + "\nCaregiver responses: Clarification requests\n" + "=" * 50)
-    print(mod.fit())
+    fitted = mod.fit()
+    print(fitted)
+    print(fitted[["Estimate", "SE", "Sig"]])
 
 
 def glm_caregiver_behavior_pos_feedback(convs):
@@ -36,7 +40,9 @@ def glm_caregiver_behavior_pos_feedback(convs):
     mod = Lmer('pos_feedback ~ utt_is_intelligible * age + (1 | child_name)', family='binomial',
                data=convs)
     print("=" * 50 + "\nCaregiver responses: Positive feedback (= No pause, no clarification request)\n" + "=" * 50)
-    print(mod.fit())
+    fitted = mod.fit()
+    print(fitted)
+    print(fitted[["Estimate", "SE", "Sig"]])
 
 
 def glm_child_behavior_timing(convs):
@@ -51,7 +57,9 @@ def glm_child_behavior_timing(convs):
     assert convs.follow_up_is_intelligible.dtype == bool
     mod = Lmer('follow_up_is_intelligible ~ has_response * age + (1 | child_name)', family='binomial', data=convs)
     print("=" * 50 + "\nChild behavior: Effect of timing\n" + "=" * 50)
-    print(mod.fit())
+    fitted = mod.fit()
+    print(fitted)
+    print(fitted[["Estimate", "SE", "Sig"]])
 
 
 def glm_child_behavior_clarification_requests_control(convs):
@@ -69,7 +77,9 @@ def glm_child_behavior_clarification_requests_control(convs):
 
     mod = Lmer('is_intelligible ~ response_is_clarification_request * is_follow_up + (1 | child_name) + (1 | age) + (1 | conversation_id)', family='binomial', data=convs)
     print("=" * 50 + "\nChild behavior: Effect of clarification requests (control case)\n" + "=" * 50)
-    print(mod.fit())
+    fitted = mod.fit()
+    print(fitted)
+    print(fitted[["Estimate", "SE", "Sig"]])
 
 
 def glm_child_behavior_clarification_requests(convs):
@@ -87,7 +97,9 @@ def glm_child_behavior_clarification_requests(convs):
 
     mod = Lmer('is_intelligible ~ is_follow_up * age + (1 | child_name) + (1 | conversation_id)', family='binomial', data=convs)
     print("=" * 50 + "\nChild behavior: Effect of clarification requests\n" + "=" * 50)
-    print(mod.fit())
+    fitted = mod.fit()
+    print(fitted)
+    print(fitted[["Estimate", "SE", "Sig"]])
 
 
 if __name__ == "__main__":
