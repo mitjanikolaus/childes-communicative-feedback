@@ -46,7 +46,9 @@ DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 1 * 60 * 1000
 
 # Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words and
 # should be excluded when annotating intelligibility based on rules.
-DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
+# Providence: Some non-speech vocalizations such as laughter are incorrectly transcribed as 'yyy', and the timing
+# information is of very poor quality
+DEFAULT_EXCLUDED_CORPORA = ["Forrester", "Providence"]
 
 # currently not used to exclude corpora, just stored for reference:
 CORPORA_NOT_LONGITUDINAL = ["Gleason", "Rollins", "Edinburgh"]
