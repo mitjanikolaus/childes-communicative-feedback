@@ -1,5 +1,10 @@
-# communicative feedback
+# CHILDES communicative feedback
 
+This repository contains code accompanying the following paper:
+
+**Communicative Feedback as a Mechanism Supporting the Production of Intelligible Speech in Early Childhood** \
+*In Proceedings of the 44th Annual Meeting of the Cognitive Science Society. (2022)* \
+Mitja Nikolaus, Laurent Prévot and Abdellah Fourtassi
 
 ## Data
 
