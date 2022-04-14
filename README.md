@@ -7,13 +7,8 @@
 All CHILDES corpora listed in 'preprocess.py' need to be downloaded from the
 [CHILDES database](https://childes.talkbank.org/) and extracted to `~/data/CHILDES/`.
 
-The following corpora were used in the analyses:
+The following corpora were considered in the analyses:
 Bernstein, Bloom, Braunwald, Brent, Edinburgh, Gleason, MPI-EVA-Manchester, MacWhinney, McCune, McMillan, Nelson, NewmanRatner, Peters, Providence, Rollins, Sachs, Snow, Soderstrom, Thomas, Tommerdahl, VanHouten, Weist
-
-### Turn taking meta-analysis
-The [data](data/MA%20turn-taking.csv) of the [systematic review on turn-taking](https://psyarxiv.com/3bak6) was 
-downloaded from the corresponding
-[OSF project](https://osf.io/wkceb/?view_only=9cca387b49ef427fa9740cb94c3fbd5c).
 
 ## Preprocessing
 
@@ -26,8 +21,8 @@ and run:
 preprocess.py
 ```
 
-Afterwards the utterances need to be annotated with speech acts. Using the method `crf_annotate` from the following
-repo: [Automatic speech act annotation](https://github.com/mitjanikolaus/childes-speech-acts/tree/new-data-loading).
+Afterwards the utterances need to be annotated with speech acts. Use the method `crf_annotate` from the following
+branch: [automatic speech act annotation](https://github.com/mitjanikolaus/childes-speech-acts/tree/new-data-loading).
 ```
 crf_annotate --model checkpoints/crf_full_train --data ~/data/communicative_feedback/utterances.p --out ~/data/communicative_feedback/utterances_with_speech_acts.p --use-pos --use-bi-grams --use-repetitions
 ```
@@ -42,8 +37,8 @@ annotate.py
 The scripts `analysis_reproduce_warlaumont.py` and `analysis_intelligibility` perform the respective analyses and
 produce the plots.
 
-The notebooks `analysis_warlaumont_glm.ipynb` and `analysis_intelligibility_glm.ipynb` are used for the GLM analyses,
-which are performed with R.
+The scripts `analysis_reproduce_warlaumont_glm.py` and `analysis_intelligibility_glm.py` are used for the GLM analyses
+of the results.
 
 
 ## Annotation Scheme
