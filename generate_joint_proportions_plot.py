@@ -45,7 +45,7 @@ def make_proportion_plots(conversations, results_dir):
 
 
 if __name__ == "__main__":
-    conversations = pd.read_csv("results/reproduce_warlaumont/conversations.csv")
+    conversations = pd.read_csv("results/conversations_raw.csv")
 
     results_dir = "results/"
     make_proportion_plots(conversations, results_dir)

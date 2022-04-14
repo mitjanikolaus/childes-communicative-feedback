@@ -204,8 +204,6 @@ def perform_analysis(utterances, args):
 
     conversations = get_micro_conversations(utterances, args)
 
-    conversations.to_csv("results/conversations_raw.csv", index=False)
-
     conversations.dropna(
         subset=("response_latency", "response_latency_follow_up"),
         inplace=True,
