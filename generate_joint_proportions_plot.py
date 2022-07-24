@@ -8,10 +8,24 @@ from analysis_reproduce_warlaumont import AGE_BIN_NUM_MONTHS
 
 
 def make_proportion_plots(conversations, results_dir):
+    plt.figure(figsize=(6, 4))
+
+    proportion_speech_like_per_transcript = conversations.groupby(
+        "transcript_file"
+    ).agg({"utt_is_speech_related": "mean", "age": "mean"})
+    axis = sns.regplot(
+        data=proportion_speech_like_per_transcript,
+        x="age",
+        y="utt_is_speech_related",
+        marker=".",
+        logistic=True,
+        line_kws={"color": sns.color_palette("tab10")[0]},
+        scatter_kws={"alpha": 0.2, "s": 20, "color": sns.color_palette("tab10")[0]},
+    )
+
     proportion_intelligible_per_transcript = conversations.groupby(
         "transcript_file"
     ).agg({"utt_is_intelligible": "mean", "age": "mean"})
-    plt.figure(figsize=(6, 4))
     sns.regplot(
         data=proportion_intelligible_per_transcript,
         x="age",
@@ -21,21 +35,9 @@ def make_proportion_plots(conversations, results_dir):
         line_kws={"color": sns.color_palette("tab10")[1]},
         scatter_kws={"alpha": 0.2, "s": 20, "color": sns.color_palette("tab10")[1]},
     )
-    proportion_speech_related_per_transcript = conversations.groupby(
-        "transcript_file"
-    ).agg({"utt_is_speech_related": "mean", "age": "mean"})
-    axis = sns.regplot(
-        data=proportion_speech_related_per_transcript,
-        x="age",
-        y="utt_is_speech_related",
-        marker=".",
-        logistic=True,
-        line_kws={"color": sns.color_palette("tab10")[0]},
-        scatter_kws={"alpha": 0.2, "s": 20, "color": sns.color_palette("tab10")[0]},
-    )
     axis.set(xlabel="age (months)", ylabel="")
     axis.legend(
-        labels=["proportion_intelligible", "proportion_speech_related"],
+        labels=["proportion_intelligible", "proportion_speech_like"],
         loc="lower right",
     )
     axis.set_xticks(np.arange(12, conversations.age.max() + 1, step=AGE_BIN_NUM_MONTHS))

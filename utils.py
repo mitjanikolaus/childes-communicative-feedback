@@ -437,10 +437,8 @@ VOCAB_CUSTOM = set(
     pd.read_csv("data/childes_custom_vocab.csv", header=None, names=["word"]).word
 )
 
-DICT_ENCHANT = enchant.Dict("en_US")
-
-
 def is_word(word):
+    DICT_ENCHANT = enchant.Dict("en_US")
     word = word.lower()
     if word in VOCAB_CUSTOM:
         return True
