@@ -37,7 +37,7 @@ def make_proportion_plots(conversations, results_dir):
     )
     axis.set(xlabel="age (months)", ylabel="")
     axis.legend(
-        labels=["proportion_intelligible", "proportion_speech_like"],
+        labels=["proportion_speech_like", "proportion_intelligible"],
         loc="lower right",
     )
     axis.set_xticks(np.arange(12, conversations.age.max() + 1, step=AGE_BIN_NUM_MONTHS))
