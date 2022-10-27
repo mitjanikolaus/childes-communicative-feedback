@@ -2,13 +2,15 @@ import argparse
 import os
 
 import pandas as pd
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 from utils import (
     remove_punctuation,
     str2bool,
     remove_babbling,
     ANNOTATED_UTTERANCES_FILE,
-    UTTERANCES_WITH_SPEECH_ACTS_FILE,
+    UTTERANCES_WITH_SPEECH_ACTS_FILE, is_empty,
 )
 from utils import (
     remove_nonspeech_events,
@@ -18,6 +20,8 @@ from utils import (
 DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED = True
 
 DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE = False
+
+MODEL_GRAMMATICALITY_ANNOTATION = "cointegrated/roberta-large-cola-krishna2020"
 
 # Speech acts that relate to nonverbal/external events
 SPEECH_ACTS_NONVERBAL_EVENTS = [
@@ -90,9 +94,54 @@ def is_intelligible(
     return True
 
 
+def is_grammatical(utt_clean, tokenizer, model, label_empty_utterance=None, label_one_word_utterance=None):
+    if is_empty(utt_clean):
+        return label_empty_utterance
+
+    tokenized = tokenizer(utt_clean)
+    num_words = max(tokenized.encodings[0].word_ids[1:-1])
+    if num_words == 1:
+        return label_one_word_utterance
+
+    input_ids = torch.tensor(tokenized.input_ids).unsqueeze(0)
+    attention_mask = torch.tensor(tokenized.attention_mask).unsqueeze(0)
+
+    model(input_ids=input_ids, attention_mask=attention_mask).logits.argmax().item()
+    predicted_class_id = model(input_ids=input_ids, attention_mask=attention_mask).logits.argmax().item()
+
+    return not bool(predicted_class_id)
+
+
+def clean_utterance(utterance):
+    final_punctuation = None
+    while len(utterance) > 0 and utterance[-1] in [".", "!", "?"]:
+        final_punctuation = utterance[-1]
+        utterance = utterance[:-1]
+
+    # Remove commas at beginning of utterance
+    while len(utterance) > 0 and utterance[0] == ",":
+        utterance = utterance[1:]
+
+    utt_clean = " ".join(utterance)
+
+    # Remove underscores
+    utt_clean = utt_clean.replace("_", " ")
+
+    # Remove spacing before comma
+    utt_clean = utt_clean.replace(" , ", ", ")
+
+    # Transform to lower case:
+    utt_clean = utt_clean.lower()
+
+    if final_punctuation:
+        utt_clean += final_punctuation
+    return utt_clean
+
+
 def annotate(args):
     utterances = pd.read_pickle(UTTERANCES_WITH_SPEECH_ACTS_FILE)
 
+    print("Annotating speech-relatedness..")
     utterances = utterances.assign(
         is_speech_related=utterances.transcript_raw.apply(
             is_speech_related,
@@ -100,10 +149,29 @@ def annotate(args):
         )
     )
 
+    print("Annotating intelligibility..")
     utterances = utterances.assign(
         is_intelligible=utterances.transcript_raw.apply(
             is_intelligible,
             label_partially_intelligible=args.label_partially_intelligible,
+        )
+    )
+
+    print("Cleaning utterances..")
+    utterances = utterances.assign(
+        utt_clean=utterances.tokens.apply(
+            clean_utterance
+        )
+    )
+
+    print("Annotating grammaticality..")
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_GRAMMATICALITY_ANNOTATION)
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL_GRAMMATICALITY_ANNOTATION)
+    utterances = utterances.assign(
+        is_grammatical=utterances.utt_clean.apply(
+            is_grammatical,
+            tokenizer=tokenizer,
+            model=model,
         )
     )
 

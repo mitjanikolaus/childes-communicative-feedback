@@ -367,16 +367,27 @@ def clean_utterance(utterance):
     return cleaned_utterance
 
 
-def remove_punctuation(utterance):
+def remove_punctuation(utterance, return_removed_trailing_punct=False):
     try:
-        cleaned_utterance = re.sub(r"[,\"„”]", "", utterance)
+        cleaned_utterance = re.sub(r"[\"„”]", "", utterance)
         cleaned_utterance = re.sub(r"''", "", cleaned_utterance)
-        cleaned_utterance = re.sub(r"[\.!\?]+\s*$", "", cleaned_utterance)
         cleaned_utterance = re.sub(r"  ", " ", cleaned_utterance)
     except TypeError as e:
         print(utterance)
         raise e
-    return cleaned_utterance.strip()
+
+    if return_removed_trailing_punct:
+        cleaned_utterance = cleaned_utterance.strip()
+        removed_punct = None
+        while cleaned_utterance[-1] in [".", "!", "?"]:
+            removed_punct = cleaned_utterance[-1]
+            cleaned_utterance = cleaned_utterance[:-1]
+            cleaned_utterance = cleaned_utterance.strip()
+
+        return cleaned_utterance.strip(), removed_punct
+    else:
+        cleaned_utterance = re.sub(r"[\.!\?]+\s*$", "", cleaned_utterance)
+        return cleaned_utterance.strip()
 
 
 # Unintelligible words with an unclear phonetic shape should be transcribed as
@@ -448,7 +459,7 @@ def is_word(word):
 
 
 def is_babbling(word):
-    # Catching simple events (&=) first, because otherwise they could interpreted as phonological fragment (&)
+    # Catching simple events (&=) first, because otherwise they could be interpreted as phonological fragment (&)
     if is_simple_event(word):
         return not paralinguistic_event_is_intelligible(word)
     if (
