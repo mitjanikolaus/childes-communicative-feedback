@@ -58,7 +58,7 @@ IS_INTERRUPTION = lambda word: word.startswith("+/")
 IS_SELF_INTERRUPTION = lambda word: word == "+//"
 IS_TRAILING_OFF = lambda word: word == "+..."
 IS_TRAILING_OFF_2 = lambda word: word == "+.."
-IS_EXCLUDED_WORD = lambda word: "@x:" in word
+IS_EXCLUDED_WORD = lambda word: "@x" in word
 IS_PAUSE = lambda word: bool(re.match(r"\(\d*?\.*\d*?\)", word))
 IS_OMITTED_WORD = lambda word: word.startswith("0")
 IS_SATELLITE_MARKER = lambda word: word == "‡"
@@ -84,6 +84,8 @@ def str2bool(v):
 
 
 def is_excluded_code(word):
+    word = word.replace(",", "")
+
     if (
         IS_UNTRANSCRIBED(word)
         or IS_INTERRUPTION(word)
@@ -112,6 +114,8 @@ def is_simple_event(word):
 
 
 def is_laughter(word):
+    word = word.replace(",", "")
+
     return word in [
         "haha",
         "hahaha",
@@ -125,7 +129,26 @@ def is_laughter(word):
     ]
 
 
+def word_is_parseable_speech(word):
+    word = word.replace(",", "")
+
+    if (
+            is_simple_event(word)
+            or is_laughter(word)
+            or word.lower() in OTHER_NONSPEECH
+            or is_excluded_code(word)
+            or is_babbling(word)
+            or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
+            or word.endswith(CODE_PHONOLOGICAL_CONSISTENT_FORM)
+    ):
+        return False
+
+    return True
+
+
 def word_is_speech_related(word):
+    word = word.replace(",", "")
+
     if is_simple_event(word):
         return paralinguistic_event_is_speech_related(word)
 
@@ -243,6 +266,7 @@ def paralinguistic_event_is_external(event):
 def remove_nonspeech_events(utterance):
     # Remove paralinguistic events
     event = get_paralinguistic_event(utterance)
+    utterance = utterance.strip()
     keep_event = None
     if event:
         utterance = utterance.replace(event, "")
@@ -252,7 +276,7 @@ def remove_nonspeech_events(utterance):
             if utterance == "":
                 return ""
             # For cases like "mm [=! squeal]":
-            words = utterance.strip().split(" ")
+            words = utterance.split(" ")
             if (
                 len(words) == 1
                 and not is_word(words[0])
@@ -261,7 +285,7 @@ def remove_nonspeech_events(utterance):
             ):
                 return ""
 
-    words = utterance.strip().split(" ")
+    words = utterance.split(" ")
     cleaned_utterance = [
         word
         for word in words
@@ -312,6 +336,29 @@ def clean_utterance(utterance):
     utterance = re.sub(r"↗", "", utterance)
     # Remove inhalations
     utterance = re.sub(r"∙", "", utterance)
+    # Remove quotation marks
+    utterance = utterance.replace("“", "")
+    utterance = utterance.replace("”", "")
+    utterance = utterance.replace("„", "")
+    # Remove pitch annotations
+    utterance = utterance.replace("▔", "")
+    utterance = utterance.replace("▁", "")
+    utterance = utterance.replace("⁎", "")
+    # Remove speed annotations
+    utterance = utterance.replace("∇", "")
+    utterance = utterance.replace("∆", "")
+    # Remove repetition annotations
+    utterance = utterance.replace("↫", "")
+
+    utterance = utterance.replace("⁎", "")
+    utterance = utterance.replace("∆", "")
+
+
+    # Remove smileys
+    utterance = utterance.replace("☺", "")
+
+
+
 
     words = utterance.split(" ")
     cleaned_utterance = []
@@ -323,6 +370,8 @@ def clean_utterance(utterance):
             word = re.sub(r"@c", "", word)
             word = re.sub(r"@f", "", word)
             word = re.sub(r"@n", "", word)
+            # general special forms
+            word = re.sub(r"@g", "", word)
             # onomatopeia
             word = re.sub(r"@o", "", word)
             # singing
@@ -348,7 +397,6 @@ def clean_utterance(utterance):
             word = word.replace("⌊", "").replace("⌋", "")
             word = word.replace("⌈", "").replace("⌉", "")
             word = word.replace("°", "")
-            word = word.replace("“", "")
             # compound words
             word = word.replace("_", " ")
             word = word.replace("+", " ")
@@ -400,7 +448,7 @@ CODE_PHONETIC = "yyy"
 CODE_BABBLING = "@b"
 CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION = "@u"
 CODE_INTERJECTION = "@i"
-CODE_PHONOLGICAL_CONSISTENT_FORM = "@p"
+CODE_PHONOLOGICAL_CONSISTENT_FORM = "@p"
 CODE_PHONOLOGICAL_FRAGMENT = "&"
 
 OTHER_BABBLING = [
@@ -448,7 +496,10 @@ VOCAB_CUSTOM = set(
     pd.read_csv("data/childes_custom_vocab.csv", header=None, names=["word"]).word
 )
 
+
 def is_word(word):
+    word = word.replace(",", "")
+
     DICT_ENCHANT = enchant.Dict("en_US")
     word = word.lower()
     if word in VOCAB_CUSTOM:
@@ -459,6 +510,7 @@ def is_word(word):
 
 
 def is_babbling(word):
+    word = word.replace(",", "")
     # Catching simple events (&=) first, because otherwise they could be interpreted as phonological fragment (&)
     if is_simple_event(word):
         return not paralinguistic_event_is_intelligible(word)
@@ -474,12 +526,27 @@ def is_babbling(word):
             and not is_word(word.replace(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION, ""))
         )
         or (
-            word.endswith(CODE_PHONOLGICAL_CONSISTENT_FORM)
-            and not is_word(word.replace(CODE_PHONOLGICAL_CONSISTENT_FORM, ""))
+            word.endswith(CODE_PHONOLOGICAL_CONSISTENT_FORM)
+            and not is_word(word.replace(CODE_PHONOLOGICAL_CONSISTENT_FORM, ""))
         )
     ):
         return True
     return False
+
+
+def remove_events_and_non_parseable_words(utterance):
+    event = get_paralinguistic_event(utterance)
+    if event:
+        utterance = utterance.replace(event, "")
+
+    words = utterance.split(" ")
+    cleaned_utterance = [
+        word
+        for word in words
+        if word_is_parseable_speech(word)
+    ]
+    cleaned_utterance = " ".join(cleaned_utterance)
+    return cleaned_utterance.strip()
 
 
 def remove_babbling(utterance):
