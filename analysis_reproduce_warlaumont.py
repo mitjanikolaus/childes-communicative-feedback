@@ -296,6 +296,9 @@ def perform_analysis_speech_relatedness(utterances, args):
         ),
         inplace=True,
     )
+    conversations.utt_is_speech_related = conversations.utt_is_speech_related.astype(bool)
+    conversations.response_is_speech_related = conversations.response_is_speech_related.astype(bool)
+    conversations.follow_up_is_speech_related = conversations.follow_up_is_speech_related.astype(bool)
 
     conversations = conversations.assign(
         has_response=conversations.apply(
