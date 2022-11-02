@@ -129,7 +129,7 @@ def is_laughter(word):
     ]
 
 
-def word_is_parseable_speech(word):
+def word_is_parseable_speech(word, vocab_check):
     word = word.replace(",", "")
 
     if (
@@ -137,7 +137,7 @@ def word_is_parseable_speech(word):
             or is_laughter(word)
             or word.lower() in OTHER_NONSPEECH
             or is_excluded_code(word)
-            or is_babbling(word)
+            or is_babbling(word, vocab_check)
             or word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
             or word.endswith(CODE_PHONOLOGICAL_CONSISTENT_FORM)
     ):
@@ -509,7 +509,7 @@ def is_word(word):
     return False
 
 
-def is_babbling(word):
+def is_babbling(word, vocab_check=True):
     word = word.replace(",", "")
     # Catching simple events (&=) first, because otherwise they could be interpreted as phonological fragment (&)
     if is_simple_event(word):
@@ -521,13 +521,19 @@ def is_babbling(word):
         or word == CODE_UNINTELLIGIBLE
         or word == CODE_PHONETIC
         or word.lower() in OTHER_BABBLING
-        or (
+        or vocab_check and (
+            (
             word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
             and not is_word(word.replace(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION, ""))
+            )
+            or (
+                word.endswith(CODE_PHONOLOGICAL_CONSISTENT_FORM)
+                and not is_word(word.replace(CODE_PHONOLOGICAL_CONSISTENT_FORM, ""))
+            )
         )
-        or (
-            word.endswith(CODE_PHONOLOGICAL_CONSISTENT_FORM)
-            and not is_word(word.replace(CODE_PHONOLOGICAL_CONSISTENT_FORM, ""))
+        or not vocab_check and (
+            word.endswith(CODE_UNIBET_PHONOLOGICAL_TRANSCRIPTION)
+            or word.endswith(CODE_PHONOLOGICAL_CONSISTENT_FORM)
         )
     ):
         return True
@@ -543,7 +549,7 @@ def remove_events_and_non_parseable_words(utterance):
     cleaned_utterance = [
         word
         for word in words
-        if word_is_parseable_speech(word)
+        if word_is_parseable_speech(word, vocab_check=False)
     ]
     cleaned_utterance = " ".join(cleaned_utterance)
     return cleaned_utterance.strip()
