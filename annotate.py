@@ -1,8 +1,11 @@
 import argparse
 import os
+import re
 
+import numpy as np
 import pandas as pd
 import torch
+from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 from utils import (
@@ -10,7 +13,7 @@ from utils import (
     str2bool,
     remove_babbling,
     ANNOTATED_UTTERANCES_FILE,
-    UTTERANCES_WITH_SPEECH_ACTS_FILE, is_empty,
+    UTTERANCES_WITH_SPEECH_ACTS_FILE, remove_events_and_non_parseable_words,
 )
 from utils import (
     remove_nonspeech_events,
@@ -21,7 +24,9 @@ DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED = True
 
 DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE = False
 
-MODEL_GRAMMATICALITY_ANNOTATION = "cointegrated/roberta-large-cola-krishna2020"
+DEFAULT_MODEL_GRAMMATICALITY_ANNOTATION = "cointegrated/roberta-large-cola-krishna2020"
+MODELS_ACCEPTABILITY_JUDGMENTS_INVERTED = ["cointegrated/roberta-large-cola-krishna2020"]
+BATCH_SIZE = 64
 
 # Speech acts that relate to nonverbal/external events
 SPEECH_ACTS_NONVERBAL_EVENTS = [
@@ -37,9 +42,9 @@ SPEECH_ACTS_NONVERBAL_EVENTS = [
 
 
 def is_speech_related(
-    utterance,
-    label_partially_speech_related=DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED,
-    label_unintelligible=None,
+        utterance,
+        label_partially_speech_related=DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED,
+        label_unintelligible=pd.NA,
 ):
     """Label utterances as speech or non-speech."""
     utterance_without_punctuation = remove_punctuation(utterance)
@@ -69,9 +74,9 @@ def is_speech_related(
 
 
 def is_intelligible(
-    utterance,
-    label_partially_intelligible=DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE,
-    label_empty_utterance=False,
+        utterance,
+        label_partially_intelligible=DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE,
+        label_empty_utterance=False,
 ):
     utterance_without_punctuation = remove_punctuation(utterance)
     utterance_without_nonspeech = remove_nonspeech_events(utterance_without_punctuation)
@@ -94,52 +99,78 @@ def is_intelligible(
     return True
 
 
-def is_grammatical(utt_clean, tokenizer, model, label_empty_utterance=None, label_one_word_utterance=None):
-    if is_empty(utt_clean):
-        return label_empty_utterance
-
-    tokenized = tokenizer(utt_clean)
-    num_words = max(tokenized.encodings[0].word_ids[1:-1])
-    if num_words == 1:
-        return label_one_word_utterance
-
-    input_ids = torch.tensor(tokenized.input_ids).unsqueeze(0)
-    attention_mask = torch.tensor(tokenized.attention_mask).unsqueeze(0)
-
-    model(input_ids=input_ids, attention_mask=attention_mask).logits.argmax().item()
-    predicted_class_id = model(input_ids=input_ids, attention_mask=attention_mask).logits.argmax().item()
-
-    return not bool(predicted_class_id)
+def get_num_words(utt_gra_tags):
+    return len([tag for tag in utt_gra_tags if tag is not None and tag["rel"] != "PUNCT"])
 
 
-def clean_utterance(utterance):
+def annotate_grammaticality(clean_utterances, gra_tags, tokenizer, model, label_empty_utterance=pd.NA,
+                            label_one_word_utterance=pd.NA, label_noun_phrase_utterance=pd.NA):
+    grammaticalities = np.zeros_like(clean_utterances, dtype=bool).astype(object)  # cast to object to allow for NA
+    num_words = torch.tensor([len(re.split('\s|\'', utt)) for utt in clean_utterances])
+    grammaticalities[(num_words == 0)] = label_empty_utterance
+    grammaticalities[(num_words == 1)] = label_one_word_utterance
+
+    utts_to_annoatate = clean_utterances[(num_words > 1)]
+
+    batches = [utts_to_annoatate[x:x + BATCH_SIZE] for x in range(0, len(utts_to_annoatate), BATCH_SIZE)]
+
+    annotated_grammaticalities = []
+    for batch in tqdm(batches):
+        tokenized = tokenizer(list(batch), padding=True)
+
+        input_ids = torch.tensor(tokenized.input_ids)
+        attention_mask = torch.tensor(tokenized.attention_mask)
+
+        predicted_class_ids = model(input_ids=input_ids, attention_mask=attention_mask).logits.argmax(dim=-1)
+        batch_grammaticalities = predicted_class_ids.bool()
+        if model in MODELS_ACCEPTABILITY_JUDGMENTS_INVERTED:
+            batch_grammaticalities = ~batch_grammaticalities
+        batch_grammaticalities = np.array(batch_grammaticalities).astype(object)
+
+        annotated_grammaticalities.extend(batch_grammaticalities.tolist())
+
+    grammaticalities[(num_words > 1)] = annotated_grammaticalities
+
+    return grammaticalities
+
+
+def clean_preprocessed_utterance(utterance):
     final_punctuation = None
     while len(utterance) > 0 and utterance[-1] in [".", "!", "?"]:
         final_punctuation = utterance[-1]
         utterance = utterance[:-1]
 
-    # Remove commas at beginning of utterance
-    while len(utterance) > 0 and utterance[0] == ",":
-        utterance = utterance[1:]
-
-    utt_clean = " ".join(utterance)
+    utt_clean = remove_events_and_non_parseable_words(utterance)
 
     # Remove underscores
     utt_clean = utt_clean.replace("_", " ")
 
     # Remove spacing before comma
-    utt_clean = utt_clean.replace(" , ", ", ")
+    utt_clean = utt_clean.replace(" ,", ",")
 
-    # Transform to lower case:
-    utt_clean = utt_clean.lower()
+    # Transform to lower case and strip:
+    utt_clean = utt_clean.lower().strip()
+
+    # Remove remaining commas at beginning and end of utterance
+    while len(utt_clean) > 0 and utt_clean[0] == ",":
+        utt_clean = utt_clean[1:].strip()
+    while len(utt_clean) > 0 and utt_clean[-1] == ",":
+        utt_clean = utt_clean[:-1].strip()
 
     if final_punctuation:
         utt_clean += final_punctuation
+    else:
+        utt_clean += "."
+
     return utt_clean
 
 
 def annotate(args):
     utterances = pd.read_pickle(UTTERANCES_WITH_SPEECH_ACTS_FILE)
+
+    # TODO remove:
+    utterances = utterances[utterances.speaker_code == "CHI"]
+    # utterances = utterances.sample(10000, random_state=1)
 
     print("Annotating speech-relatedness..")
     utterances = utterances.assign(
@@ -148,6 +179,7 @@ def annotate(args):
             label_partially_speech_related=args.label_partially_speech_related,
         )
     )
+    utterances.is_speech_related = utterances.is_speech_related.astype("boolean")
 
     print("Annotating intelligibility..")
     utterances = utterances.assign(
@@ -159,21 +191,17 @@ def annotate(args):
 
     print("Cleaning utterances..")
     utterances = utterances.assign(
-        utt_clean=utterances.tokens.apply(
-            clean_utterance
+        utt_clean=utterances.transcript_raw.apply(
+            clean_preprocessed_utterance
         )
     )
-
+    #
     print("Annotating grammaticality..")
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_GRAMMATICALITY_ANNOTATION)
-    model = AutoModelForSequenceClassification.from_pretrained(MODEL_GRAMMATICALITY_ANNOTATION)
-    utterances = utterances.assign(
-        is_grammatical=utterances.utt_clean.apply(
-            is_grammatical,
-            tokenizer=tokenizer,
-            model=model,
-        )
-    )
+    tokenizer = AutoTokenizer.from_pretrained(args.grammaticality_annotation_model)
+    model = AutoModelForSequenceClassification.from_pretrained(args.grammaticality_annotation_model)
+    utterances["is_grammatical"] = annotate_grammaticality(utterances.utt_clean.values, utterances.gra.values,
+                                                           tokenizer, model)
+    utterances.is_grammatical = utterances.is_grammatical.astype("boolean")
 
     return utterances
 
@@ -187,7 +215,7 @@ def parse_args():
         nargs="?",
         default=DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED,
         help="Label for partially speech-related utterances: Set to True to count as speech-related, False to count as "
-        "not speech-related or None to exclude these utterances from the analysis",
+             "not speech-related or None to exclude these utterances from the analysis",
     )
     argparser.add_argument(
         "--label-partially-intelligible",
@@ -196,6 +224,11 @@ def parse_args():
         nargs="?",
         default=DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE,
         help="Label for partially intelligible utterances: Set to True to count as intelligible, False to count as unintelligible or None to exclude these utterances from the analysis",
+    )
+    argparser.add_argument(
+        "--grammaticality-annotation-model",
+        type=str,
+        default=DEFAULT_MODEL_GRAMMATICALITY_ANNOTATION,
     )
 
     args = argparser.parse_args()
@@ -208,5 +241,10 @@ if __name__ == "__main__":
 
     annotated_utts = annotate(args)
 
+    file_path_with_model = f"{ANNOTATED_UTTERANCES_FILE.split('.p')[0]}_{args.grammaticality_annotation_model.replace('/', '_')}.p"
     os.makedirs(os.path.dirname(ANNOTATED_UTTERANCES_FILE), exist_ok=True)
+    os.makedirs(os.path.dirname(file_path_with_model), exist_ok=True)
+
     annotated_utts.to_pickle(ANNOTATED_UTTERANCES_FILE)
+    annotated_utts.to_pickle(file_path_with_model)
+    annotated_utts.to_csv(file_path_with_model.replace(".p", ".csv"))
