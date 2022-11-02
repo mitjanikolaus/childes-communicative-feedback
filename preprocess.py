@@ -52,8 +52,17 @@ def parse_args():
 
 
 def get_pos_tag(tag):
-    tag = str(tag).lower()
-    return tag
+    if tag:
+        return str(tag).lower()
+    else:
+        return None
+
+
+def get_gra_tag(tag):
+    if tag:
+        return {"dep": tag.dep, "head": tag.head, "rel": tag.rel}
+    else:
+        return None
 
 
 def preprocess_utterances(corpus, transcripts):
@@ -84,11 +93,26 @@ def preprocess_utterances(corpus, transcripts):
         if len(utts_transcript) == 0:
             # print("Empty transcript: ", file)
             continue
-        if age is None or age == 0:
-            print("Missing age information: ", file)
+        if "Interview" in file:
+            # Interview transcripts do not contain child-caregiver interactions
             continue
+        if age is None or age == 0:
+            # Child age can sometimes be read from the file name
+            if corpus in ["MPI-EVA-Manchester", "Bernstein", "Brent", "Braunwald", "Weist", "MacWhinney"]:
+                age_info = os.path.basename(file).split(".cha")[0]
+                age = int(age_info[0:2])*12 + int(age_info[2:4])
+            elif corpus == "Rollins":
+                age_info = os.path.basename(file).split(".cha")[0]
+                age = int(age_info[2:4])
+            elif corpus == "Tommerdahl" and os.path.basename(file) == "MEH2.cha":
+                age = 39    # Missing value copied from "MEH2.cha"
+            elif corpus == "Gleason" and file.endswith("Father/eddie.cha"):
+                age = 52    # Missing value taken from https://childes.talkbank.org/access/Eng-NA/Gleason.html
+            else:
+                print("Missing age information: ", file)
+                continue
         if child_name is None:
-            print("Missing child name information: ", file)
+            # Child is not present in transcript, ignore
             continue
 
         # Make a dataframe
@@ -106,6 +130,10 @@ def preprocess_utterances(corpus, transcripts):
                         for t in utt.tokens
                         if t.pos not in POS_PUNCTUATION
                     ],
+                    "gra": [
+                        get_gra_tag(t.gra)
+                        for t in utt.tokens
+                    ],
                     "start_time": utt.time_marks[0] if utt.time_marks else None,
                     "end_time": utt.time_marks[1] if utt.time_marks else None,
                     "age": round(age),
@@ -117,7 +145,8 @@ def preprocess_utterances(corpus, transcripts):
             ]
         )
 
-        if len(utts_transcript) == 0:
+        if len(utts_transcript[utts_transcript.speaker_code == SPEAKER_CODE_CHILD]) == 0:
+            # Child is not present in transcript, ignore
             continue
 
         # Verify that we have at least timing information for some of the utterances
