@@ -28,6 +28,8 @@ DEFAULT_MODEL_GRAMMATICALITY_ANNOTATION = "cointegrated/roberta-large-cola-krish
 MODELS_ACCEPTABILITY_JUDGMENTS_INVERTED = ["cointegrated/roberta-large-cola-krishna2020"]
 BATCH_SIZE = 64
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
 # Speech acts that relate to nonverbal/external events
 SPEECH_ACTS_NONVERBAL_EVENTS = [
     "CR",  # Criticize or point out error in nonverbal act.
@@ -116,7 +118,7 @@ def annotate_grammaticality(clean_utterances, gra_tags, tokenizer, model, label_
 
     annotated_grammaticalities = []
     for batch in tqdm(batches):
-        tokenized = tokenizer(list(batch), padding=True)
+        tokenized = tokenizer(list(batch), padding=True).to(device)
 
         input_ids = torch.tensor(tokenized.input_ids)
         attention_mask = torch.tensor(tokenized.attention_mask)
@@ -145,11 +147,13 @@ def clean_preprocessed_utterance(utterance):
     # Remove underscores
     utt_clean = utt_clean.replace("_", " ")
 
-    # Remove spacing before comma
+    # Remove spacing before commas and double commas
     utt_clean = utt_clean.replace(" ,", ",")
+    utt_clean = utt_clean.replace(",,", ",")
 
     # Transform to lower case and strip:
     utt_clean = utt_clean.lower().strip()
+    utt_clean = utt_clean.replace("  ", " ")
 
     # Remove remaining commas at beginning and end of utterance
     while len(utt_clean) > 0 and utt_clean[0] == ",":
@@ -170,7 +174,6 @@ def annotate(args):
 
     # TODO remove:
     utterances = utterances[utterances.speaker_code == "CHI"]
-    # utterances = utterances.sample(10000, random_state=1)
 
     print("Annotating speech-relatedness..")
     utterances = utterances.assign(
@@ -195,10 +198,15 @@ def annotate(args):
             clean_preprocessed_utterance
         )
     )
+
+    # num_words = np.array([len(re.split('\s|\'', utt)) for utt in utterances.utt_clean.values])
+    # utts_to_annoatate = utterances[(num_words > 1)]
+    # utterances = utts_to_annoatate.sample(1000, random_state=1)
+
     #
     print("Annotating grammaticality..")
     tokenizer = AutoTokenizer.from_pretrained(args.grammaticality_annotation_model)
-    model = AutoModelForSequenceClassification.from_pretrained(args.grammaticality_annotation_model)
+    model = AutoModelForSequenceClassification.from_pretrained(args.grammaticality_annotation_model).to(device)
     utterances["is_grammatical"] = annotate_grammaticality(utterances.utt_clean.values, utterances.gra.values,
                                                            tokenizer, model)
     utterances.is_grammatical = utterances.is_grammatical.astype("boolean")
