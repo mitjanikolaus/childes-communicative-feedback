@@ -118,16 +118,13 @@ def annotate_grammaticality(clean_utterances, gra_tags, tokenizer, model, label_
 
     annotated_grammaticalities = []
     for batch in tqdm(batches):
-        tokenized = tokenizer(list(batch), padding=True).to(device)
+        tokenized = tokenizer(list(batch), padding=True, return_tensors="pt").to(device)
 
-        input_ids = torch.tensor(tokenized.input_ids)
-        attention_mask = torch.tensor(tokenized.attention_mask)
-
-        predicted_class_ids = model(input_ids=input_ids, attention_mask=attention_mask).logits.argmax(dim=-1)
+        predicted_class_ids = model(input_ids=tokenized.input_ids, attention_mask=tokenized.attention_mask).logits.argmax(dim=-1)
         batch_grammaticalities = predicted_class_ids.bool()
         if model in MODELS_ACCEPTABILITY_JUDGMENTS_INVERTED:
             batch_grammaticalities = ~batch_grammaticalities
-        batch_grammaticalities = np.array(batch_grammaticalities).astype(object)
+        batch_grammaticalities = batch_grammaticalities.cpu().numpy().astype(object)
 
         annotated_grammaticalities.extend(batch_grammaticalities.tolist())
 
