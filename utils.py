@@ -353,12 +353,8 @@ def clean_utterance(utterance):
     utterance = utterance.replace("⁎", "")
     utterance = utterance.replace("∆", "")
 
-
     # Remove smileys
     utterance = utterance.replace("☺", "")
-
-
-
 
     words = utterance.split(" ")
     cleaned_utterance = []
@@ -415,11 +411,13 @@ def clean_utterance(utterance):
     return cleaned_utterance
 
 
-def remove_punctuation(utterance, return_removed_trailing_punct=False):
+def remove_punctuation(utterance, return_removed_trailing_punct=False, remove_commas=False):
     try:
         cleaned_utterance = re.sub(r"[\"„”]", "", utterance)
         cleaned_utterance = re.sub(r"''", "", cleaned_utterance)
         cleaned_utterance = re.sub(r"  ", " ", cleaned_utterance)
+        if remove_commas:
+            cleaned_utterance = re.sub(",", "", cleaned_utterance)
     except TypeError as e:
         print(utterance)
         raise e
@@ -553,6 +551,61 @@ def remove_events_and_non_parseable_words(utterance):
     ]
     cleaned_utterance = " ".join(cleaned_utterance)
     return cleaned_utterance.strip()
+
+
+SLANG_WORDS = {
+    "hasta": "has to",
+    "needta": "need to",
+    "wantta": "want to",
+    "dat's": "that is",
+    "dat": "that",
+    "dis": "this",
+    "dere": "there",
+    "de": "the",
+    "gonna": "going to",
+}
+
+
+def replace_slang_forms(utterance):
+    words = utterance.split(" ")
+    cleaned_utterance = [
+        word if word not in SLANG_WORDS.keys() else SLANG_WORDS[word]
+        for word in words
+    ]
+    cleaned_utterance = " ".join(cleaned_utterance)
+    return cleaned_utterance.strip()
+
+
+def find_repeated_sequence(utterance):
+    words = utterance.split(" ")
+
+    for rep_len in range(len(words)//2, 0, -1):
+        candidates = ["__".join(words[i:i+rep_len]) for i in range(len(words)) if len(words[i:i+rep_len]) == rep_len]
+        repetitions = [candidates[i] for i in range(len(candidates) - rep_len) if candidates[i+rep_len] == candidates[i]]
+        if len(repetitions) > 0:
+            return repetitions[0].replace("__", " ")
+
+    return None
+
+
+DISFLUENCIES = ["uhm", "um", "uh", "erh", "aw"] # TODO: "ehm"?
+
+
+def clean_disfluencies(utterance):
+    words = utterance.split(" ")
+    words = [word for word in words if not word in DISFLUENCIES]
+    utterance = " ".join(words)
+
+    duplicate = find_repeated_sequence(utterance)
+    while duplicate:
+        if len(remove_punctuation(utterance.replace(duplicate, ""), remove_commas=True).strip()) == 0:
+            # Cases like "bye bye", "no no no!"
+            return utterance
+        utterance = utterance.replace(duplicate, "", 1)
+        utterance = utterance.strip().replace("  ", " ")
+        duplicate = find_repeated_sequence(utterance)
+
+    return utterance
 
 
 def remove_babbling(utterance):
