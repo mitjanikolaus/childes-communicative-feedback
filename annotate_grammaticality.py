@@ -9,7 +9,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 DEFAULT_MODEL_GRAMMATICALITY_ANNOTATION = "cointegrated/roberta-large-cola-krishna2020"
 MODELS_ACCEPTABILITY_JUDGMENTS_INVERTED = ["cointegrated/roberta-large-cola-krishna2020"]
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -80,6 +80,7 @@ def annotate(args):
         utterances["is_grammatical_m"] = utterances.is_grammatical_m.astype(bool)
 
         for model_name in args.grammaticality_annotation_models:
+            print(model_name, end="\t\t")
             column_name = "is_grammatical_" + model_name.replace('/', '_')
             utterances[column_name] = utterances[column_name].astype(bool)
             acc = (utterances[column_name] == utterances.is_grammatical_m).mean()
