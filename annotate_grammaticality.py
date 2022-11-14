@@ -77,6 +77,8 @@ def annotate(args):
         utterances[column_name] = annotate_grammaticality(utterances.utt_clean.values, model_name)
 
     if "is_grammatical_m" in utterances.columns:
+        utterances = utterances.dropna(subset=["is_grammatical_m"])
+        print(f"Accuracy scores for {len(utterances)} samples:")
         utterances["is_grammatical_m"] = utterances.is_grammatical_m.astype(bool)
 
         for model_name in args.grammaticality_annotation_models:
