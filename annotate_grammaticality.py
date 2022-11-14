@@ -28,15 +28,19 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 def annotate(args):
     utterances = pd.read_csv(args.utterances_file, index_col=0)
 
-    utterances["is_grammatical_m"] = utterances.is_grammatical_m.astype(bool)
-
     for model_name in args.grammaticality_annotation_models:
         print(f"Annotating grammaticality with {model_name}..")
         column_name = "is_grammatical_" + model_name.replace('/', '_')
         utterances[column_name] = annotate_grammaticality(utterances.utt_clean.values, model_name)
-        utterances[column_name] = utterances[column_name].astype(bool)
-        acc = (utterances[column_name] == utterances.is_grammatical_m).mean()
-        print(f"Accuracy: {acc:.3f}")
+
+    if "is_grammatical_m" in utterances.columns:
+        utterances["is_grammatical_m"] = utterances.is_grammatical_m.astype(bool)
+
+        for model_name in args.grammaticality_annotation_models:
+            column_name = "is_grammatical_" + model_name.replace('/', '_')
+            utterances[column_name] = utterances[column_name].astype(bool)
+            acc = (utterances[column_name] == utterances.is_grammatical_m).mean()
+            print(f"Accuracy: {acc:.3f}")
 
     return utterances
 

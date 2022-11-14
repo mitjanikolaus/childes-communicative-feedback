@@ -555,6 +555,7 @@ def remove_events_and_non_parseable_words(utterance):
 
 SLANG_WORDS = {
     "hasta": "has to",
+    "hafta": "have to",
     "needta": "need to",
     "wantta": "want to",
     "dat's": "that is",
@@ -593,7 +594,7 @@ DISFLUENCIES = ["uhm", "um", "uh", "erh", "aw"] # TODO: "ehm"?
 
 def clean_disfluencies(utterance):
     words = utterance.split(" ")
-    words = [word for word in words if not word in DISFLUENCIES]
+    words = [word for word in words if not word.replace(",", "") in DISFLUENCIES]
     utterance = " ".join(words)
 
     duplicate = find_repeated_sequence(utterance)
