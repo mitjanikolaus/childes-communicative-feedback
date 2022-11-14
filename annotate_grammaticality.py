@@ -1,10 +1,18 @@
 import argparse
 import os
-
+import re
+import numpy as np
 import pandas as pd
 import torch
+from tqdm import tqdm
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-from annotate import annotate_grammaticality
+DEFAULT_MODEL_GRAMMATICALITY_ANNOTATION = "cointegrated/roberta-large-cola-krishna2020"
+MODELS_ACCEPTABILITY_JUDGMENTS_INVERTED = ["cointegrated/roberta-large-cola-krishna2020"]
+BATCH_SIZE = 64
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
 
 OUT_UTTERANCES_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances_annotated_model_results.csv"
@@ -23,6 +31,41 @@ DEFAULT_MODELS_GRAMMATICALITY_ANNOTATION = [
 BATCH_SIZE = 64
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+
+def get_num_words(utt_gra_tags):
+    return len([tag for tag in utt_gra_tags if tag is not None and tag["rel"] != "PUNCT"])
+
+
+def annotate_grammaticality(clean_utterances, model_name, label_empty_utterance=pd.NA,
+                            label_one_word_utterance=pd.NA):
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
+
+    grammaticalities = np.zeros_like(clean_utterances, dtype=bool).astype(object)  # cast to object to allow for NA
+    num_words = torch.tensor([len(re.split('\s|\'', utt)) for utt in clean_utterances])
+    grammaticalities[(num_words == 0)] = label_empty_utterance
+    grammaticalities[(num_words == 1)] = label_one_word_utterance
+
+    utts_to_annotate = clean_utterances[(num_words > 1)]
+
+    batches = [utts_to_annotate[x:x + BATCH_SIZE] for x in range(0, len(utts_to_annotate), BATCH_SIZE)]
+
+    annotated_grammaticalities = []
+    for batch in tqdm(batches):
+        tokenized = tokenizer(list(batch), padding=True, return_tensors="pt").to(device)
+
+        predicted_class_ids = model(input_ids=tokenized.input_ids, attention_mask=tokenized.attention_mask).logits.argmax(dim=-1)
+        batch_grammaticalities = predicted_class_ids.bool()
+        if model_name in MODELS_ACCEPTABILITY_JUDGMENTS_INVERTED:
+            batch_grammaticalities = ~batch_grammaticalities
+        batch_grammaticalities = batch_grammaticalities.cpu().numpy().astype(object)
+
+        annotated_grammaticalities.extend(batch_grammaticalities.tolist())
+
+    grammaticalities[(num_words > 1)] = annotated_grammaticalities
+
+    return grammaticalities
 
 
 def annotate(args):
