@@ -82,11 +82,16 @@ def annotate(args):
         utterances["is_grammatical_m"] = utterances.is_grammatical_m.astype(bool)
 
         for model_name in args.grammaticality_annotation_models:
-            print(model_name, end="\t\t")
+            print(model_name, end="\t\t\t\t")
             column_name = "is_grammatical_" + model_name.replace('/', '_')
             utterances[column_name] = utterances[column_name].astype(bool)
             acc = (utterances[column_name] == utterances.is_grammatical_m).mean()
-            print(f"Accuracy: {acc:.3f}")
+            utt_pos = utterances[utterances.is_grammatical_m]
+            acc_pos = (utt_pos[column_name] == utt_pos.is_grammatical_m).mean()
+            utt_neg = utterances[~utterances.is_grammatical_m]
+            acc_neg = (utt_neg[column_name] == utt_neg.is_grammatical_m).mean()
+
+            print(f"Accuracy: {acc:.3f} | Accuracy (pos): {acc_pos:.3f} | Accuracy (neg): {acc_neg:.3f}")
 
     return utterances
 
