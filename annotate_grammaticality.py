@@ -81,8 +81,8 @@ def annotate(args):
         print(f"Accuracy scores for {len(utterances)} samples:")
         utterances["is_grammatical_m"] = utterances.is_grammatical_m.astype(bool)
 
+        results = []
         for model_name in args.grammaticality_annotation_models:
-            print(model_name, end="\t\t\t\t")
             column_name = "is_grammatical_" + model_name.replace('/', '_')
             utterances[column_name] = utterances[column_name].astype(bool)
             acc = (utterances[column_name] == utterances.is_grammatical_m).mean()
@@ -91,7 +91,11 @@ def annotate(args):
             utt_neg = utterances[~utterances.is_grammatical_m]
             acc_neg = (utt_neg[column_name] == utt_neg.is_grammatical_m).mean()
 
-            print(f"Accuracy: {acc:.3f} | Accuracy (pos): {acc_pos:.3f} | Accuracy (neg): {acc_neg:.3f}")
+            results.append({"model": model_name, "accuracy": acc, "accuracy (pos)": acc_pos, "accuracy (neg)": acc_neg})
+
+        results = pd.DataFrame(results)
+        pd.set_option('display.precision', 2)
+        print(results)
 
     return utterances
 
