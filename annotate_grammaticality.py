@@ -95,6 +95,9 @@ def annotate(args):
 
         results = pd.DataFrame(results)
         pd.set_option('display.precision', 2)
+        pd.set_option('display.max_columns', 10)
+        pd.set_option('display.max_rows', len(args.grammaticality_annotation_models))
+        pd.set_option('display.width', 1000)
         print(results)
 
     return utterances
