@@ -589,7 +589,7 @@ def find_repeated_sequence(utterance):
     return None
 
 
-DISFLUENCIES = ["uhm", "um", "uh", "erh", "aw"] # TODO: "ehm"?
+DISFLUENCIES = ["uhm", "um", "uh", "erh", "err", "aw", "ehm"]
 
 
 def clean_disfluencies(utterance):
