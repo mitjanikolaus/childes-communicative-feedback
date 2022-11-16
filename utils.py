@@ -477,7 +477,6 @@ OTHER_BABBLING = [
 ]
 OTHER_NONSPEECH = [
     "ouch",
-    "wee",
     "yack",
     "ugh",
     "woah",
@@ -566,6 +565,7 @@ def remove_events_and_non_parseable_words(utterance):
 SLANG_WORDS = {
     "hasta": "has to",
     "hafta": "have to",
+    "hadta": "had to",
     "needta": "need to",
     "wantta": "want to",
     "wanna": "want to",
@@ -601,7 +601,7 @@ def find_repeated_sequence(utterance):
     return None
 
 
-DISFLUENCIES = ["uhm", "um", "uh", "erh", "err", "aw", "ehm"]
+DISFLUENCIES = ["uhm", "um", "uh", "erh", "err", "aw", "ehm", "hm"]
 
 
 def clean_disfluencies(utterance):
@@ -609,12 +609,12 @@ def clean_disfluencies(utterance):
     words = [word for word in words if not word.replace(",", "") in DISFLUENCIES]
     utterance = " ".join(words)
 
-    duplicate = find_repeated_sequence(utterance)
+    duplicate = find_repeated_sequence(remove_punctuation(utterance, remove_commas=True))
     while duplicate:
-        if len(remove_punctuation(utterance.replace(duplicate, ""), remove_commas=True).strip()) == 0:
+        if (len(remove_punctuation(utterance.replace(duplicate, ""), remove_commas=True).strip()) == 0) and (len(duplicate.split(" ")) == 1):
             # Cases like "bye bye", "no no no!"
             return utterance
-        utterance = utterance.replace(duplicate, "", 1)
+        utterance = re.sub(f"(^|\s){duplicate}(\s|$|\.|\,)", " ", utterance, count=1)
         utterance = utterance.strip().replace("  ", " ")
         duplicate = find_repeated_sequence(utterance)
 
