@@ -113,7 +113,11 @@ def is_simple_event(word):
     return word.startswith("&=")
 
 
-def is_laughter(word):
+def utterance_is_laughter(utterance):
+    return utterance in ["ha ha", "ha ha ha"]
+
+
+def word_is_laughter(word):
     word = word.replace(",", "")
 
     return word in [
@@ -134,7 +138,7 @@ def word_is_parseable_speech(word, vocab_check):
 
     if (
             is_simple_event(word)
-            or is_laughter(word)
+            or word_is_laughter(word)
             or word.lower() in OTHER_NONSPEECH
             or is_excluded_code(word)
             or is_babbling(word, vocab_check)
@@ -152,7 +156,7 @@ def word_is_speech_related(word):
     if is_simple_event(word):
         return paralinguistic_event_is_speech_related(word)
 
-    if is_laughter(word):
+    if word_is_laughter(word):
         return False
 
     if word.lower() in OTHER_NONSPEECH:
@@ -284,6 +288,9 @@ def remove_nonspeech_events(utterance):
                 and not word_is_speech_related(words[0])
             ):
                 return ""
+
+    if utterance_is_laughter(utterance):
+        return ""
 
     words = utterance.split(" ")
     cleaned_utterance = [
@@ -543,6 +550,9 @@ def remove_events_and_non_parseable_words(utterance):
     if event:
         utterance = utterance.replace(event, "")
 
+    if utterance_is_laughter(utterance):
+        return ""
+
     words = utterance.split(" ")
     cleaned_utterance = [
         word
@@ -558,12 +568,14 @@ SLANG_WORDS = {
     "hafta": "have to",
     "needta": "need to",
     "wantta": "want to",
+    "wanna": "want to",
     "dat's": "that is",
     "dat": "that",
     "dis": "this",
     "dere": "there",
     "de": "the",
     "gonna": "going to",
+    "anoder": "another",
 }
 
 
