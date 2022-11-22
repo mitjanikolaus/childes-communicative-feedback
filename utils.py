@@ -547,7 +547,11 @@ def is_babbling(word, vocab_check=True):
 def remove_events_and_non_parseable_words(utterance):
     event = get_paralinguistic_event(utterance)
     if event:
-        utterance = utterance.replace(event, "")
+        if not utterance.startswith(event) or utterance.endswith(event):
+            utterance = utterance.replace(event, ",")
+            utterance = utterance.replace(" ,", ",")
+        else:
+            utterance = utterance.replace(event, "")
 
     if utterance_is_laughter(utterance):
         return ""
@@ -575,6 +579,8 @@ SLANG_WORDS = {
     "de": "the",
     "gonna": "going to",
     "anoder": "another",
+    "dunno": "don't know",
+    "'cause": "because",
 }
 
 

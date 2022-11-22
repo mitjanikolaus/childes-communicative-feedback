@@ -105,6 +105,8 @@ def clean_preprocessed_utterance(utterance):
     # Remove spacing before commas and double commas
     utt_clean = utt_clean.replace(" ,", ",")
     utt_clean = utt_clean.replace(",,", ",")
+    utt_clean = utt_clean.replace(" .", ".")
+    utt_clean = utt_clean.replace(",.", ".")
 
     # Strip:
     utt_clean = utt_clean.strip()
