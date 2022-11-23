@@ -9,6 +9,10 @@ import seaborn as sns
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
+import matplotlib
+if os.environ["DISPLAY"] != ":0":
+    matplotlib.use("Agg")
+
 DEFAULT_MODEL_GRAMMATICALITY_ANNOTATION = "cointegrated/roberta-large-cola-krishna2020"
 MODELS_ACCEPTABILITY_JUDGMENTS_INVERTED = ["cointegrated/roberta-large-cola-krishna2020"]
 BATCH_SIZE = 32
