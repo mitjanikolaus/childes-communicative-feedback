@@ -566,7 +566,8 @@ def remove_events_and_non_parseable_words(utterance):
     return cleaned_utterance.strip()
 
 
-# We're not fixing "wanna", as it can be both "want to" and "want a"
+# We're not fixing words such as "wanna", as it can be both "want to" and "want a"
+# Also: "she's": can be either "she has" or "she is"
 SLANG_WORDS = {
     "hasta": "has to",
     "hafta": "have to",
