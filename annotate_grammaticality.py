@@ -118,15 +118,15 @@ def annotate(utterances):
     if "is_grammatical_m" in utterances.columns:
         utterances = utterances.dropna(subset=["is_grammatical_m"])
         print(f"Accuracy scores for {len(utterances)} samples:")
-        utterances["is_grammatical_m"] = utterances.is_grammatical_m.astype(bool)
+        utterances["is_grammatical_m"] = utterances.is_grammatical_m.astype(bool).copy()
 
         results = []
         for model_name in args.grammaticality_annotation_models:
             column_name = column_name_model_grammaticality(model_name)
             column_name_correct = column_name_model_correct(model_name)
 
-            utterances[column_name] = utterances[column_name].astype(bool)
-            utterances[column_name_correct] = utterances[column_name] == utterances.is_grammatical_m
+            utterances[column_name] = utterances[column_name].astype(bool).copy()
+            utterances[column_name_correct] = (utterances[column_name] == utterances.is_grammatical_m).copy()
             acc = utterances[column_name_correct].mean()
             utt_pos = utterances[utterances.is_grammatical_m]
             acc_pos = utt_pos[column_name_correct].mean()
