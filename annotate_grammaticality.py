@@ -24,7 +24,6 @@ DEFAULT_MODELS_GRAMMATICALITY_ANNOTATION = [
     "cointegrated/roberta-large-cola-krishna2020",
     "textattack/bert-base-uncased-CoLA",
     "yevheniimaslov/deberta-v3-large-cola",
-    "cointegrated/roberta-large-cola-krishna2020",
     "textattack/distilbert-base-cased-CoLA",
     "ModelTC/bert-base-uncased-cola",
     "WillHeld/roberta-base-cola",
