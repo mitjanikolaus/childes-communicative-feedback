@@ -443,6 +443,10 @@ def remove_punctuation(utterance, return_removed_trailing_punct=False, remove_co
         return cleaned_utterance.strip()
 
 
+def get_num_words(clean_utts):
+    return clean_utts.apply(lambda x: len(re.split('\s|\'', x)))
+
+
 # Unintelligible words with an unclear phonetic shape should be transcribed as
 CODE_UNINTELLIGIBLE = "xxx"
 

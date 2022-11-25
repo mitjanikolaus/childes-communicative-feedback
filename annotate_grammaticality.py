@@ -10,6 +10,9 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 import matplotlib
+
+from utils import get_num_words
+
 if os.environ["DISPLAY"] != ":0":
     matplotlib.use("Agg")
 
@@ -38,17 +41,13 @@ BATCH_SIZE = 32
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def get_num_words(utt_gra_tags):
-    return len([tag for tag in utt_gra_tags if tag is not None and tag["rel"] != "PUNCT"])
-
-
 def annotate_grammaticality(clean_utterances, model_name, label_empty_utterance=pd.NA,
                             label_one_word_utterance=pd.NA):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
 
     grammaticalities = np.zeros_like(clean_utterances, dtype=bool).astype(object)  # cast to object to allow for NA
-    num_words = torch.tensor([len(re.split('\s|\'', utt)) for utt in clean_utterances])
+    num_words = torch.tensor(get_num_words(clean_utterances))
     grammaticalities[(num_words == 0)] = label_empty_utterance
     grammaticalities[(num_words == 1)] = label_one_word_utterance
 
