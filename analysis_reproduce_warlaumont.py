@@ -242,6 +242,7 @@ def get_micro_conversations(utterances, args, use_is_grammatical=False):
     utterances_grouped = [group for _, group in utterances.groupby("transcript_file")]
     process_args = [(utts_transcript, args) for utts_transcript in utterances_grouped]
 
+    # Single-process version for debugging:
     # results = [get_micro_conversations_for_transcript(utts_transcript, args)
     #     for utts_transcript in utterances_grouped]
     with Pool(processes=8) as pool:
