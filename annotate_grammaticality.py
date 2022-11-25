@@ -73,28 +73,30 @@ def annotate_grammaticality(clean_utterances, model_name, label_empty_utterance=
 
 
 def plot_error_type_stats(utterances):
-    utts = utterances.dropna(subset=["is_grammatical_m", "categories"]).copy()
-    utts["category"] = utts.categories.astype(str).apply(lambda x: x.replace("?", "").split(", "))
-    utts.drop(columns="categories", inplace=True)
-    utts = utts.explode("category")
-    utts.category.value_counts().plot(kind="barh")
-    plt.subplots_adjust(left=0.2, right=0.99)
+    if "is_grammatical_m" in utterances.columns:
+        utts = utterances.dropna(subset=["is_grammatical_m", "categories"]).copy()
+        utts["category"] = utts.categories.astype(str).apply(lambda x: x.replace("?", "").split(", "))
+        utts.drop(columns="categories", inplace=True)
+        utts = utts.explode("category")
+        utts.category.value_counts().plot(kind="barh")
+        plt.subplots_adjust(left=0.2, right=0.99)
 
 
 def plot_errors(utterances):
-    plt.figure()
-    utts = utterances.dropna(subset=["is_grammatical_m", "categories"]).copy()
-    utts["category"] = utts.categories.astype(str).apply(lambda x: x.replace("?", "").split(", "))
-    utts.drop(columns="categories", inplace=True)
-    keep_columns = [column for column in utts.columns if "_is_correct" in column or column == "category"]
-    utts = utts[keep_columns]
-    utts = utts.explode("category")
-    utts_grouped = utts.groupby("category").mean()
-    utts_melted = utts_grouped.reset_index().melt("category", var_name='cols', value_name='vals')
-    sns.barplot(data=utts_melted, x="category", y="vals", hue="cols")
-    plt.xticks(rotation=90)
-    plt.subplots_adjust(bottom=0.25, top=0.99)
-    plt.legend(loc='lower left', fontsize='5')
+    if "is_grammatical_m" in utterances.columns:
+        plt.figure()
+        utts = utterances.dropna(subset=["is_grammatical_m", "categories"]).copy()
+        utts["category"] = utts.categories.astype(str).apply(lambda x: x.replace("?", "").split(", "))
+        utts.drop(columns="categories", inplace=True)
+        keep_columns = [column for column in utts.columns if "_is_correct" in column or column == "category"]
+        utts = utts[keep_columns]
+        utts = utts.explode("category")
+        utts_grouped = utts.groupby("category").mean()
+        utts_melted = utts_grouped.reset_index().melt("category", var_name='cols', value_name='vals')
+        sns.barplot(data=utts_melted, x="category", y="vals", hue="cols")
+        plt.xticks(rotation=90)
+        plt.subplots_adjust(bottom=0.25, top=0.99)
+        plt.legend(loc='lower left', fontsize='5')
 
 
 def column_name_model_grammaticality(model_name):
