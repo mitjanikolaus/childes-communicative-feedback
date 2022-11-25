@@ -151,16 +151,6 @@ def response_is_clarification_request(micro_conv):
     return False
 
 
-def pos_feedback(
-    row,
-):
-    """Positive feedback is counted if there is a response, and it's not a clarification request"""
-    if not row["has_response"] or row["response_is_clarification_request"]:
-        return False
-
-    return True
-
-
 def melt_variable(conversations, variable_suffix):
     value_var_names = ["utt_"+variable_suffix, "follow_up_"+variable_suffix]
     conversations_melted = conversations.copy()
@@ -173,7 +163,6 @@ def melt_variable(conversations, variable_suffix):
             "age",
             "transcript_file",
             "has_response",
-            "pos_feedback",
         ],
         value_vars=value_var_names,
         var_name="is_follow_up",
@@ -215,17 +204,6 @@ def perform_analysis(utterances, args):
         response_is_clarification_request=conversations.apply(
             response_is_clarification_request, axis=1
         )
-    )
-
-    conversations = conversations.assign(
-        pos_feedback=conversations.apply(
-            pos_feedback,
-            axis=1,
-        )
-    )
-    conversations.dropna(
-        subset=("pos_feedback",),
-        inplace=True,
     )
 
     conversations = filter_transcripts_based_on_num_child_utts(
@@ -418,24 +396,6 @@ def make_plots(conversations, conversations_melted):
     plt.savefig(
         os.path.join(RESULTS_DIR, "cf_quality_clarification_request.png"), dpi=300
     )
-
-    plt.figure(figsize=(6, 3))
-    axis = sns.barplot(
-        data=conversations_with_avg_age,
-        x="age",
-        y="pos_feedback",
-        hue="utt_is_intelligible",
-        linewidth=1,
-        edgecolor="w",
-    )
-    legend = axis.legend()
-    legend.texts[0].set_text("unintelligible")
-    legend.texts[1].set_text("intelligible")
-    sns.move_legend(axis, "lower right")
-    axis.set(xlabel="age (months)", ylabel="prop_pos_feedback")
-    axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
-    plt.tight_layout()
-    plt.savefig(os.path.join(RESULTS_DIR, "cf_quality_all.png"), dpi=300)
 
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
