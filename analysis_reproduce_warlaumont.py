@@ -15,7 +15,6 @@ from tqdm import tqdm
 
 from annotate import ANNOTATED_UTTERANCES_FILE
 from utils import (
-    filter_corpora_based_on_response_latency_length,
     age_bin,
     str2bool,
     SPEECH_ACT_NO_FUNCTION,
@@ -34,9 +33,6 @@ DEFAULT_MAX_NEG_RESPONSE_LATENCY = -10 * 1000  # ms
 
 # 1 minute
 DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 1 * 60 * 1000  # ms
-
-# Set to -1 to skip filtering
-DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = -1
 
 DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
 
@@ -95,12 +91,6 @@ def parse_args():
         default=DEFAULT_MIN_RATIO_NONSPEECH,
     )
 
-    argparser.add_argument(
-        "--response-latency-max-standard-deviations-off",
-        type=int,
-        default=DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF,
-        help="Number of standard deviations that the mean response latency of a corpus can be off the reference mean",
-    )
     argparser.add_argument(
         "--response-latency",
         type=int,
@@ -307,14 +297,6 @@ def perform_analysis_speech_relatedness(utterances, args):
             response_latency=args.response_latency,
             count_only_speech_related_responses=args.count_only_speech_related_responses,
         )
-    )
-
-    conversations = filter_corpora_based_on_response_latency_length(
-        conversations,
-        args.response_latency_max_standard_deviations_off,
-        args.min_age,
-        args.max_age,
-        args.max_response_latency_follow_up,
     )
 
     counter_non_speech = Counter(

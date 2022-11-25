@@ -661,59 +661,6 @@ def remove_babbling(utterance):
     return filtered_utterance.strip()
 
 
-def filter_corpora_based_on_response_latency_length(
-    conversations, standard_deviations_off, min_age, max_age, max_response_latency
-):
-    if standard_deviations_off == -1:
-        print(f"Not filtering corpora based on average response latency")
-        return conversations
-
-    print(f"Filtering corpora based on average response latency")
-
-    # Calculate mean and stddev of response latency using data from Nguyen, Versyp, Cox, Fusaroli (2021)
-    latency_data = pd.read_csv("data/MA turn-taking.csv")
-
-    # Use only non-clinical data:
-    latency_data = latency_data[latency_data["clinical group"] == "Healthy"]
-
-    # Use only data of the target age range:
-    latency_data = latency_data[
-        (latency_data.mean_age_infants_months >= min_age)
-        & (latency_data.mean_age_infants_months <= max_age)
-    ]
-
-    mean_latency = latency_data.adult_response_latency.dropna().mean()
-    std_mean_latency = latency_data.adult_response_latency.dropna().std()
-    print(
-        f"Mean of response latency in meta-analysis: {mean_latency:.1f} +/- {std_mean_latency:.1f}"
-    )
-
-    # Filter corpora to be in range of mean +/- 1 standard deviation
-    filtered = []
-    print("Response latencies:")
-
-    # Exclude conversations without responses (as they have infinite latency)
-    conversations_with_responses = conversations[
-        conversations.response_latency < max_response_latency
-    ]
-
-    corpus_means = conversations_with_responses.groupby("corpus").agg(
-        {"response_latency": "mean"}
-    )
-    for corpus, row in corpus_means.iterrows():
-        print(f"{corpus}: {row['response_latency']:.1f}")
-        if (
-            mean_latency - standard_deviations_off * std_mean_latency
-            < row["response_latency"]
-            < mean_latency + standard_deviations_off * std_mean_latency
-        ):
-            filtered.append(corpus)
-
-    print(f"Corpora included in analysis after filtering: {filtered}")
-    conversations = conversations[conversations.corpus.isin(filtered)]
-    return conversations
-
-
 def filter_transcripts_based_on_num_child_utts(
     conversations, min_child_utts_per_transcript
 ):

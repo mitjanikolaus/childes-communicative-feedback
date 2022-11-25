@@ -31,9 +31,6 @@ DEFAULT_MAX_AGE = 48
 
 AGE_BIN_NUM_MONTHS = 6
 
-# Set to -1 to skip filtering
-DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF = -1
-
 DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES = True
 
 DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 1
@@ -97,12 +94,6 @@ def parse_args():
         "--min-child-utts-per-transcript",
         type=int,
         default=DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT,
-    )
-    argparser.add_argument(
-        "--response-latency-max-standard-deviations-off",
-        type=int,
-        default=DEFAULT_RESPONSE_LATENCY_MAX_STANDARD_DEVIATIONS_OFF,
-        help="Number of standard deviations that the mean response latency of a corpus can be off the reference mean",
     )
 
     argparser.add_argument(
@@ -207,14 +198,6 @@ def perform_analysis(utterances, args):
     conversations.dropna(
         subset=("response_latency", "response_latency_follow_up"),
         inplace=True,
-    )
-
-    conversations = filter_corpora_based_on_response_latency_length(
-        conversations,
-        args.response_latency_max_standard_deviations_off,
-        args.min_age,
-        args.max_age,
-        args.max_response_latency_follow_up,
     )
 
     conversations = conversations.assign(
