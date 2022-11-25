@@ -233,7 +233,11 @@ def get_micro_conversations_for_transcript(utterances_transcript, args):
     return conversations
 
 
-def get_micro_conversations(utterances, args):
+def get_micro_conversations(utterances, args, use_is_grammatical=False):
+    if use_is_grammatical:
+        KEEP_KEYS.append("is_grammatical")
+        DUMMY_RESPONSE["is_grammatical"] = False
+
     print("Creating micro conversations from transcripts..")
     utterances_grouped = [group for _, group in utterances.groupby("transcript_file")]
     process_args = [(utts_transcript, args) for utts_transcript in utterances_grouped]

@@ -1,7 +1,7 @@
 import pandas as pd
 from pymer4.models import Lmer
 
-from analysis_intelligibility import melt_is_intelligible_variable
+from analysis_intelligibility import melt_variable
 
 
 def glm_caregiver_behavior_timing(convs):
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     pd.set_option('display.width', 1000)
     pd.set_option('display.max_columns', 15)
 
-    conversations_melted = melt_is_intelligible_variable(conversations)
+    conversations_melted = melt_variable(conversations, "is_intelligible")
 
     # normalize age
     min_age, max_age, mean_age = conversations.age.min(), conversations.age.max(), conversations.age.mean()

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from analysis_intelligibility import make_plots, perform_per_transcript_analyses, \
-    melt_is_intelligible_variable
+    melt_variable
 
 
 if __name__ == "__main__":
@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
     conversations = pd.read_csv("results/intelligibility/conversations.csv")
 
-    conversations_melted = melt_is_intelligible_variable(conversations)
+    conversations_melted = melt_variable(conversations, "is_intelligible")
 
     # normalize age
     min_age, max_age, mean_age = conversations.age.min(), conversations.age.max(), conversations.age.mean()
@@ -20,7 +20,6 @@ if __name__ == "__main__":
 
     perform_per_transcript_analyses(conversations)
 
-    results_dir = "results/intelligibility/"
-    make_plots(conversations, conversations_melted, results_dir)
+    make_plots(conversations, conversations_melted)
 
     plt.show()

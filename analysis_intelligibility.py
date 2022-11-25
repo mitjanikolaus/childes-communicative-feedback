@@ -19,7 +19,6 @@ from preprocess import (
 )
 from utils import (
     age_bin,
-    filter_corpora_based_on_response_latency_length,
     ANNOTATED_UTTERANCES_FILE,
     filter_transcripts_based_on_num_child_utts,
 )
@@ -54,6 +53,8 @@ SPEECH_ACTS_CLARIFICATION_REQUEST = [
     "EQ",  # Eliciting question (e.g. hmm?).
     "RR",  # Request to repeat utterance.
 ]
+
+RESULTS_DIR = "results/intelligibility/"
 
 
 def parse_args():
@@ -160,12 +161,9 @@ def pos_feedback(
     return True
 
 
-def melt_is_intelligible_variable(conversations):
+def melt_variable(conversations, variable_suffix):
+    value_var_names = ["utt_"+variable_suffix, "follow_up_"+variable_suffix]
     conversations_melted = conversations.copy()
-    conversations_melted["utterance_is_intelligible"] = conversations_melted[
-        "utt_is_intelligible"
-    ]
-    del conversations_melted["utt_is_intelligible"]
     conversations_melted = pd.melt(
         conversations_melted.reset_index(),
         id_vars=[
@@ -177,12 +175,12 @@ def melt_is_intelligible_variable(conversations):
             "has_response",
             "pos_feedback",
         ],
-        value_vars=["utterance_is_intelligible", "follow_up_is_intelligible"],
+        value_vars=value_var_names,
         var_name="is_follow_up",
-        value_name="is_intelligible",
+        value_name=variable_suffix,
     )
     conversations_melted["is_follow_up"] = conversations_melted["is_follow_up"].apply(
-        lambda x: x == "follow_up_is_intelligible"
+        lambda x: x == value_var_names[1]
     )
     conversations_melted["conversation_id"] = conversations_melted["index"]
     del conversations_melted["index"]
@@ -241,16 +239,13 @@ def perform_analysis(utterances, args):
         num_months=AGE_BIN_NUM_MONTHS,
     )
 
-    results_dir = "results/intelligibility/"
-    os.makedirs(results_dir, exist_ok=True)
-
-    conversations.to_csv(results_dir + "conversations.csv", index=False)
-    conversations = pd.read_csv(results_dir + "conversations.csv")
+    conversations.to_csv(RESULTS_DIR + "conversations.csv", index=False)
+    conversations = pd.read_csv(RESULTS_DIR + "conversations.csv")
 
     # Melt is_intellgible variable for CR analyses
-    conversations_melted = melt_is_intelligible_variable(conversations)
-    conversations_melted.to_csv(results_dir + "conversations_melted.csv", index=False)
-    conversations_melted = pd.read_csv(results_dir + "conversations_melted.csv")
+    conversations_melted = melt_variable(conversations, variable_suffix="is_intelligible")
+    conversations_melted.to_csv(RESULTS_DIR + "conversations_melted.csv", index=False)
+    conversations_melted = pd.read_csv(RESULTS_DIR + "conversations_melted.csv")
 
     ###
     # Analyses
@@ -282,7 +277,7 @@ def perform_analysis(utterances, args):
 
     perform_per_transcript_analyses(conversations)
 
-    make_plots(conversations, conversations_melted, results_dir)
+    make_plots(conversations, conversations_melted)
 
     plt.show()
 
@@ -358,7 +353,7 @@ def perform_per_transcript_analyses(conversations):
     )
 
 
-def make_plots(conversations, conversations_melted, results_dir):
+def make_plots(conversations, conversations_melted):
     proportion_intelligible_per_transcript = conversations.groupby(
         "transcript_file"
     ).agg({"utt_is_intelligible": "mean", "age": "min"})
@@ -379,7 +374,7 @@ def make_plots(conversations, conversations_melted, results_dir):
             step=AGE_BIN_NUM_MONTHS,
         )
     )
-    plt.savefig(os.path.join(results_dir, "proportion_intelligible.png"), dpi=300)
+    plt.savefig(os.path.join(RESULTS_DIR, "proportion_intelligible.png"), dpi=300)
 
     conversations_duplicated = conversations.copy()
     conversations_duplicated["age"] = math.inf
@@ -401,7 +396,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     axis.set(xlabel="age (months)", ylabel="prop_has_response")
     axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_quality_timing.png"), dpi=300)
+    plt.savefig(os.path.join(RESULTS_DIR, "cf_quality_timing.png"), dpi=300)
 
     conversations_with_response = conversations_with_avg_age[conversations_with_avg_age.has_response]
     plt.figure(figsize=(6, 3))
@@ -421,7 +416,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
     plt.tight_layout()
     plt.savefig(
-        os.path.join(results_dir, "cf_quality_clarification_request.png"), dpi=300
+        os.path.join(RESULTS_DIR, "cf_quality_clarification_request.png"), dpi=300
     )
 
     plt.figure(figsize=(6, 3))
@@ -440,7 +435,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     axis.set(xlabel="age (months)", ylabel="prop_pos_feedback")
     axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_quality_all.png"), dpi=300)
+    plt.savefig(os.path.join(RESULTS_DIR, "cf_quality_all.png"), dpi=300)
 
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
@@ -460,7 +455,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
     plt.tight_layout()
     plt.savefig(
-        os.path.join(results_dir, "cf_effect_pos_feedback_on_intelligible_timing.png"),
+        os.path.join(RESULTS_DIR, "cf_effect_pos_feedback_on_intelligible_timing.png"),
         dpi=300,
     )
 
@@ -484,7 +479,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     axis.set(ylabel="prop_is_intelligible")
     plt.tight_layout()
     plt.savefig(
-        os.path.join(results_dir, "cf_effect_clarification_request_control.png"),
+        os.path.join(RESULTS_DIR, "cf_effect_clarification_request_control.png"),
         dpi=300,
     )
 
@@ -514,14 +509,15 @@ def make_plots(conversations, conversations_melted, results_dir):
     axis.set_xticklabels(sorted(conversations_melted_cr_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
     plt.tight_layout()
     plt.savefig(
-        os.path.join(results_dir, "cf_effect_clarification_request.png"), dpi=300
+        os.path.join(RESULTS_DIR, "cf_effect_clarification_request.png"), dpi=300
     )
 
 
 if __name__ == "__main__":
     args = parse_args()
-
     print(args)
+
+    os.makedirs(RESULTS_DIR, exist_ok=True)
 
     utterances = pd.read_pickle(ANNOTATED_UTTERANCES_FILE)
 
