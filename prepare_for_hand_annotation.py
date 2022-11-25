@@ -8,7 +8,7 @@ import pandas as pd
 from annotate import is_intelligible, is_speech_related, clean_preprocessed_utterance, \
     DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED, DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE
 from utils import (
-    str2bool,
+    str2bool, SPEAKER_CODE_CHILD,
 )
 
 TO_ANNOTATE_UTTERANCES_FILE = os.path.expanduser(
@@ -19,7 +19,7 @@ TO_ANNOTATE_UTTERANCES_FILE = os.path.expanduser(
 def prepare(args):
     utterances = pd.read_csv(args.utterances_file, index_col=0)
 
-    utterances = utterances[utterances.speaker_code == "CHI"]
+    utterances = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD]
 
     print("Annotating speech-relatedness..")
     utterances = utterances.assign(
