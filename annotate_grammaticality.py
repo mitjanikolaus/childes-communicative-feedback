@@ -36,7 +36,7 @@ DEFAULT_MODELS_GRAMMATICALITY_ANNOTATION = [
     "WillHeld/roberta-base-cola",
     "Aktsvigun/electra-large-cola"
 ]
-BATCH_SIZE = 32
+BATCH_SIZE = 10
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
