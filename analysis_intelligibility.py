@@ -1,6 +1,8 @@
 import argparse
 import math
 import os
+import re
+from ast import literal_eval
 from collections import Counter
 
 import matplotlib.pyplot as plt
@@ -124,7 +126,7 @@ def parse_args():
     return args
 
 
-CAREGIVER_NAMES = {
+CAREGIVER_NAMES = [
     "dad",
     "daddy",
     "dada",
@@ -134,17 +136,40 @@ CAREGIVER_NAMES = {
     "mummy",
     "mama",
     "mamma",
-}
+]
+
+
+# TODO: add "okay let's do it"? | take care: might be question!
+RESPONSES_ACKNOWLEDGEMENT_IF_ALONE = {"right", "sure", "okay", "alright", "all right", "yep", "yeah"}
+
+RESPONSES_ACKNOWLEDGEMENT_CERTAIN = {"uhhuh", "uhuh", "uhhum", "mhm", "mm", "huh", "ummhm"}
+
+
+def response_is_acknowledgement(micro_conv):
+    response = micro_conv["response_transcript_clean"].lower()
+    resp_no_punctuation = response[:-1]
+    words = resp_no_punctuation.split(" ")
+    if len(set(words) & (RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_IF_ALONE)) == len(set(words)):
+        # Consider sentences ending with full stop, but not exclamation marks or question marks, as they are changing
+        # the function of the word (i.e. "okay?" or "huh?" are not acknowledgements)
+        if response[-1] == ".":
+            return True
+        else:
+            return False
+    elif words[0] in RESPONSES_ACKNOWLEDGEMENT_CERTAIN:
+        return True
+
+    return False
 
 
 def response_is_clarification_request(micro_conv):
     if micro_conv["has_response"]:
         if micro_conv["response_speech_act"] in SPEECH_ACTS_CLARIFICATION_REQUEST:
-            words = set(
-                [w.lower() for w in micro_conv["utt_transcript_raw"].split(" ")][:-1]
-            )
-            # If the initial utterance is just a call for attention, the response is not a clarification request.
-            if len(words) <= 1 and len(words & CAREGIVER_NAMES) > 0:
+            utt = micro_conv["utt_transcript_clean"]
+            utt_no_punctuation = utt[:-1]
+            utt_len = len(re.split('\s|\'', utt_no_punctuation))
+            if utt_len <= 1 and utt_no_punctuation.lower() in CAREGIVER_NAMES:
+                # If the initial utterance is just a call for attention, the response is not a clarification request.
                 return False
             else:
                 return True
@@ -159,6 +184,7 @@ def melt_variable(conversations, variable_suffix):
         id_vars=[
             "index",
             "response_is_clarification_request",
+            "response_is_acknowledgement",
             "child_name",
             "age",
             "transcript_file",
@@ -206,6 +232,12 @@ def perform_analysis(utterances, args):
         )
     )
 
+    conversations = conversations.assign(
+        response_is_acknowledgement=conversations.apply(
+            response_is_acknowledgement, axis=1
+        )
+    )
+
     conversations = filter_transcripts_based_on_num_child_utts(
         conversations, args.min_child_utts_per_transcript
     )
@@ -247,17 +279,23 @@ def perform_analysis(utterances, args):
 
     counter_cr = Counter(
         conversations[
+            conversations.response_is_acknowledgement
+        ].response_transcript_raw.values
+    )
+    print("Most common acknowledgements: ")
+    print(counter_cr.most_common(20))
+
+    counter_unint = Counter(
+        conversations[
             conversations.utt_is_intelligible == False
         ].utt_transcript_raw.values
     )
     print("Most common unintelligible utterances: ")
-    print(counter_cr.most_common(20))
+    print(counter_unint.most_common(20))
 
     perform_per_transcript_analyses(conversations)
 
     make_plots(conversations, conversations_melted)
-
-    plt.show()
 
     return conversations
 
@@ -354,6 +392,7 @@ def make_plots(conversations, conversations_melted):
     )
     plt.savefig(os.path.join(RESULTS_DIR, "proportion_intelligible.png"), dpi=300)
 
+    # Duplicate all entries and set age to infinity to get summary bars over all age groups
     conversations_duplicated = conversations.copy()
     conversations_duplicated["age"] = math.inf
     conversations_with_avg_age = conversations.append(conversations_duplicated, ignore_index=True)
@@ -395,6 +434,27 @@ def make_plots(conversations, conversations_melted):
     plt.tight_layout()
     plt.savefig(
         os.path.join(RESULTS_DIR, "cf_quality_clarification_request.png"), dpi=300
+    )
+
+    conversations_with_response = conversations_with_avg_age[conversations_with_avg_age.has_response]
+    plt.figure(figsize=(6, 3))
+    axis = sns.barplot(
+        data=conversations_with_response,
+        x="age",
+        y="response_is_acknowledgement",
+        hue="utt_is_intelligible",
+        linewidth=1,
+        edgecolor="w",
+    )
+    legend = axis.legend()
+    legend.texts[0].set_text("unintelligible")
+    legend.texts[1].set_text("intelligible")
+    sns.move_legend(axis, "upper left")
+    axis.set(xlabel="age (months)", ylabel="prop_acknowledgement")
+    axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(RESULTS_DIR, "cf_quality_acknowledgements.png"), dpi=300
     )
 
     plt.figure(figsize=(6, 3))
@@ -443,13 +503,35 @@ def make_plots(conversations, conversations_melted):
         dpi=300,
     )
 
-    conversations_melted_cr = conversations_melted_with_response[
-        conversations_melted_with_response.response_is_clarification_request
-    ]
+    plt.figure(figsize=(6, 3))
+    axis = sns.barplot(
+        data=conversations_melted_with_response,
+        x="response_is_acknowledgement",
+        y="is_intelligible",
+        hue="is_follow_up",
+        linewidth=1,
+        edgecolor="w",
+        palette=sns.color_palette(),
+    )
+    legend = axis.legend()
+    legend.texts[0].set_text("utterance")
+    legend.texts[1].set_text("follow-up")
+    sns.move_legend(axis, "lower right")
+    axis.set(ylabel="prop_is_intelligible")
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(RESULTS_DIR, "cf_effect_acknowledgement_control.png"),
+        dpi=300,
+    )
 
-    conversations_melted_duplicated = conversations_melted_cr.copy()
+    # Duplicate all entries and set age to infinity to get summary bars over all age groups
+    conversations_melted_duplicated = conversations_melted.copy()
     conversations_melted_duplicated["age"] = math.inf
-    conversations_melted_cr_with_avg_age = conversations_melted_cr.append(conversations_melted_duplicated, ignore_index=True)
+    conversations_melted_with_avg_age = conversations_melted.append(conversations_melted_duplicated, ignore_index=True)
+
+    conversations_melted_cr_with_avg_age = conversations_melted_with_avg_age[
+        conversations_melted_with_avg_age.response_is_clarification_request
+    ]
 
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
@@ -472,6 +554,31 @@ def make_plots(conversations, conversations_melted):
         os.path.join(RESULTS_DIR, "cf_effect_clarification_request.png"), dpi=300
     )
 
+    conversations_melted_ack_with_avg_age = conversations_melted_with_avg_age[
+        conversations_melted_with_avg_age.response_is_acknowledgement
+    ]
+
+    plt.figure(figsize=(6, 3))
+    axis = sns.barplot(
+        data=conversations_melted_ack_with_avg_age,
+        x="age",
+        y="is_intelligible",
+        hue="is_follow_up",
+        linewidth=1,
+        edgecolor="w",
+        palette=sns.color_palette(),
+    )
+    legend = axis.legend()
+    legend.texts[0].set_text("utterance")
+    legend.texts[1].set_text("follow-up")
+    sns.move_legend(axis, "upper left")
+    axis.set(xlabel="age (months)", ylabel="prop_is_intelligible")
+    axis.set_xticklabels(sorted(conversations_melted_ack_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(RESULTS_DIR, "cf_effect_acknowledgement.png"), dpi=300
+    )
+
 
 if __name__ == "__main__":
     args = parse_args()
@@ -479,7 +586,7 @@ if __name__ == "__main__":
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    utterances = pd.read_pickle(ANNOTATED_UTTERANCES_FILE)
+    utterances = pd.read_csv(ANNOTATED_UTTERANCES_FILE, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval})
 
     print("Excluding corpora: ", args.excluded_corpora)
     utterances = utterances[~utterances.corpus.isin(args.excluded_corpora)]

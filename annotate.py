@@ -149,7 +149,7 @@ def annotate(args):
 
     print("Cleaning utterances..")
     utterances = utterances.assign(
-        utt_clean=utterances.transcript_raw.apply(
+        transcript_clean=utterances.transcript_raw.apply(
             clean_preprocessed_utterance
         )
     )

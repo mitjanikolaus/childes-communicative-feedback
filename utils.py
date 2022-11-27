@@ -29,7 +29,7 @@ UTTERANCES_WITH_SPEECH_ACTS_FILE = os.path.expanduser(
 )
 
 ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
-    "~/data/communicative_feedback/utterances_annotated.p"
+    "~/data/communicative_feedback/utterances_annotated.csv"
 )
 
 SPEECH_ACT_NO_FUNCTION = "YY"

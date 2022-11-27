@@ -114,7 +114,7 @@ def annotate(utterances):
             print(f"Annotation for {model_name} already done. Skipping.")
             continue
         print(f"Annotating grammaticality with {model_name}..")
-        utterances[column_name] = annotate_grammaticality(utterances.utt_clean.values, model_name)
+        utterances[column_name] = annotate_grammaticality(utterances.transcript_clean.values, model_name)
 
     if "is_grammatical_m" in utterances.columns:
         utterances.dropna(subset=["is_grammatical_m"], inplace=True)

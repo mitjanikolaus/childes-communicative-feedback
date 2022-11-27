@@ -2,6 +2,7 @@ import argparse
 import itertools
 import math
 import os
+from ast import literal_eval
 from collections import Counter
 from multiprocessing import Pool
 
@@ -140,6 +141,7 @@ def has_response(
 
 DUMMY_RESPONSE = {
     "transcript_raw": "",
+    "transcript_clean": "",
     "start_time": math.inf,
     "end_time": math.inf,
     "is_speech_related": False,
@@ -149,6 +151,7 @@ DUMMY_RESPONSE = {
 
 KEEP_KEYS = [
     "transcript_raw",
+    "transcript_clean",
     "start_time",
     "end_time",
     "is_speech_related",
@@ -478,10 +481,9 @@ def make_plots(conversations, results_dir):
 
 if __name__ == "__main__":
     args = parse_args()
-
     print(args)
 
-    utterances = pd.read_pickle(ANNOTATED_UTTERANCES_FILE)
+    utterances = pd.read_csv(ANNOTATED_UTTERANCES_FILE, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval})
 
     print("Excluding corpora: ", args.excluded_corpora)
     utterances = utterances[~utterances.corpus.isin(args.excluded_corpora)]
