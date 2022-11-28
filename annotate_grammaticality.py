@@ -24,7 +24,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 OUT_UTTERANCES_FILE = os.path.expanduser(
-    "~/data/communicative_feedback/utterances_annotated_model_results.csv"
+    "~/data/communicative_feedback/utterances_annotated_grammaticality.csv"
 )
 
 DEFAULT_MODELS_GRAMMATICALITY_ANNOTATION = [
