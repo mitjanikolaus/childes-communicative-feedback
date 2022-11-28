@@ -439,9 +439,11 @@ def remove_punctuation(utterance, return_removed_trailing_punct=False, remove_co
         return cleaned_utterance.strip()
 
 
-def split_into_words(utt, split_on_apostrophe=True, remove_commas=False, remove_trailing_punctuation=False):
+def split_into_words(utterance, split_on_apostrophe=True, remove_commas=False, remove_trailing_punctuation=False):
+    # Copy in order not to modify the original utterance
+    utt = utterance
     if remove_trailing_punctuation:
-        utt = utt[:-1]
+        utt = utterance[:-1]
     regex = '\s'
     if split_on_apostrophe:
         regex += '|\''
