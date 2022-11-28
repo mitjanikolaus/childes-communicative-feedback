@@ -131,28 +131,20 @@ def annotate(args):
     utterances = pd.read_pickle(UTTERANCES_WITH_SPEECH_ACTS_FILE)
 
     print("Annotating speech-relatedness..")
-    utterances = utterances.assign(
-        is_speech_related=utterances.transcript_raw.apply(
-            is_speech_related,
-            label_partially_speech_related=args.label_partially_speech_related,
-        )
+    utterances["is_speech_related"] = utterances.transcript_raw.apply(
+        is_speech_related,
+        label_partially_speech_related=args.label_partially_speech_related,
     )
     utterances.is_speech_related = utterances.is_speech_related.astype("boolean")
 
     print("Annotating intelligibility..")
-    utterances = utterances.assign(
-        is_intelligible=utterances.transcript_raw.apply(
-            is_intelligible,
-            label_partially_intelligible=args.label_partially_intelligible,
-        )
+    utterances["is_intelligible"] = utterances.transcript_raw.apply(
+        is_intelligible,
+        label_partially_intelligible=args.label_partially_intelligible,
     )
 
     print("Cleaning utterances..")
-    utterances = utterances.assign(
-        transcript_clean=utterances.transcript_raw.apply(
-            clean_preprocessed_utterance
-        )
-    )
+    utterances["transcript_clean"] = utterances.transcript_raw.apply(clean_preprocessed_utterance)
 
     return utterances
 

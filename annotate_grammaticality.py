@@ -11,7 +11,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 import matplotlib
 
-from utils import get_num_words
+from utils import get_num_unique_words
 
 if os.environ["DISPLAY"] != ":0":
     matplotlib.use("Agg")
@@ -47,11 +47,11 @@ def annotate_grammaticality(clean_utterances, model_name, label_empty_utterance=
     model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
 
     grammaticalities = np.zeros_like(clean_utterances, dtype=bool).astype(object)  # cast to object to allow for NA
-    num_words = torch.tensor(get_num_words(clean_utterances))
-    grammaticalities[(num_words == 0)] = label_empty_utterance
-    grammaticalities[(num_words == 1)] = label_one_word_utterance
+    num_unique_words = get_num_unique_words(clean_utterances)
+    grammaticalities[(num_unique_words == 0)] = label_empty_utterance
+    grammaticalities[(num_unique_words == 1)] = label_one_word_utterance
 
-    utts_to_annotate = clean_utterances[(num_words > 1)]
+    utts_to_annotate = clean_utterances[(num_unique_words > 1)]
 
     batches = [utts_to_annotate[x:x + BATCH_SIZE] for x in range(0, len(utts_to_annotate), BATCH_SIZE)]
 
@@ -67,7 +67,7 @@ def annotate_grammaticality(clean_utterances, model_name, label_empty_utterance=
 
         annotated_grammaticalities.extend(batch_grammaticalities.tolist())
 
-    grammaticalities[(num_words > 1)] = annotated_grammaticalities
+    grammaticalities[(num_unique_words > 1)] = annotated_grammaticalities
 
     return grammaticalities
 
@@ -114,7 +114,7 @@ def annotate(utterances):
             print(f"Annotation for {model_name} already done. Skipping.")
             continue
         print(f"Annotating grammaticality with {model_name}..")
-        utterances[column_name] = annotate_grammaticality(utterances.transcript_clean.values, model_name)
+        utterances[column_name] = annotate_grammaticality(utterances.transcript_clean, model_name)
 
     if "is_grammatical_m" in utterances.columns:
         utterances.dropna(subset=["is_grammatical_m"], inplace=True)

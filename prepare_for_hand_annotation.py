@@ -8,7 +8,7 @@ import pandas as pd
 from annotate import is_intelligible, is_speech_related, clean_preprocessed_utterance, \
     DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED, DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE
 from utils import (
-    str2bool, SPEAKER_CODE_CHILD,
+    str2bool, SPEAKER_CODE_CHILD, get_num_unique_words,
 )
 
 TO_ANNOTATE_UTTERANCES_FILE = os.path.expanduser(
@@ -22,31 +22,23 @@ def prepare(args):
     utterances = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD]
 
     print("Annotating speech-relatedness..")
-    utterances = utterances.assign(
-        is_speech_related=utterances.transcript_raw.apply(
-            is_speech_related,
-            label_partially_speech_related=args.label_partially_speech_related,
-        )
+    utterances["is_speech_related"] = utterances.transcript_raw.apply(
+        is_speech_related,
+        label_partially_speech_related=args.label_partially_speech_related,
     )
     utterances.is_speech_related = utterances.is_speech_related.astype("boolean")
 
     print("Annotating intelligibility..")
-    utterances = utterances.assign(
-        is_intelligible=utterances.transcript_raw.apply(
-            is_intelligible,
-            label_partially_intelligible=args.label_partially_intelligible,
-        )
+    utterances["is_intelligible"] = utterances.transcript_raw.apply(
+        is_intelligible,
+        label_partially_intelligible=args.label_partially_intelligible,
     )
 
     print("Cleaning utterances..")
-    utterances = utterances.assign(
-        utt_clean=utterances.transcript_raw.apply(
-            clean_preprocessed_utterance
-        )
-    )
+    utterances["transcript_clean"] = utterances.transcript_raw.apply(clean_preprocessed_utterance)
 
-    num_words = np.array([len(re.split('\s|\'', utt)) for utt in utterances.utt_clean.values])
-    utts_to_annotate = utterances[(num_words > 1)]
+    num_unique_words = get_num_unique_words(utterances.transcript_clean)
+    utts_to_annotate = utterances[(num_unique_words > 1)]
     utts_to_annotate = utts_to_annotate[utts_to_annotate.is_speech_related & utts_to_annotate.is_intelligible]
 
     # utts_to_annotate = utts_to_annotate.sample(1000, random_state=1)

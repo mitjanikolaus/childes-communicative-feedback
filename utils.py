@@ -443,8 +443,19 @@ def remove_punctuation(utterance, return_removed_trailing_punct=False, remove_co
         return cleaned_utterance.strip()
 
 
-def get_num_words(clean_utts):
-    return clean_utts.apply(lambda x: len(re.split('\s|\'', x)))
+def get_num_words(clean_utts, remove_punctuation=True):
+    if remove_punctuation:
+        return clean_utts.apply(lambda x: len(re.split('\s|\'', x[:-1])))
+    else:
+        return clean_utts.apply(lambda x: len(re.split('\s|\'', x)))
+
+
+def get_num_unique_words(clean_utts, remove_punctuation=True):
+    if remove_punctuation:
+        return clean_utts.apply(lambda x: len(set(re.split('\s', x[:-1]))))
+    else:
+        return clean_utts.apply(lambda x: len(set(re.split('\s', x))))
+
 
 
 # Unintelligible words with an unclear phonetic shape should be transcribed as
