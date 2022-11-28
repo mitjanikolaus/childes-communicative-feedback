@@ -8,6 +8,7 @@ from utils import (
     remove_babbling,
     ANNOTATED_UTTERANCES_FILE,
     UTTERANCES_WITH_SPEECH_ACTS_FILE, remove_events_and_non_parseable_words, replace_slang_forms, clean_disfluencies,
+    split_into_words,
 )
 from utils import (
     remove_nonspeech_events,
@@ -46,7 +47,7 @@ def is_speech_related(
 
     # We exclude completely unintelligible utterances (we don't know whether it's speech-related or not)
     is_completely_unintelligible = True
-    for word in utt_without_nonspeech.split(" "):
+    for word in split_into_words(utt_without_nonspeech, remove_commas=True, remove_trailing_punctuation=False):
         if word != CODE_UNINTELLIGIBLE and word != "":
             is_completely_unintelligible = False
             break

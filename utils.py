@@ -134,8 +134,6 @@ def word_is_laughter(word):
 
 
 def word_is_parseable_speech(word, vocab_check):
-    word = word.replace(",", "")
-
     if (
             is_simple_event(word)
             or word_is_laughter(word)
@@ -151,8 +149,6 @@ def word_is_parseable_speech(word, vocab_check):
 
 
 def word_is_speech_related(word):
-    word = word.replace(",", "")
-
     if is_simple_event(word):
         return paralinguistic_event_is_speech_related(word)
 
@@ -280,7 +276,7 @@ def remove_nonspeech_events(utterance):
             if utterance == "":
                 return ""
             # For cases like "mm [=! squeal]":
-            words = utterance.split(" ")
+            words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=False)
             if (
                 len(words) == 1
                 and not is_word(words[0])
@@ -292,7 +288,7 @@ def remove_nonspeech_events(utterance):
     if utterance_is_laughter(utterance):
         return ""
 
-    words = utterance.split(" ")
+    words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=False)
     cleaned_utterance = [
         word
         for word in words
@@ -363,7 +359,7 @@ def clean_utterance(utterance):
     # Remove smileys
     utterance = utterance.replace("☺", "")
 
-    words = utterance.split(" ")
+    words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=False, remove_trailing_punctuation=False)
     cleaned_utterance = []
     for word in words:
         if not word == "" and not is_excluded_code(word):
@@ -443,18 +439,28 @@ def remove_punctuation(utterance, return_removed_trailing_punct=False, remove_co
         return cleaned_utterance.strip()
 
 
+def split_into_words(utt, split_on_apostrophe=True, remove_commas=False, remove_trailing_punctuation=False):
+    if remove_trailing_punctuation:
+        utt = utt[:-1]
+    regex = '\s'
+    if split_on_apostrophe:
+        regex += '|\''
+    if remove_commas:
+        regex += '|,'
+
+    words = re.split(regex, utt)
+
+    # Filter out empty words:
+    words = [word for word in words if len(word) > 0]
+    return words
+
+
 def get_num_words(clean_utts, remove_punctuation=True):
-    if remove_punctuation:
-        return clean_utts.apply(lambda x: len(re.split('\s|\'', x[:-1].replace(",", ""))))
-    else:
-        return clean_utts.apply(lambda x: len(re.split('\s|\'', x)))
+    return clean_utts.apply(lambda x: len(split_into_words(x, split_on_apostrophe=True, remove_commas=remove_punctuation, remove_trailing_punctuation=remove_punctuation)))
 
 
 def get_num_unique_words(clean_utts, remove_punctuation=True):
-    if remove_punctuation:
-        return clean_utts.apply(lambda x: len(set(re.split('\s', x[:-1].replace(",", "")))))
-    else:
-        return clean_utts.apply(lambda x: len(set(re.split('\s', x))))
+    return clean_utts.apply(lambda x: len(set(split_into_words(x, split_on_apostrophe=False, remove_commas=remove_punctuation, remove_trailing_punctuation=remove_punctuation))))
 
 
 # Unintelligible words with an unclear phonetic shape should be transcribed as
@@ -516,8 +522,6 @@ VOCAB_CUSTOM = set(
 
 
 def is_word(word):
-    word = word.replace(",", "")
-
     DICT_ENCHANT = enchant.Dict("en_US")
     word = word.lower()
     if word in VOCAB_CUSTOM:
@@ -528,7 +532,6 @@ def is_word(word):
 
 
 def is_babbling(word, vocab_check=True):
-    word = word.replace(",", "")
     # Catching simple events (&=) first, because otherwise they could be interpreted as phonological fragment (&)
     if is_simple_event(word):
         return not paralinguistic_event_is_intelligible(word)
@@ -570,7 +573,7 @@ def remove_events_and_non_parseable_words(utterance):
     if utterance_is_laughter(utterance):
         return ""
 
-    words = utterance.split(" ")
+    words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=False)
     cleaned_utterance = [
         word
         for word in words
@@ -600,7 +603,7 @@ SLANG_WORDS = {
 
 
 def replace_slang_forms(utterance):
-    words = utterance.split(" ")
+    words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=False)
     cleaned_utterance = [
         word if word not in SLANG_WORDS.keys() else SLANG_WORDS[word]
         for word in words
@@ -610,7 +613,7 @@ def replace_slang_forms(utterance):
 
 
 def find_repeated_sequence(utterance):
-    words = utterance.split(" ")
+    words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=False)
 
     for rep_len in range(len(words)//2, 0, -1):
         candidates = ["__".join(words[i:i+rep_len]) for i in range(len(words)) if len(words[i:i+rep_len]) == rep_len]
@@ -653,11 +656,13 @@ def remove_babbling(utterance):
             if utterance == "":
                 return ""
             # For cases like "mm [=! babbling]":
-            words = utterance.strip().split(" ")
+            utterance = utterance.strip()
+            words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=False)
             if len(words) == 1 and not is_word(words[0]):
                 return ""
 
-    words = utterance.strip().split(" ")
+    utterance = utterance.strip()
+    words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=False)
     filtered_utterance = [
         word
         for word in words
