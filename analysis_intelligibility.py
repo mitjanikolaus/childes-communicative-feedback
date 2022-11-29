@@ -22,7 +22,7 @@ from preprocess import (
 from utils import (
     age_bin,
     ANNOTATED_UTTERANCES_FILE,
-    filter_transcripts_based_on_num_child_utts,
+    filter_transcripts_based_on_num_child_utts, split_into_words,
 )
 
 DEFAULT_RESPONSE_THRESHOLD = 1000
@@ -147,12 +147,11 @@ RESPONSES_ACKNOWLEDGEMENT_CERTAIN = {"uhhuh", "uhuh", "uhhum", "mhm", "mm", "huh
 
 def response_is_acknowledgement(micro_conv):
     response = micro_conv["response_transcript_clean"].lower()
-    resp_no_punctuation = response[:-1]
-    words = resp_no_punctuation.split(" ")
+    words = [word.lower() for word in split_into_words(response, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True)]
     if len(set(words) & (RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_IF_ALONE)) == len(set(words)):
         # Consider sentences ending with full stop, but not exclamation marks or question marks, as they are changing
         # the function of the word (i.e. "okay?" or "huh?" are not acknowledgements)
-        if response[-1] == ".":
+        if len(response) > 0 and response[-1] == ".":
             return True
         else:
             return False
@@ -166,14 +165,41 @@ def response_is_clarification_request(micro_conv):
     if micro_conv["has_response"]:
         if micro_conv["response_speech_act"] in SPEECH_ACTS_CLARIFICATION_REQUEST:
             utt = micro_conv["utt_transcript_clean"]
-            utt_no_punctuation = utt[:-1]
-            utt_len = len(re.split('\s|\'', utt_no_punctuation))
-            if utt_len <= 1 and utt_no_punctuation.lower() in CAREGIVER_NAMES:
+            unique_words = set(split_into_words(utt, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True))
+            if len(unique_words) == 1 and unique_words.pop().lower() in CAREGIVER_NAMES:
                 # If the initial utterance is just a call for attention, the response is not a clarification request.
                 return False
             else:
                 return True
     return False
+
+
+# List of stopwords to be ignored for repetition calculation
+STOPWORDS = {'s', 'the', 'a', 'to', 't', 'and', 'no', 'yeah', 'oh', 'is', 'in', 'on', 'yes', 'not',  'of', 'okay', 'right', 'with', 'for', 'up', 'some', 'just', 'at', 'because', 'so', 'but', 'out', 'if', 'mhm',  'off', 'about', 'too', 'over', 'ah', 'again', 'or', 'mm', 'as', 'huh', 'from', 'else', 'an', 'alright', 'ooh'}
+
+
+def get_repetition_ratios(micro_conv):
+    utt = micro_conv["utt_transcript_clean"].lower()
+    words_utt = split_into_words(utt, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True)
+    words_utt = {word for word in words_utt if word not in STOPWORDS}
+
+    response = micro_conv["response_transcript_clean"].lower()
+    words_response = split_into_words(response, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True)
+    words_response = {word for word in words_response if word not in STOPWORDS}
+
+    overlap = words_utt & words_response
+
+    if len(words_utt) == 0:
+        utt_rep_ratio = 0
+    else:
+        utt_rep_ratio = len(overlap) / len(words_utt)
+
+    if len(words_response) == 0:
+        resp_rep_ratio = 0
+    else:
+        resp_rep_ratio = len(overlap) / len(words_response)
+
+    return [utt_rep_ratio, resp_rep_ratio]
 
 
 def melt_variable(conversations, variable_suffix):
@@ -226,17 +252,12 @@ def perform_analysis(utterances, args):
         inplace=True,
     )
 
-    conversations = conversations.assign(
-        response_is_clarification_request=conversations.apply(
-            response_is_clarification_request, axis=1
-        )
-    )
+    repetition_ratios = conversations.apply(get_repetition_ratios, axis=1)
+    conversations["utt_repetition_ratio"] = repetition_ratios.apply(lambda ratios: ratios[0])
+    conversations["resp_repetition_ratio"] = repetition_ratios.apply(lambda ratios: ratios[1])
 
-    conversations = conversations.assign(
-        response_is_acknowledgement=conversations.apply(
-            response_is_acknowledgement, axis=1
-        )
-    )
+    conversations["response_is_clarification_request"] = conversations.apply(response_is_clarification_request, axis=1)
+    conversations["response_is_acknowledgement"] = conversations.apply(response_is_acknowledgement, axis=1)
 
     conversations = filter_transcripts_based_on_num_child_utts(
         conversations, args.min_child_utts_per_transcript
@@ -298,6 +319,14 @@ def perform_analysis(utterances, args):
     make_plots(conversations, conversations_melted)
 
     return conversations
+
+
+def print_most_common_words(utterances):
+    utterances["words"] = utterances.transcript_clean.apply(split_into_words, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True)
+    exploded = utterances[["words"]].explode("words")
+    exploded["words"] = exploded["words"].str.lower()
+    print(exploded["words"].value_counts()[:200].to_string())
+    print(exploded["words"].value_counts()[:200].index.to_list())
 
 
 def perform_per_transcript_analyses(conversations):
@@ -430,7 +459,7 @@ def make_plots(conversations, conversations_melted):
     legend.texts[1].set_text("intelligible")
     sns.move_legend(axis, "upper left")
     axis.set(xlabel="age (months)", ylabel="prop_clarification_request")
-    axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
+    axis.set_xticklabels(sorted(conversations_with_response.age.unique()[:-1].astype(int)) + ["all"])
     plt.tight_layout()
     plt.savefig(
         os.path.join(RESULTS_DIR, "cf_quality_clarification_request.png"), dpi=300
@@ -451,7 +480,7 @@ def make_plots(conversations, conversations_melted):
     legend.texts[1].set_text("intelligible")
     sns.move_legend(axis, "upper left")
     axis.set(xlabel="age (months)", ylabel="prop_acknowledgement")
-    axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
+    axis.set_xticklabels(sorted(conversations_with_response.age.unique()[:-1].astype(int)) + ["all"])
     plt.tight_layout()
     plt.savefig(
         os.path.join(RESULTS_DIR, "cf_quality_acknowledgements.png"), dpi=300
