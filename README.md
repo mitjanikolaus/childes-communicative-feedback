@@ -10,6 +10,21 @@ To reproduce the exact results from the paper, the
 [cogsci_2022](https://github.com/mitjanikolaus/childes-communicative-feedback/tree/cogsci_2022) branch should be used.
 The main branch contains some addtional tweaks for the preprocessing of utterances.
 
+## Python Environment
+
+You can create an environment using the `environment.yml` file:
+```
+conda env create --file environment.yml
+
+```
+Additionally, we need to install [my fork of the pylangacq repo](https://github.com/mitjanikolaus/pylangacq) (The original repo can be found here: [pylangacq](https://github.com/jacksonllee/pylangacq)) using pip:
+```
+git clone git@github.com:mitjanikolaus/pylangacq.git
+cd pylangacq
+source activate cf_timing
+pip install .
+```
+
 ## Data
 
 ### CHILDES corpora
@@ -22,12 +37,11 @@ Bernstein, Bloom, Braunwald, Brent, Edinburgh, Gleason, MPI-EVA-Manchester, MacW
 ## Preprocessing
 
 The CHILDES corpus data is loaded using [my fork of the pylangacq repo](https://github.com/mitjanikolaus/pylangacq)
-(The original repo can be found here: [pylangacq](https://github.com/jacksonllee/pylangacq))
 
-To preprocess the data, install the [pylangacq](https://github.com/mitjanikolaus/pylangacq) library
-and run:
+To preprocess the data, once you've installed the [pylangacq](https://github.com/mitjanikolaus/pylangacq) library as
+mentioned above, you can run:
 ```
-preprocess.py --require-timing-information --corpora Edinburgh VanHouten MPI-EVA-Manchester McMillan Rollins Gleason Forrester Braunwald Bloom McCune Tommerdahl Soderstrom Weist NewmanRatner Snow Thomas Peters MacWhinney Sachs Bernstein Brent Nelson Providence
+python preprocess.py --require-timing-information --corpora Edinburgh VanHouten MPI-EVA-Manchester McMillan Rollins Gleason Forrester Braunwald Bloom McCune Tommerdahl Soderstrom Weist NewmanRatner Snow Thomas Peters MacWhinney Sachs Bernstein Brent Nelson Providence
 ```
 This preprocessed all corpora that are conversational (have child AND caregiver transcripts), are English, and
 have timing information.
@@ -35,12 +49,12 @@ have timing information.
 Afterwards the utterances need to be annotated with speech acts. Use the method `crf_annotate` from the following
 branch: [automatic speech act annotation](https://github.com/mitjanikolaus/childes-speech-acts/tree/new-data-loading).
 ```
-crf_annotate --model checkpoints/crf_full_train --data ~/data/communicative_feedback/utterances.p --out ~/data/communicative_feedback/utterances_with_speech_acts.p --use-pos --use-bi-grams --use-repetitions
+python crf_annotate --model checkpoints/crf_full_train --data ~/data/communicative_feedback/utterances.p --out ~/data/communicative_feedback/utterances_with_speech_acts.p --use-pos --use-bi-grams --use-repetitions
 ```
 
 Finally, annotate speech-relatedness and intelligibility:
 ```
-annotate.py
+python annotate.py
 ```
 
 ## Analyses
