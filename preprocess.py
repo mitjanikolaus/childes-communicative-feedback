@@ -3,9 +3,10 @@ import os
 
 import pandas as pd
 import pylangacq
+from tqdm import tqdm
 
 from utils import (
-    clean_utterance,
+    remove_superfluous_annotations,
     is_empty,
     POS_PUNCTUATION,
     PREPROCESSED_UTTERANCES_FILE,
@@ -13,39 +14,24 @@ from utils import (
     get_all_paralinguistic_events,
     remove_punctuation,
     get_paralinguistic_event,
-    paralinguistic_event_is_external,
+    paralinguistic_event_is_external, clean_utterance,
 )
-
-# Corpora that are conversational (have child AND caregiver transcripts), are English, and have timing information
-CANDIDATE_CORPORA = [
-    "Edinburgh",
-    "VanHouten",
-    "MPI-EVA-Manchester",
-    "McMillan",
-    "Rollins",
-    "Gleason",
-    "Forrester",
-    "Braunwald",
-    "Bloom",
-    "McCune",
-    "Tommerdahl",
-    "Soderstrom",
-    "Weist",
-    "NewmanRatner",
-    "Snow",
-    "Thomas",
-    "Peters",
-    "MacWhinney",
-    "Sachs",
-    "Bernstein",
-    "Brent",
-    "Nelson",
-    "Providence",
-]
 
 
 def parse_args():
     argparser = argparse.ArgumentParser()
+    argparser.add_argument(
+        "--corpora",
+        nargs="+",
+        type=str,
+        required=True,
+        help="Corpora to analyze.",
+    )
+    argparser.add_argument(
+        "--require-timing-information",
+        default=False,
+        action="store_true",
+    )
     args = argparser.parse_args()
 
     return args
@@ -65,7 +51,7 @@ def get_gra_tag(tag):
         return None
 
 
-def preprocess_utterances(corpus, transcripts):
+def preprocess_utterances(corpus, transcripts, args):
     file_paths = transcripts.file_paths()
 
     ages = transcripts.ages(months=True)
@@ -86,9 +72,9 @@ def preprocess_utterances(corpus, transcripts):
 
     all_utts = []
 
-    for file, age, child_name, utts_transcript in zip(
+    for file, age, child_name, utts_transcript in tqdm(zip(
         file_paths, ages, child_names, utts_by_file
-    ):
+    ), total=len(file_paths)):
         # Filter out empty transcripts and transcripts without age or child information
         if len(utts_transcript) == 0:
             # print("Empty transcript: ", file)
@@ -149,13 +135,25 @@ def preprocess_utterances(corpus, transcripts):
             # Child is not present in transcript, ignore
             continue
 
-        # Verify that we have at least timing information for some of the utterances
-        if len(utts_transcript["start_time"].dropna()) == 0:
-            continue
+        if args.require_timing_information:
+            # Verify that we have at least timing information for some of the utterances
+            if len(utts_transcript["start_time"].dropna()) == 0:
+                continue
 
         utts_transcript["transcript_raw"] = utts_transcript["transcript_raw"].apply(
-            clean_utterance
+            remove_superfluous_annotations
         )
+        utts_transcript.dropna(subset=("transcript_raw",), inplace=True)
+
+        utts_transcript = utts_transcript[
+            ~utts_transcript.transcript_raw.apply(has_multiple_events)
+        ]
+        utts_transcript = utts_transcript[
+            ~utts_transcript.transcript_raw.apply(is_external_event)
+        ]
+        utts_transcript = utts_transcript[~utts_transcript.transcript_raw.apply(is_empty)]
+
+        utts_transcript["transcript_clean"] = utts_transcript.transcript_raw.apply(clean_utterance)
 
         utts_transcript = utts_transcript[utts_transcript["transcript_raw"] != ""]
         utts_transcript.dropna(subset=["transcript_raw", "speaker_code"], inplace=True)
@@ -184,40 +182,30 @@ def is_external_event(utterance):
     return False
 
 
-def preprocess_transcripts():
+def preprocess_transcripts(args):
     all_utterances = []
-    for corpus in CANDIDATE_CORPORA:
+    for corpus in args.corpora:
         print(f"Reading transcripts of {corpus} corpus.. ", end="")
         transcripts = pylangacq.read_chat(
             os.path.expanduser(f"~/data/CHILDES/{corpus}/"),
         )
         print("done.")
 
-        print(f"Preprocessing utterances.. ", end="")
-        utterances_corpus = preprocess_utterances(corpus, transcripts)
-        print("done.")
+        print(f"Preprocessing utterances of {corpus}.. ")
+        utterances_corpus = preprocess_utterances(corpus, transcripts, args)
 
         all_utterances.append(utterances_corpus)
 
     all_utterances = pd.concat(all_utterances, ignore_index=True)
-
-    all_utterances.dropna(subset=("transcript_raw",), inplace=True)
-
-    all_utterances = all_utterances[
-        ~all_utterances.transcript_raw.apply(has_multiple_events)
-    ]
-    all_utterances = all_utterances[
-        ~all_utterances.transcript_raw.apply(is_external_event)
-    ]
-    all_utterances = all_utterances[~all_utterances.transcript_raw.apply(is_empty)]
 
     return all_utterances
 
 
 if __name__ == "__main__":
     args = parse_args()
+    print(args)
 
-    preprocessed_utterances = preprocess_transcripts()
+    preprocessed_utterances = preprocess_transcripts(args)
 
     os.makedirs(os.path.dirname(PREPROCESSED_UTTERANCES_FILE), exist_ok=True)
     preprocessed_utterances.to_pickle(PREPROCESSED_UTTERANCES_FILE)

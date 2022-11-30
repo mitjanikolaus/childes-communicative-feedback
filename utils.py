@@ -303,6 +303,44 @@ def remove_nonspeech_events(utterance):
 
 
 def clean_utterance(utterance):
+    final_punctuation = None
+    while len(utterance) > 0 and utterance[-1] in [".", "!", "?"]:
+        final_punctuation = utterance[-1]
+        utterance = utterance[:-1]
+
+    utt_clean = remove_events_and_non_parseable_words(utterance)
+    utt_clean = replace_slang_forms(utt_clean)
+    utt_clean = clean_disfluencies(utt_clean)
+
+    # Remove underscores
+    utt_clean = utt_clean.replace("_", " ")
+
+    # Remove spacing before commas and double commas
+    utt_clean = utt_clean.replace(" ,", ",")
+    utt_clean = utt_clean.replace(",,", ",")
+    utt_clean = utt_clean.replace(" .", ".")
+    utt_clean = utt_clean.replace(",.", ".")
+
+    # Strip:
+    utt_clean = utt_clean.strip()
+    utt_clean = utt_clean.replace("   ", " ")
+    utt_clean = utt_clean.replace("  ", " ")
+
+    # Remove remaining commas at beginning and end of utterance
+    while len(utt_clean) > 0 and utt_clean[0] == ",":
+        utt_clean = utt_clean[1:].strip()
+    while len(utt_clean) > 0 and utt_clean[-1] == ",":
+        utt_clean = utt_clean[:-1].strip()
+
+    if final_punctuation:
+        utt_clean += final_punctuation
+    else:
+        utt_clean += "."
+
+    return utt_clean
+
+
+def remove_superfluous_annotations(utterance):
     """Remove all superfluous annotation information."""
     # Remove timing information:
     utterance = re.sub(r"[^]+?", "", utterance)

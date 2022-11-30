@@ -23,8 +23,10 @@ The CHILDES corpus data is loaded using [my fork of the pylangacq repo](https://
 To preprocess the data, install the [pylangacq](https://github.com/mitjanikolaus/pylangacq) library
 and run:
 ```
-preprocess.py
+preprocess.py --require-timing-information --corpora Edinburgh VanHouten MPI-EVA-Manchester McMillan Rollins Gleason Forrester Braunwald Bloom McCune Tommerdahl Soderstrom Weist NewmanRatner Snow Thomas Peters MacWhinney Sachs Bernstein Brent Nelson Providence
 ```
+This preprocessed all corpora that are conversational (have child AND caregiver transcripts), are English, and
+have timing information.
 
 Afterwards the utterances need to be annotated with speech acts. Use the method `crf_annotate` from the following
 branch: [automatic speech act annotation](https://github.com/mitjanikolaus/childes-speech-acts/tree/new-data-loading).

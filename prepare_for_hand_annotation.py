@@ -5,7 +5,7 @@ import re
 import numpy as np
 import pandas as pd
 
-from annotate import is_intelligible, is_speech_related, clean_preprocessed_utterance, \
+from annotate import is_intelligible, is_speech_related, \
     DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED, DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE
 from utils import (
     str2bool, SPEAKER_CODE_CHILD, get_num_unique_words,
@@ -33,9 +33,6 @@ def prepare(args):
         is_intelligible,
         label_partially_intelligible=args.label_partially_intelligible,
     )
-
-    print("Cleaning utterances..")
-    utterances["transcript_clean"] = utterances.transcript_raw.apply(clean_preprocessed_utterance)
 
     num_unique_words = get_num_unique_words(utterances.transcript_clean)
     utts_to_annotate = utterances[(num_unique_words > 1)]

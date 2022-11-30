@@ -16,17 +16,17 @@ from utils import (
     VOCAB,
     CODE_PHONOLGICAL_CONSISTENT_FORM,
     filter_corpora_based_on_response_latency_length,
-    clean_utterance,
+    remove_superfluous_annotations,
     remove_nonspeech_events,
 )
 
 
 def check_vocab(adj_utterances):
     # Clean utterances
-    adj_utterances["utt_child"] = adj_utterances.utt_child.apply(clean_utterance)
-    adj_utterances["utt_car"] = adj_utterances.utt_car.apply(clean_utterance)
+    adj_utterances["utt_child"] = adj_utterances.utt_child.apply(remove_superfluous_annotations)
+    adj_utterances["utt_car"] = adj_utterances.utt_car.apply(remove_superfluous_annotations)
     adj_utterances["utt_child_follow_up"] = adj_utterances.utt_child_follow_up.apply(
-        clean_utterance
+        remove_superfluous_annotations
     )
 
     # Remove nonspeech events
