@@ -6,6 +6,10 @@ This repository contains code accompanying the following paper:
 *In Proceedings of the 44th Annual Meeting of the Cognitive Science Society. (2022)* \
 Mitja Nikolaus, Laurent Prévot and Abdellah Fourtassi
 
+To reproduce the exact results from the paper, the
+[cogsci_2022](https://github.com/mitjanikolaus/childes-communicative-feedback/tree/cogsci_2022) branch should be used.
+The main branch contains some addtional tweaks for the preprocessing of utterances.
+
 ## Data
 
 ### CHILDES corpora
