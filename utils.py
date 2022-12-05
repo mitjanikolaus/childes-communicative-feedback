@@ -21,11 +21,11 @@ SPEAKER_CODES_CAREGIVER = [
 ]
 
 PREPROCESSED_UTTERANCES_FILE = os.path.expanduser(
-    "~/data/communicative_feedback/utterances.p"
+    "~/data/communicative_feedback/utterances.csv"
 )
 
 UTTERANCES_WITH_SPEECH_ACTS_FILE = os.path.expanduser(
-    "~/data/communicative_feedback/utterances_with_speech_acts.p"
+    "~/data/communicative_feedback/utterances_with_speech_acts.csv"
 )
 
 ANNOTATED_UTTERANCES_FILE = os.path.expanduser(

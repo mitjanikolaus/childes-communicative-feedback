@@ -1,6 +1,5 @@
 import argparse
 import os
-import re
 import numpy as np
 import pandas as pd
 import torch
@@ -160,7 +159,7 @@ def parse_args():
         default=DEFAULT_MODELS_GRAMMATICALITY_ANNOTATION,
     )
     argparser.add_argument(
-        "--out-file",
+        "--out",
         type=str,
         default=OUT_UTTERANCES_FILE
     )
@@ -172,6 +171,8 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    if not args.out.endswith(".csv"):
+        raise ValueError("Out file should have .csv ending!")
 
     utterances = pd.read_csv(args.utterances_file, index_col=0)
     plot_error_type_stats(utterances)
@@ -179,7 +180,6 @@ if __name__ == "__main__":
     annotated_utts = annotate(utterances)
     plot_errors(annotated_utts)
 
-    annotated_utts.to_pickle(args.out_file)
-    annotated_utts.to_csv(args.out_file.replace(".p", ".csv"))
+    annotated_utts.to_csv(args.out)
 
     plt.show()

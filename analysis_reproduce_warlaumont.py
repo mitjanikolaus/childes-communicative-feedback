@@ -14,17 +14,13 @@ import seaborn as sns
 from scipy.stats import ttest_1samp
 from tqdm import tqdm
 
-from annotate import ANNOTATED_UTTERANCES_FILE
 from utils import (
     age_bin,
     str2bool,
     SPEECH_ACT_NO_FUNCTION,
     filter_transcripts_based_on_num_child_utts,
     SPEAKER_CODE_CHILD,
-    SPEAKER_CODES_CAREGIVER,
-)
-from preprocess import (
-    CANDIDATE_CORPORA,
+    SPEAKER_CODES_CAREGIVER, UTTERANCES_WITH_SPEECH_ACTS_FILE,
 )
 
 DEFAULT_RESPONSE_THRESHOLD = 1000
@@ -60,14 +56,12 @@ def parse_args():
         nargs="+",
         type=str,
         required=False,
-        choices=CANDIDATE_CORPORA,
         help="Corpora to analyze. If not given, corpora are selected based on a response time variance threshold.",
     )
     argparser.add_argument(
         "--excluded-corpora",
         nargs="+",
         type=str,
-        choices=CANDIDATE_CORPORA,
         default=DEFAULT_EXCLUDED_CORPORA,
         help="Corpora to exclude from analysis",
     )
@@ -483,7 +477,7 @@ if __name__ == "__main__":
     args = parse_args()
     print(args)
 
-    utterances = pd.read_csv(ANNOTATED_UTTERANCES_FILE, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval})
+    utterances = pd.read_csv(UTTERANCES_WITH_SPEECH_ACTS_FILE, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval})
 
     print("Excluding corpora: ", args.excluded_corpora)
     utterances = utterances[~utterances.corpus.isin(args.excluded_corpora)]

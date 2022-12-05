@@ -1,8 +1,6 @@
 import argparse
 import os
-import re
 
-import numpy as np
 import pandas as pd
 
 from annotate import is_intelligible, is_speech_related, \

@@ -46,15 +46,15 @@ python preprocess.py --require-timing-information --corpora Edinburgh VanHouten 
 This preprocessed all corpora that are conversational (have child AND caregiver transcripts), are English, and
 have timing information.
 
-Afterwards the utterances need to be annotated with speech acts. Use the method `crf_annotate` from the following
-branch: [automatic speech act annotation](https://github.com/mitjanikolaus/childes-speech-acts/tree/new-data-loading).
-```
-python crf_annotate --model checkpoints/crf_full_train --data ~/data/communicative_feedback/utterances.p --out ~/data/communicative_feedback/utterances_with_speech_acts.p --use-pos --use-bi-grams --use-repetitions
-```
-
-Finally, annotate speech-relatedness and intelligibility:
+Afterwards, annotate speech-relatedness and intelligibility:
 ```
 python annotate.py
+```
+
+Finally, the utterances need to be annotated with speech acts. Use the method `crf_annotate` from the following
+repo: [childes-speech-acts](https://github.com/mitjanikolaus/childes-speech-acts).
+```
+python crf_annotate.py --model checkpoint_full_train --data ~/data/communicative_feedback/utterances_annotated.csv --out ~/data/communicative_feedback/utterances_with_speech_acts.csv --use-pos --use-bi-grams --use-repetitions
 ```
 
 ## Analyses

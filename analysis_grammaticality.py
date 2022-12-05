@@ -15,10 +15,7 @@ from annotate import ANNOTATED_UTTERANCES_FILE
 from utils import (
     age_bin,
     str2bool,
-    filter_transcripts_based_on_num_child_utts, SPEAKER_CODE_CHILD, get_num_words,
-)
-from preprocess import (
-    CANDIDATE_CORPORA,
+    filter_transcripts_based_on_num_child_utts, SPEAKER_CODE_CHILD, get_num_words, UTTERANCES_WITH_SPEECH_ACTS_FILE,
 )
 
 DEFAULT_RESPONSE_THRESHOLD = 1000
@@ -58,21 +55,19 @@ def parse_args():
     argparser.add_argument(
         "--utterances-file",
         type=str,
-        default=ANNOTATED_UTTERANCES_FILE,
+        default=UTTERANCES_WITH_SPEECH_ACTS_FILE,
     )
     argparser.add_argument(
         "--corpora",
         nargs="+",
         type=str,
         required=False,
-        choices=CANDIDATE_CORPORA,
         help="Corpora to analyze. If not given, corpora are selected based on a response time variance threshold.",
     )
     argparser.add_argument(
         "--excluded-corpora",
         nargs="+",
         type=str,
-        choices=CANDIDATE_CORPORA,
         default=DEFAULT_EXCLUDED_CORPORA,
         help="Corpora to exclude from analysis",
     )
@@ -493,10 +488,7 @@ if __name__ == "__main__":
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    if args.utterances_file.endswith(".p"):
-        utterances = pd.read_pickle(args.utterances_file)
-    else:
-        utterances = pd.read_csv(args.utterances_file, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval})
+    utterances = pd.read_csv(args.utterances_file, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval})
 
     utterances["is_grammatical"] = utterances[GRAMMATICALITY_COLUMN]
 

@@ -1,14 +1,18 @@
 import argparse
 import os
+from ast import literal_eval
+
 import pandas as pd
+
+from tqdm import tqdm
+tqdm.pandas()
 
 from utils import (
     remove_punctuation,
     str2bool,
     remove_babbling,
     ANNOTATED_UTTERANCES_FILE,
-    UTTERANCES_WITH_SPEECH_ACTS_FILE,
-    split_into_words,
+    split_into_words, PREPROCESSED_UTTERANCES_FILE,
 )
 from utils import (
     remove_nonspeech_events,
@@ -90,19 +94,19 @@ def is_intelligible(
     return True
 
 
-
 def annotate(args):
-    utterances = pd.read_pickle(UTTERANCES_WITH_SPEECH_ACTS_FILE)
+    utterances = pd.read_csv(args.utterances_file, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval})
+    utterances.dropna(subset=["transcript_raw"], inplace=True)
 
     print("Annotating speech-relatedness..")
-    utterances["is_speech_related"] = utterances.transcript_raw.apply(
+    utterances["is_speech_related"] = utterances.transcript_raw.progress_apply(
         is_speech_related,
         label_partially_speech_related=args.label_partially_speech_related,
     )
     utterances.is_speech_related = utterances.is_speech_related.astype("boolean")
 
     print("Annotating intelligibility..")
-    utterances["is_intelligible"] = utterances.transcript_raw.apply(
+    utterances["is_intelligible"] = utterances.transcript_raw.progress_apply(
         is_intelligible,
         label_partially_intelligible=args.label_partially_intelligible,
     )
@@ -112,6 +116,18 @@ def annotate(args):
 
 def parse_args():
     argparser = argparse.ArgumentParser()
+    argparser.add_argument(
+        "--utterances-file",
+        default=PREPROCESSED_UTTERANCES_FILE,
+        type=str,
+        help="Path to utterances annotated with speech acts",
+    )
+    argparser.add_argument(
+        "--out",
+        default=ANNOTATED_UTTERANCES_FILE,
+        type=str,
+        help="Path to store output file",
+    )
     argparser.add_argument(
         "--label-partially-speech-related",
         type=str2bool,
@@ -137,10 +153,10 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    if not args.out.endswith(".csv"):
+        raise ValueError("Out file should have .csv ending!")
 
     annotated_utts = annotate(args)
 
-    os.makedirs(os.path.dirname(ANNOTATED_UTTERANCES_FILE), exist_ok=True)
-
-    annotated_utts.to_pickle(ANNOTATED_UTTERANCES_FILE)
-    annotated_utts.to_csv(ANNOTATED_UTTERANCES_FILE.replace(".p", ".csv"))
+    os.makedirs(os.path.dirname(args.out), exist_ok=True)
+    annotated_utts.to_csv(args.out)

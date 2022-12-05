@@ -16,13 +16,9 @@ from analysis_reproduce_warlaumont import (
     get_micro_conversations,
     has_response,
 )
-from preprocess import (
-    CANDIDATE_CORPORA,
-)
 from utils import (
     age_bin,
-    ANNOTATED_UTTERANCES_FILE,
-    filter_transcripts_based_on_num_child_utts, split_into_words,
+    filter_transcripts_based_on_num_child_utts, split_into_words, UTTERANCES_WITH_SPEECH_ACTS_FILE,
 )
 
 DEFAULT_RESPONSE_THRESHOLD = 1000
@@ -66,14 +62,12 @@ def parse_args():
         nargs="+",
         type=str,
         required=False,
-        choices=CANDIDATE_CORPORA,
         help="Corpora to analyze. If not given, corpora are selected based on a response time variance threshold.",
     )
     argparser.add_argument(
         "--excluded-corpora",
         nargs="+",
         type=str,
-        choices=CANDIDATE_CORPORA,
         default=DEFAULT_EXCLUDED_CORPORA,
         help="Corpora to exclude from analysis",
     )
@@ -615,7 +609,7 @@ if __name__ == "__main__":
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    utterances = pd.read_csv(ANNOTATED_UTTERANCES_FILE, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval})
+    utterances = pd.read_csv(UTTERANCES_WITH_SPEECH_ACTS_FILE, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval})
 
     print("Excluding corpora: ", args.excluded_corpora)
     utterances = utterances[~utterances.corpus.isin(args.excluded_corpora)]

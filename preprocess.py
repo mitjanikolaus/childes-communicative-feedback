@@ -32,6 +32,12 @@ def parse_args():
         default=False,
         action="store_true",
     )
+    argparser.add_argument(
+        "--out",
+        default=PREPROCESSED_UTTERANCES_FILE,
+        type=str,
+        help="Path to store output file",
+    )
     args = argparser.parse_args()
 
     return args
@@ -204,8 +210,10 @@ def preprocess_transcripts(args):
 if __name__ == "__main__":
     args = parse_args()
     print(args)
+    if not args.out.endswith(".csv"):
+        raise ValueError("Out file should have .csv ending!")
 
     preprocessed_utterances = preprocess_transcripts(args)
 
-    os.makedirs(os.path.dirname(PREPROCESSED_UTTERANCES_FILE), exist_ok=True)
-    preprocessed_utterances.to_pickle(PREPROCESSED_UTTERANCES_FILE)
+    os.makedirs(os.path.dirname(args.out), exist_ok=True)
+    preprocessed_utterances.to_csv(args.out)
