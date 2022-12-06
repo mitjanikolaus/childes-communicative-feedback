@@ -72,8 +72,8 @@ def annotate_grammaticality(clean_utterances, model_name, label_empty_utterance=
 
 
 def plot_error_type_stats(utterances):
-    if "is_grammatical_m" in utterances.columns:
-        utts = utterances.dropna(subset=["is_grammatical_m", "categories"]).copy()
+    if "is_grammatical" in utterances.columns:
+        utts = utterances.dropna(subset=["is_grammatical", "categories"]).copy()
         utts["category"] = utts.categories.astype(str).apply(lambda x: x.replace("?", "").split(", "))
         utts.drop(columns="categories", inplace=True)
         utts = utts.explode("category")
@@ -82,9 +82,9 @@ def plot_error_type_stats(utterances):
 
 
 def plot_errors(utterances):
-    if "is_grammatical_m" in utterances.columns:
+    if "is_grammatical" in utterances.columns:
         plt.figure()
-        utts = utterances.dropna(subset=["is_grammatical_m", "categories"]).copy()
+        utts = utterances.dropna(subset=["is_grammatical", "categories"]).copy()
         utts["category"] = utts.categories.astype(str).apply(lambda x: x.replace("?", "").split(", "))
         utts.drop(columns="categories", inplace=True)
         keep_columns = [column for column in utts.columns if "_is_correct" in column or column == "category"]
@@ -115,10 +115,10 @@ def annotate(utterances):
         print(f"Annotating grammaticality with {model_name}..")
         utterances[column_name] = annotate_grammaticality(utterances.transcript_clean, model_name)
 
-    if "is_grammatical_m" in utterances.columns:
-        utterances.dropna(subset=["is_grammatical_m"], inplace=True)
+    if "is_grammatical" in utterances.columns:
+        utterances.dropna(subset=["is_grammatical"], inplace=True)
         print(f"Accuracy scores for {len(utterances)} samples:")
-        utterances["is_grammatical_m"] = utterances.is_grammatical_m.astype(bool)
+        utterances["is_grammatical"] = utterances.is_grammatical.astype(bool)
 
         results = []
         for model_name in args.grammaticality_annotation_models:
@@ -126,11 +126,11 @@ def annotate(utterances):
             column_name_correct = column_name_model_correct(model_name)
 
             utterances[column_name] = utterances[column_name].astype(bool)
-            utterances[column_name_correct] = utterances[column_name] == utterances.is_grammatical_m
+            utterances[column_name_correct] = utterances[column_name] == utterances.is_grammatical
             acc = utterances[column_name_correct].mean()
-            utt_pos = utterances[utterances.is_grammatical_m]
+            utt_pos = utterances[utterances.is_grammatical]
             acc_pos = utt_pos[column_name_correct].mean()
-            utt_neg = utterances[~utterances.is_grammatical_m]
+            utt_neg = utterances[~utterances.is_grammatical]
             acc_neg = utt_neg[column_name_correct].mean()
 
             results.append({"model": model_name, "accuracy": acc, "accuracy (pos)": acc_pos, "accuracy (neg)": acc_neg})
