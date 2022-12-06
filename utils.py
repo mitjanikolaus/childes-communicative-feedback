@@ -134,6 +134,7 @@ def word_is_laughter(word):
 
 
 def word_is_parseable_speech(word, vocab_check):
+    word = word.replace(",", "")
     if (
             is_simple_event(word)
             or word_is_laughter(word)
@@ -572,6 +573,7 @@ def is_word(word):
 
 
 def is_babbling(word, vocab_check=True):
+    word = word.replace(",", "")
     # Catching simple events (&=) first, because otherwise they could be interpreted as phonological fragment (&)
     if is_simple_event(word):
         return not paralinguistic_event_is_intelligible(word)
@@ -613,7 +615,7 @@ def remove_events_and_non_parseable_words(utterance):
     if utterance_is_laughter(utterance):
         return ""
 
-    words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=False)
+    words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=False, remove_trailing_punctuation=False)
     cleaned_utterance = [
         word
         for word in words
@@ -643,9 +645,9 @@ SLANG_WORDS = {
 
 
 def replace_slang_forms(utterance):
-    words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=False)
+    words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=False, remove_trailing_punctuation=False)
     cleaned_utterance = [
-        word if word not in SLANG_WORDS.keys() else SLANG_WORDS[word]
+        word if word.replace(",", "") not in SLANG_WORDS.keys() else SLANG_WORDS[word.replace(",", "")]
         for word in words
     ]
     cleaned_utterance = " ".join(cleaned_utterance)
@@ -658,8 +660,10 @@ def find_repeated_sequence(utterance):
     for rep_len in range(len(words)//2, 0, -1):
         candidates = ["__".join(words[i:i+rep_len]) for i in range(len(words)) if len(words[i:i+rep_len]) == rep_len]
         repetitions = [candidates[i] for i in range(len(candidates) - rep_len) if candidates[i+rep_len] == candidates[i]]
+        repetitions = [rep.replace("__", " ") for rep in repetitions]
+        repetitions = [rep for rep in repetitions if rep in utterance]
         if len(repetitions) > 0:
-            return repetitions[0].replace("__", " ")
+            return repetitions[0]
 
     return None
 
@@ -702,11 +706,11 @@ def remove_babbling(utterance):
                 return ""
 
     utterance = utterance.strip()
-    words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=False)
+    words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=False, remove_trailing_punctuation=False)
     filtered_utterance = [
         word
         for word in words
-        if not (word == "" or is_babbling(word) or is_excluded_code(word))
+        if not (is_babbling(word) or is_excluded_code(word))
     ]
 
     if keep_event:

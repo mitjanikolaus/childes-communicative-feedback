@@ -12,7 +12,7 @@ from utils import (
     str2bool,
     remove_babbling,
     ANNOTATED_UTTERANCES_FILE,
-    split_into_words, PREPROCESSED_UTTERANCES_FILE,
+    split_into_words, PREPROCESSED_UTTERANCES_FILE, clean_utterance,
 )
 from utils import (
     remove_nonspeech_events,
