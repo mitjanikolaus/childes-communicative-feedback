@@ -3,8 +3,7 @@ import os
 
 import pandas as pd
 
-from annotate import is_intelligible, is_speech_related, \
-    DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED, DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE
+from annotate import DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED, DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE
 from utils import (
     str2bool, SPEAKER_CODE_CHILD, get_num_unique_words,
 )
@@ -19,26 +18,30 @@ def prepare(args):
 
     utterances = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD]
 
-    print("Annotating speech-relatedness..")
-    utterances["is_speech_related"] = utterances.transcript_raw.apply(
-        is_speech_related,
-        label_partially_speech_related=args.label_partially_speech_related,
-    )
-    utterances.is_speech_related = utterances.is_speech_related.astype("boolean")
-
-    print("Annotating intelligibility..")
-    utterances["is_intelligible"] = utterances.transcript_raw.apply(
-        is_intelligible,
-        label_partially_intelligible=args.label_partially_intelligible,
-    )
-
     num_unique_words = get_num_unique_words(utterances.transcript_clean)
     utts_to_annotate = utterances[(num_unique_words > 1)]
     utts_to_annotate = utts_to_annotate[utts_to_annotate.is_speech_related & utts_to_annotate.is_intelligible]
 
+    utterances_annotated = pd.read_csv("/home/mitja/data/communicative_feedback/utterances_for_annotation_10000.csv", index_col=0)
+    utterances_annotated.dropna(subset=["is_grammatical_m"], inplace=True)
+    utts_to_annotate["is_grammatical"] = pd.NA
+    utts_to_annotate["categories"] = ""
+    utts_to_annotate["note"] = ""
+    for i, row in utterances_annotated.iterrows():
+        indices = utts_to_annotate.index[utts_to_annotate.transcript_clean == row.transcript_clean]
+        if len(indices) == 0:
+            print(row.transcript_clean)
+            continue
+        idx = indices[0]
+        utts_to_annotate.at[idx, "is_grammatical"] = row["is_grammatical_m"]
+        utts_to_annotate.at[idx, "categories"] = row["categories"]
+        utts_to_annotate.at[idx, "note"] = row["note"]
+
+    utts_annotated = utts_to_annotate.dropna(subset=["is_grammatical"]).copy()
+
     # utts_to_annotate = utts_to_annotate.sample(1000, random_state=1)
 
-    return utts_to_annotate
+    return utts_annotated
 
 
 def parse_args():
@@ -73,6 +76,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    print(args)
 
     annotated_utts = prepare(args)
 
