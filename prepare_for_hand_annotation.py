@@ -22,26 +22,9 @@ def prepare(args):
     utts_to_annotate = utterances[(num_unique_words > 1)]
     utts_to_annotate = utts_to_annotate[utts_to_annotate.is_speech_related & utts_to_annotate.is_intelligible]
 
-    utterances_annotated = pd.read_csv("/home/mitja/data/communicative_feedback/utterances_for_annotation_10000.csv", index_col=0)
-    utterances_annotated.dropna(subset=["is_grammatical_m"], inplace=True)
-    utts_to_annotate["is_grammatical"] = pd.NA
-    utts_to_annotate["categories"] = ""
-    utts_to_annotate["note"] = ""
-    for i, row in utterances_annotated.iterrows():
-        indices = utts_to_annotate.index[utts_to_annotate.transcript_clean == row.transcript_clean]
-        if len(indices) == 0:
-            print(row.transcript_clean)
-            continue
-        idx = indices[0]
-        utts_to_annotate.at[idx, "is_grammatical"] = row["is_grammatical_m"]
-        utts_to_annotate.at[idx, "categories"] = row["categories"]
-        utts_to_annotate.at[idx, "note"] = row["note"]
+    utts_to_annotate = utts_to_annotate.sample(1000, random_state=1)
 
-    utts_annotated = utts_to_annotate.dropna(subset=["is_grammatical"]).copy()
-
-    # utts_to_annotate = utts_to_annotate.sample(1000, random_state=1)
-
-    return utts_annotated
+    return utts_to_annotate
 
 
 def parse_args():
