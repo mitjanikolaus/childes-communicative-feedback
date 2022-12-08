@@ -12,7 +12,8 @@ The main branch contains some addtional tweaks for the preprocessing of utteranc
 
 ## Python Environment
 
-You can create an environment using the `environment.yml` file:
+You can create an environment using the [environment.yml](environment.yml) file (if you're not on Ubuntu, you can also
+use the [environment_os_independent.yml](environment_os_independent.yml) file:
 ```
 conda env create --file environment.yml
 
@@ -21,7 +22,7 @@ Additionally, we need to install [my fork of the pylangacq repo](https://github.
 ```
 git clone git@github.com:mitjanikolaus/pylangacq.git
 cd pylangacq
-source activate cf_timing
+source activate cf
 pip install .
 ```
 
