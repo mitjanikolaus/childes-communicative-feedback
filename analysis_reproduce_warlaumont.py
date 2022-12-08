@@ -276,7 +276,7 @@ def get_micro_conversations(utterances, args, use_is_grammatical=False):
 def perform_analysis_speech_relatedness(utterances, args):
     conversations = get_micro_conversations(utterances, args)
 
-    conversations.to_csv("results/conversations_raw.csv", index=False)
+    conversations.to_csv("results/conversations_raw.csv")
 
     conversations.dropna(
         subset=(
@@ -336,7 +336,7 @@ def perform_analysis_speech_relatedness(utterances, args):
     results_dir = "results/reproduce_warlaumont/"
     os.makedirs(results_dir, exist_ok=True)
 
-    conversations.to_csv(results_dir + "conversations.csv", index=False)
+    conversations.to_csv(results_dir + "conversations.csv")
 
     ###
     # Analyses

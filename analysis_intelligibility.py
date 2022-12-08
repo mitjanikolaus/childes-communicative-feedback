@@ -264,13 +264,13 @@ def perform_analysis(utterances, args):
         num_months=AGE_BIN_NUM_MONTHS,
     )
 
-    conversations.to_csv(RESULTS_DIR + "conversations.csv", index=False)
-    conversations = pd.read_csv(RESULTS_DIR + "conversations.csv")
+    conversations.to_csv(RESULTS_DIR + "conversations.csv")
+    conversations = pd.read_csv(RESULTS_DIR + "conversations.csv", index_col=0)
 
     # Melt is_intellgible variable for CR analyses
     conversations_melted = melt_variable(conversations, variable_suffix="is_intelligible")
-    conversations_melted.to_csv(RESULTS_DIR + "conversations_melted.csv", index=False)
-    conversations_melted = pd.read_csv(RESULTS_DIR + "conversations_melted.csv")
+    conversations_melted.to_csv(RESULTS_DIR + "conversations_melted.csv")
+    conversations_melted = pd.read_csv(RESULTS_DIR + "conversations_melted.csv", index_col=0)
 
     ###
     # Analyses
