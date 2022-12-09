@@ -44,6 +44,10 @@ AGE_BIN_NUM_MONTHS = 6
 # information is of very poor quality
 DEFAULT_EXCLUDED_CORPORA = ["Providence", "Forrester"]
 
+# The caregivers of these children are using slang (e.g., "you was" or "she don't") and are therefore excluded
+# We are unfortunately only studying mainstream US English
+EXCLUDED_CHILDREN = ["Brent_Jaylen", "Brent_Tyrese", "Brent_Vas", "Brent_Vas_Coleman", "Brent_Xavier"]
+
 GRAMMATICALITY_COLUMN = "is_grammatical_cointegrated_roberta-large-cola-krishna2020"
 
 RESULTS_DIR = "results/grammaticality/"
@@ -487,7 +491,7 @@ if __name__ == "__main__":
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    utterances = pd.read_csv(args.utterances_file, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval})
+    utterances = pd.read_csv(args.utterances_file, index_col=0)
 
     utterances["is_grammatical"] = utterances[GRAMMATICALITY_COLUMN]
 
@@ -497,6 +501,9 @@ if __name__ == "__main__":
     if args.corpora:
         print("Including only corpora: ", args.corpora)
         utterances = utterances[utterances.corpus.isin(args.corpora)]
+
+    print("Excluding children: ", EXCLUDED_CHILDREN)
+    utterances = utterances[~utterances.child_name.isin(EXCLUDED_CHILDREN)]
 
     # Filter by age
     utterances = utterances[
