@@ -226,7 +226,8 @@ def perform_analysis(utterances, args):
     # Discard non-speech, but keep uncertain (xxx, labelled as NA)
     utterances = utterances[utterances.is_speech_related != False]
 
-    conversations = get_micro_conversations(utterances, args)
+    conversations = get_micro_conversations(utterances, args.response_latency, args.max_response_latency_follow_up,
+                            args.max_neg_response_latency)
 
     conversations.dropna(
         subset=("response_latency", "response_latency_follow_up"),

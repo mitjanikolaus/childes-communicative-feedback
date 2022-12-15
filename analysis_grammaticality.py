@@ -48,7 +48,8 @@ DEFAULT_EXCLUDED_CORPORA = ["Providence", "Forrester"]
 # We are unfortunately only studying mainstream US English
 EXCLUDED_CHILDREN = ["Brent_Jaylen", "Brent_Tyrese", "Brent_Vas", "Brent_Vas_Coleman", "Brent_Xavier"]
 
-GRAMMATICALITY_COLUMN = "is_grammatical_cointegrated_roberta-large-cola-krishna2020"
+# GRAMMATICALITY_COLUMN = "is_grammatical_cointegrated_roberta-large-cola-krishna2020"
+GRAMMATICALITY_COLUMN = "is_grammatical"
 
 RESULTS_DIR = "results/grammaticality/"
 
@@ -185,7 +186,6 @@ def plot_grammaticality_development(utterances):
     plt.legend(labels=["children", "adults"])
     plt.savefig(os.path.join(RESULTS_DIR, "proportion_grammatical_children_adults.png"), dpi=300)
     plt.show()
-
 
 
 def perform_analysis_grammaticality(utterances, args):

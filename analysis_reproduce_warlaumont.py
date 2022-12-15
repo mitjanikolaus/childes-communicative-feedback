@@ -164,7 +164,7 @@ def get_dict_with_prefix(series, prefix, keep_keys=KEEP_KEYS):
     return {prefix + key: series[key] for key in keep_keys}
 
 
-def get_micro_conversations_for_transcript(utterances_transcript, args):
+def get_micro_conversations_for_transcript(utterances_transcript, response_latency):
     conversations = []
     utterances_child = utterances_transcript[
         utterances_transcript.speaker_code == SPEAKER_CODE_CHILD
@@ -183,6 +183,7 @@ def get_micro_conversations_for_transcript(utterances_transcript, args):
         ]
         if len(following_utts_child) > 0:
             conversation = utterances_transcript.loc[candidate_id].to_dict()
+            conversation["index"] = candidate_id
             conversation = update_dict_with_prefix(conversation, "utt_")
 
             response = get_dict_with_prefix(
@@ -198,7 +199,7 @@ def get_micro_conversations_for_transcript(utterances_transcript, args):
         (utterances_child.speaker_code_next == SPEAKER_CODE_CHILD)
         & (
             utterances_child.start_time_next - utterances_child.end_time
-            >= args.response_latency
+            >= response_latency
         )
     ]
     for candidate_id in utts_child_no_response.index.values:
@@ -217,6 +218,7 @@ def get_micro_conversations_for_transcript(utterances_transcript, args):
         ]
         if len(following_utts_child) > 0:
             conversation = utterances_transcript.loc[candidate_id].to_dict()
+            conversation["index"] = candidate_id
             conversation = update_dict_with_prefix(conversation, "utt_")
 
             response = get_dict_with_prefix(DUMMY_RESPONSE, "response_")
@@ -230,25 +232,26 @@ def get_micro_conversations_for_transcript(utterances_transcript, args):
     return conversations
 
 
-def get_micro_conversations(utterances, args, use_is_grammatical=False):
+def get_micro_conversations(utterances, response_latency, max_response_latency_follow_up, max_neg_response_latency,
+                            use_is_grammatical=False):
     if use_is_grammatical:
         KEEP_KEYS.append("is_grammatical")
         DUMMY_RESPONSE["is_grammatical"] = False
 
     print("Creating micro conversations from transcripts..")
     utterances_grouped = [group for _, group in utterances.groupby("transcript_file")]
-    process_args = [(utts_transcript, args) for utts_transcript in utterances_grouped]
+    process_args = [(utts_transcript, response_latency) for utts_transcript in utterances_grouped]
 
     # Single-process version for debugging:
-    # results = [get_micro_conversations_for_transcript(utts_transcript, args)
-    #     for utts_transcript in utterances_grouped]
+    # results = [get_micro_conversations_for_transcript(utts_transcript, response_latency)
+    #     for utts_transcript in tqdm(utterances_grouped)]
     with Pool(processes=8) as pool:
         results = pool.starmap(
             get_micro_conversations_for_transcript,
             tqdm(process_args, total=len(process_args)),
         )
 
-    conversations = pd.DataFrame(list(itertools.chain(*results)))
+    conversations = pd.DataFrame(list(itertools.chain(*results))).set_index("index")
 
     conversations["response_latency"] = (
         conversations["response_start_time"] - conversations["utt_end_time"]
@@ -261,20 +264,21 @@ def get_micro_conversations(utterances, args, use_is_grammatical=False):
     conversations = conversations[
         (
             conversations.response_latency_follow_up
-            <= args.max_response_latency_follow_up
+            <= max_response_latency_follow_up
         )
     ]
 
     # Disregard conversations with too long negative pauses
     conversations = conversations[
-        (conversations.response_latency > args.max_neg_response_latency)
+        (conversations.response_latency > max_neg_response_latency)
     ]
 
     return conversations
 
 
 def perform_analysis_speech_relatedness(utterances, args):
-    conversations = get_micro_conversations(utterances, args)
+    conversations = get_micro_conversations(utterances, args.response_latency, args.max_response_latency_follow_up,
+                                            args.max_neg_response_latency)
 
     conversations.to_csv("results/conversations_raw.csv")
 
