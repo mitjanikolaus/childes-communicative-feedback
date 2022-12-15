@@ -32,6 +32,14 @@ ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances_annotated.csv"
 )
 
+MICRO_CONVERSATIONS_FILE = os.path.expanduser(
+    "~/data/communicative_feedback/micro_conversations.csv"
+)
+
+MICRO_CONVERSATIONS_WITH_PREV_UTT_FILE = os.path.expanduser(
+    "~/data/communicative_feedback/micro_conversations_with_prev_utt.csv"
+)
+
 SPEECH_ACT_NO_FUNCTION = "YY"
 SPEECH_ACTS_NO_FUNCTION = ["YY", "OO"]
 
