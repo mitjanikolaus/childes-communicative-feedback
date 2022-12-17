@@ -1,6 +1,5 @@
 name: cf
 channels:
-  - anaconda
   - ejolly
   - conda-forge
   - defaults
@@ -18,8 +17,7 @@ dependencies:
   - backports=1.0
   - backports.zoneinfo=0.2.1
   - binutils_impl_linux-64=2.39
-  - blosc=1.21.2
-  - bottleneck=1.3.5
+  - blosc=1.21.3
   - brotli=1.0.9
   - brotli-bin=1.0.9
   - bwidget=1.9.14
@@ -27,8 +25,10 @@ dependencies:
   - c-ares=1.18.1
   - ca-certificates=2022.12.7
   - cairo=1.16.0
+  - certifi=2022.12.7
   - cffi=1.15.1
   - colorama=0.4.6
+  - contourpy=1.0.6
   - curl=7.86.0
   - cycler=0.11.0
   - dbus=1.13.6
@@ -43,7 +43,7 @@ dependencies:
   - fontconfig=2.14.1
   - fonts-conda-ecosystem=1
   - fonts-conda-forge=1
-  - fonttools=4.25.0
+  - fonttools=4.38.0
   - freetype=2.12.1
   - fribidi=1.0.10
   - gcc_impl_linux-64=12.2.0
@@ -130,8 +130,8 @@ dependencies:
   - lzo=2.10
   - make=4.3
   - markupsafe=2.1.1
-  - matplotlib=3.5.3
-  - matplotlib-base=3.5.3
+  - matplotlib=3.6.2
+  - matplotlib-base=3.6.2
   - mpg123=1.31.1
   - munkres=1.1.4
   - mysql-common=8.0.31
@@ -142,11 +142,11 @@ dependencies:
   - nspr=4.35
   - nss=3.82
   - numexpr=2.8.3
-  - numpy=1.21.6
+  - numpy=1.23.5
   - openjpeg=2.5.0
   - openssl=3.0.7
-  - packaging=21.3
-  - pandas=1.3.5
+  - packaging=22.0
+  - pandas=1.5.2
   - pango=1.50.12
   - patsy=0.5.3
   - pcre2=10.40
@@ -163,10 +163,10 @@ dependencies:
   - pyqt=5.15.7
   - pyqt5-sip=12.11.0
   - pytables=3.7.0
-  - python=3.7.12
+  - python=3.8.15
   - python-dateutil=2.8.2
   - python-tzdata=2022.7
-  - python_abi=3.7
+  - python_abi=3.8
   - pytz=2022.6
   - pytz-deprecation-shim=0.1.0.post0
   - qt-main=5.15.6
@@ -196,7 +196,7 @@ dependencies:
   - r-minqa=1.2.5
   - r-munsell=0.5.0
   - r-mvtnorm=1.1_3
-  - r-nlme=3.1_160
+  - r-nlme=3.1_161
   - r-nloptr=2.0.3
   - r-numderiv=2016.8_1.1
   - r-pillar=1.8.1
@@ -215,28 +215,27 @@ dependencies:
   - r-withr=2.5.0
   - r-xtable=1.8_4
   - readline=8.1.2
-  - rpy2=3.5.1
-  - scipy=1.7.3
+  - rpy2=3.5.6
+  - scipy=1.9.3
   - seaborn=0.12.1
   - seaborn-base=0.12.1
   - sed=4.8
   - setuptools=65.5.1
   - simplegeneric=0.8.1
-  - sip=6.6.2
+  - sip=6.7.5
   - six=1.16.0
   - snappy=1.1.9
-  - sqlite=3.40.0
-  - statsmodels=0.13.2
+  - statsmodels=0.13.5
   - sysroot_linux-64=2.12
   - tk=8.6.12
   - tktable=2.10
   - toml=0.10.2
   - tornado=6.2
   - tqdm=4.64.1
-  - typing-extensions=4.4.0
   - typing_extensions=4.4.0
   - tzdata=2022g
   - tzlocal=4.2
+  - unicodedata2=15.0.0
   - wheel=0.38.4
   - xcb-util=0.4.0
   - xcb-util-image=0.4.0
@@ -258,14 +257,3 @@ dependencies:
   - xz=5.2.6
   - zlib=1.2.13
   - zstd=1.5.2
-  - pip:
-    - certifi==2022.12.7
-    - charset-normalizer==2.1.1
-    - idna==3.4
-    - importlib-metadata==5.1.0
-    - pylangacq==0.16.0
-    - requests==2.28.1
-    - tabulate==0.9.0
-    - urllib3==1.26.13
-    - wcwidth==0.2.5
-    - zipp==3.11.0
