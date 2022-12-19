@@ -54,7 +54,7 @@ def get_dict_with_prefix(series, prefix, keep_keys=KEEP_KEYS):
     return {prefix + key: series[key] for key in keep_keys}
 
 
-def get_micro_conversations_for_transcript(utterances_transcript, response_latency, add_prev_utterance):
+def get_micro_conversations_for_transcript(utterances_transcript, response_latency):
     micro_convs = []
     utterances_child = utterances_transcript[
         utterances_transcript.speaker_code == SPEAKER_CODE_CHILD
@@ -65,8 +65,6 @@ def get_micro_conversations_for_transcript(utterances_transcript, response_laten
     ]
     for candidate_id in utts_child_before_caregiver_utt.index.values:
         if candidate_id + 1 not in utterances_transcript.index.values:
-            continue
-        if add_prev_utterance and candidate_id - 1 not in utterances_transcript.index.values:
             continue
 
         following_utts = utterances_transcript.loc[candidate_id + 1:]
@@ -86,12 +84,6 @@ def get_micro_conversations_for_transcript(utterances_transcript, response_laten
             follow_up = get_dict_with_prefix(following_utts_child.iloc[0], "follow_up_")
             conversation.update(follow_up)
 
-            if add_prev_utterance:
-                prev = get_dict_with_prefix(
-                    utterances_transcript.loc[candidate_id - 1], "prev_"
-                )
-                conversation.update(prev)
-
             micro_convs.append(conversation)
 
     utts_child_no_response = utterances_child[
@@ -102,9 +94,6 @@ def get_micro_conversations_for_transcript(utterances_transcript, response_laten
         )
     ]
     for candidate_id in utts_child_no_response.index.values:
-        if add_prev_utterance and candidate_id - 1 not in utterances_transcript.index.values:
-            continue
-
         following_utts = utterances_transcript.loc[candidate_id + 1:]
         following_utts_non_child = following_utts[
             following_utts.speaker_code != SPEAKER_CODE_CHILD
@@ -129,29 +118,23 @@ def get_micro_conversations_for_transcript(utterances_transcript, response_laten
             follow_up = get_dict_with_prefix(following_utts_child.iloc[0], "follow_up_")
             conversation.update(follow_up)
 
-            if add_prev_utterance:
-                prev = get_dict_with_prefix(
-                    utterances_transcript.loc[candidate_id - 1], "prev_"
-                )
-                conversation.update(prev)
-
             micro_convs.append(conversation)
 
     return micro_convs
 
 
 def get_micro_conversations(utterances, response_latency, max_response_latency_follow_up, max_neg_response_latency,
-                            use_is_grammatical=False, add_prev_utterance=False):
+                            use_is_grammatical=False):
     if use_is_grammatical:
         KEEP_KEYS.append("is_grammatical")
         DUMMY_RESPONSE["is_grammatical"] = False
 
     print("Creating micro conversations from transcripts..")
     utterances_grouped = [group for _, group in utterances.groupby("transcript_file")]
-    process_args = [(utts_transcript, response_latency, add_prev_utterance) for utts_transcript in utterances_grouped]
+    process_args = [(utts_transcript, response_latency) for utts_transcript in utterances_grouped]
 
     # Single-process version for debugging:
-    # results = [get_micro_conversations_for_transcript(utts_transcript, response_latency, add_prev_utterance)
+    # results = [get_micro_conversations_for_transcript(utts_transcript, response_latency)
     #     for utts_transcript in tqdm(utterances_grouped)]
     with Pool(processes=8) as pool:
         results = pool.starmap(
@@ -192,8 +175,7 @@ def extract(args):
     conversations = get_micro_conversations(utterances, DEFAULT_RESPONSE_THRESHOLD,
                                             DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP,
                                             DEFAULT_MAX_NEG_RESPONSE_LATENCY,
-                                            use_is_grammatical=False,
-                                            add_prev_utterance=True)
+                                            use_is_grammatical=False)
 
     return conversations
 
