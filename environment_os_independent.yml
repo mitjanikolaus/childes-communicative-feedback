@@ -2,7 +2,7 @@ name: cf
 channels:
   - conda-forge
   - defaults
-  - ejolly
+  - ejolly/label/pre-release
 dependencies:
   - python=3.8
   - pandas=1.5
@@ -11,6 +11,6 @@ dependencies:
   - hunspell-en
   - pyenchant
   - matplotlib
-  - pymer4
+  - pymer4=0.8.0
   - seaborn
   - statsmodels
