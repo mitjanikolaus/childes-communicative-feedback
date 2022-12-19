@@ -254,7 +254,7 @@ def make_plots(conversations, results_dir):
 
     conversations_duplicated = conversations.copy()
     conversations_duplicated["age"] = math.inf
-    conversations_with_avg_age = conversations.append(conversations_duplicated, ignore_index=True)
+    conversations_with_avg_age = pd.concat([conversations, conversations_duplicated], ignore_index=True)
 
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
