@@ -3,9 +3,8 @@ import os
 
 import pandas as pd
 
-from annotate import DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED, DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE
 from utils import (
-    str2bool, SPEAKER_CODE_CHILD, get_num_unique_words,
+    UTTERANCES_WITH_SPEECH_ACTS_FILE, SPEAKER_CODE_CHILD, get_num_unique_words,
 )
 
 TO_ANNOTATE_UTTERANCES_FILE = os.path.expanduser(
@@ -16,13 +15,23 @@ TO_ANNOTATE_UTTERANCES_FILE = os.path.expanduser(
 def prepare(args):
     utterances = pd.read_csv(args.utterances_file, index_col=0)
 
-    utterances = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD]
+    if args.annotated_utterances_file:
+        annotated_utts = pd.read_csv(args.annotated_utterances_file, index_col=0)
+        annotated_utts = annotated_utts[["is_grammatical", "categories", "note"]]
 
-    num_unique_words = get_num_unique_words(utterances.transcript_clean)
-    utts_to_annotate = utterances[(num_unique_words > 1)]
+        utterances = utterances.merge(annotated_utts, how="left", left_index=True, right_index=True)
+        utterances.dropna(subset=["is_grammatical"], inplace=True)
+
+    utterances.dropna(subset=["prev_transcript_clean"], inplace=True)
+
+    utts_to_annotate = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD]
+
+    num_unique_words = get_num_unique_words(utts_to_annotate.transcript_clean)
+    utts_to_annotate = utts_to_annotate[(num_unique_words > 1)]
     utts_to_annotate = utts_to_annotate[utts_to_annotate.is_speech_related & utts_to_annotate.is_intelligible]
 
-    utts_to_annotate = utts_to_annotate.sample(1000, random_state=1)
+    if args.max_utts:
+        utts_to_annotate = utts_to_annotate.sample(args.max_utts, random_state=1)
 
     return utts_to_annotate
 
@@ -32,24 +41,17 @@ def parse_args():
     argparser.add_argument(
         "--utterances-file",
         type=str,
-        required=True,
+        default=UTTERANCES_WITH_SPEECH_ACTS_FILE,
     )
     argparser.add_argument(
-        "--label-partially-speech-related",
-        type=str2bool,
-        const=True,
-        nargs="?",
-        default=DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED,
-        help="Label for partially speech-related utterances: Set to True to count as speech-related, False to count as "
-             "not speech-related or None to exclude these utterances from the analysis",
+        "--annotated-utterances-file",
+        type=str,
+        required=False,
     )
     argparser.add_argument(
-        "--label-partially-intelligible",
-        type=str2bool,
-        const=True,
-        nargs="?",
-        default=DEFAULT_LABEL_PARTIALLY_INTELLIGIBLE,
-        help="Label for partially intelligible utterances: Set to True to count as intelligible, False to count as unintelligible or None to exclude these utterances from the analysis",
+        "--max-utts",
+        type=int,
+        default=None,
     )
 
     args = argparser.parse_args()
@@ -61,7 +63,7 @@ if __name__ == "__main__":
     args = parse_args()
     print(args)
 
-    annotated_utts = prepare(args)
+    utterances = prepare(args)
 
     os.makedirs(os.path.dirname(TO_ANNOTATE_UTTERANCES_FILE), exist_ok=True)
-    annotated_utts.to_csv(TO_ANNOTATE_UTTERANCES_FILE)
+    utterances.to_csv(TO_ANNOTATE_UTTERANCES_FILE)
