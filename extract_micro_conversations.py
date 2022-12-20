@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from utils import (
     str2bool, SPEAKER_CODE_CHILD, UTTERANCES_WITH_SPEECH_ACTS_FILE, SPEECH_ACT_NO_FUNCTION,
-    SPEAKER_CODES_CAREGIVER, MICRO_CONVERSATIONS_FILE,
+    SPEAKER_CODES_CAREGIVER, MICRO_CONVERSATIONS_FILE, MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE,
 )
 
 DEFAULT_RESPONSE_THRESHOLD = 1000
@@ -172,6 +172,10 @@ def extract(args):
 
     utterances.drop(["tokens", "pos", "gra"], axis=1, inplace=True)
 
+    if args.discard_non_speech_related_utterances:
+        # Discard non-speech, but keep uncertain (xxx, labelled as NA)
+        utterances = utterances[utterances.is_speech_related != False]
+
     conversations = get_micro_conversations(utterances, DEFAULT_RESPONSE_THRESHOLD,
                                             DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP,
                                             DEFAULT_MAX_NEG_RESPONSE_LATENCY,
@@ -188,17 +192,16 @@ def parse_args():
         default=UTTERANCES_WITH_SPEECH_ACTS_FILE,
     )
     argparser.add_argument(
-        "--out",
-        default=MICRO_CONVERSATIONS_FILE,
-        type=str,
-        help="Path to store output file",
-    )
-    argparser.add_argument(
         "--add-prev-utterance",
         type=str2bool,
         const=True,
         nargs="?",
         default=False,
+    )
+    argparser.add_argument(
+        "--discard-non-speech-related-utterances",
+        default=False,
+        action="store_true",
     )
 
     args = argparser.parse_args()
@@ -212,5 +215,9 @@ if __name__ == "__main__":
 
     conversations = extract(args)
 
-    os.makedirs(os.path.dirname(args.out), exist_ok=True)
-    conversations.to_csv(args.out)
+    out_file = MICRO_CONVERSATIONS_FILE
+    if args.discard_non_speech_related_utterances:
+        out_file = MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE
+
+    os.makedirs(os.path.dirname(out_file), exist_ok=True)
+    conversations.to_csv(out_file)

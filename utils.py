@@ -36,8 +36,8 @@ MICRO_CONVERSATIONS_FILE = os.path.expanduser(
     "~/data/communicative_feedback/micro_conversations.csv"
 )
 
-MICRO_CONVERSATIONS_WITH_PREV_UTT_FILE = os.path.expanduser(
-    "~/data/communicative_feedback/micro_conversations_with_prev_utt.csv"
+MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE = os.path.expanduser(
+    "~/data/communicative_feedback/micro_conversations_without_non_speech.csv"
 )
 
 SPEECH_ACT_NO_FUNCTION = "YY"

@@ -60,6 +60,12 @@ python crf_annotate.py --model checkpoint_full_train --data ~/data/communicative
 
 ## Analyses
 
+First, extract the micro conversations for both analyses (speech-likeness and intelligibility):
+```
+python extract_micro_conversations.py
+python extract_micro_conversations.py --discard-non-speech-related-utterances
+```
+
 The scripts `analysis_reproduce_warlaumont.py` and `analysis_intelligibility` perform the respective analyses and
 produce the plots.
 

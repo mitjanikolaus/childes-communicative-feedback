@@ -1,8 +1,6 @@
 import argparse
 import math
 import os
-import re
-from ast import literal_eval
 from collections import Counter
 
 import matplotlib.pyplot as plt
@@ -13,15 +11,14 @@ from statsmodels.stats.weightstats import ztest
 
 from analysis_reproduce_warlaumont import (
     str2bool,
-    get_micro_conversations,
     has_response,
 )
+from extract_micro_conversations import DEFAULT_RESPONSE_THRESHOLD
 from utils import (
     age_bin,
-    filter_transcripts_based_on_num_child_utts, split_into_words, UTTERANCES_WITH_SPEECH_ACTS_FILE,
+    filter_transcripts_based_on_num_child_utts, split_into_words,
+    MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE,
 )
-
-DEFAULT_RESPONSE_THRESHOLD = 1000
 
 DEFAULT_MIN_AGE = 10  # age of first words
 DEFAULT_MAX_AGE = 48
@@ -31,12 +28,6 @@ AGE_BIN_NUM_MONTHS = 6
 DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES = True
 
 DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 1
-
-# 10 seconds
-DEFAULT_MAX_NEG_RESPONSE_LATENCY = -10 * 1000  # ms
-
-# 1 minute
-DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP = 1 * 60 * 1000
 
 # Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words and
 # should be excluded when annotating intelligibility based on rules.
@@ -91,20 +82,6 @@ def parse_args():
         "--min-child-utts-per-transcript",
         type=int,
         default=DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT,
-    )
-
-    argparser.add_argument(
-        "--max-neg-response-latency",
-        type=int,
-        default=DEFAULT_MAX_NEG_RESPONSE_LATENCY,
-        help="Maximum negative response latency in milliseconds",
-    )
-
-    argparser.add_argument(
-        "--max-response-latency-follow-up",
-        type=int,
-        default=DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP,
-        help="Maximum response latency for the child follow-up in milliseconds",
     )
 
     argparser.add_argument(
@@ -222,13 +199,7 @@ def melt_variable(conversations, variable_suffix):
     return conversations_melted
 
 
-def perform_analysis(utterances, args):
-    # Discard non-speech, but keep uncertain (xxx, labelled as NA)
-    utterances = utterances[utterances.is_speech_related != False]
-
-    conversations = get_micro_conversations(utterances, args.response_latency, args.max_response_latency_follow_up,
-                            args.max_neg_response_latency)
-
+def perform_analysis(conversations, args):
     conversations.dropna(
         subset=("response_latency", "response_latency_follow_up"),
         inplace=True,
@@ -238,7 +209,7 @@ def perform_analysis(utterances, args):
         has_response=conversations.apply(
             has_response,
             axis=1,
-            response_latency=args.response_latency,
+            response_latency=DEFAULT_RESPONSE_THRESHOLD,
             count_only_intelligible_responses=args.count_only_intelligible_responses,
         )
     )
@@ -246,6 +217,8 @@ def perform_analysis(utterances, args):
         subset=("has_response",),
         inplace=True,
     )
+
+    conversations.response_transcript_clean = conversations.response_transcript_clean.astype(str)
 
     repetition_ratios = conversations.apply(get_repetition_ratios, axis=1)
     conversations["utt_repetition_ratio"] = repetition_ratios.apply(lambda ratios: ratios[0])
@@ -419,7 +392,7 @@ def make_plots(conversations, conversations_melted):
     # Duplicate all entries and set age to infinity to get summary bars over all age groups
     conversations_duplicated = conversations.copy()
     conversations_duplicated["age"] = math.inf
-    conversations_with_avg_age = conversations.append(conversations_duplicated, ignore_index=True)
+    conversations_with_avg_age = pd.concat([conversations, conversations_duplicated], ignore_index=True)
 
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
@@ -551,7 +524,7 @@ def make_plots(conversations, conversations_melted):
     # Duplicate all entries and set age to infinity to get summary bars over all age groups
     conversations_melted_duplicated = conversations_melted.copy()
     conversations_melted_duplicated["age"] = math.inf
-    conversations_melted_with_avg_age = conversations_melted.append(conversations_melted_duplicated, ignore_index=True)
+    conversations_melted_with_avg_age = pd.concat([conversations_melted,conversations_melted_duplicated], ignore_index=True)
 
     conversations_melted_cr_with_avg_age = conversations_melted_with_avg_age[
         conversations_melted_with_avg_age.response_is_clarification_request
@@ -610,18 +583,18 @@ if __name__ == "__main__":
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    utterances = pd.read_csv(UTTERANCES_WITH_SPEECH_ACTS_FILE, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval})
+    conversations = pd.read_csv(MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE, index_col=0)
 
     print("Excluding corpora: ", args.excluded_corpora)
-    utterances = utterances[~utterances.corpus.isin(args.excluded_corpora)]
+    conversations = conversations[~conversations.corpus.isin(args.excluded_corpora)]
 
     if args.corpora:
         print("Including only corpora: ", args.corpora)
-        utterances = utterances[utterances.corpus.isin(args.corpora)]
+        conversations = conversations[conversations.corpus.isin(args.corpora)]
 
     # Filter by age
-    utterances = utterances[
-        (args.min_age <= utterances.age) & (utterances.age <= args.max_age)
+    conversations = conversations[
+        (args.min_age <= conversations.age) & (conversations.age <= args.max_age)
     ]
 
-    conversations = perform_analysis(utterances, args)
+    perform_analysis(conversations, args)
