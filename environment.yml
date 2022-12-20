@@ -116,7 +116,7 @@ dependencies:
   - libstdcxx-devel_linux-64=12.2.0
   - libstdcxx-ng=12.2.0
   - libsystemd0=252
-  - libtiff=4.4.0
+  - libtiff=4.5.0
   - libtool=2.4.6
   - libudev1=252
   - libuuid=2.32.1
@@ -142,7 +142,7 @@ dependencies:
   - nspr=4.35
   - nss=3.82
   - numexpr=2.8.3
-  - numpy=1.23.5
+  - numpy=1.24.0
   - openjpeg=2.5.0
   - openssl=3.0.7
   - packaging=22.0
