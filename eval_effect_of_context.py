@@ -2,10 +2,10 @@ import argparse
 import os
 
 import pandas as pd
+import seaborn as sns
 
-from utils import (
-    UTTERANCES_WITH_SPEECH_ACTS_FILE, SPEAKER_CODE_CHILD, get_num_unique_words,
-)
+import matplotlib.pyplot as plt
+
 
 ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
     "results/grammaticality/effect_of_context/utterances_for_annotation_compare.csv"
@@ -36,6 +36,29 @@ def compare(args):
     change_1_to_0 = utterances[(utterances.is_grammatical_no_prev == "1") & (utterances.is_grammatical == "0")]
     percentage_1_to_0 = 100 * len(change_1_to_0) / len(utterances)
     print(f"percentage_1_to_0: {percentage_1_to_0}%")
+
+    not_grammatical = utterances[utterances.is_grammatical == "0"]
+    percentage_not_grammatical = 100 * len(not_grammatical) / len(utterances)
+    print(f"percentage_not_grammatical: {percentage_not_grammatical}%")
+
+    counts_1 = pd.DataFrame(utterances["is_grammatical_no_prev"].value_counts())
+    counts_1.rename(columns={"is_grammatical_no_prev": "count"}, inplace=True)
+    counts_1["context"] = False
+
+    counts_2 = pd.DataFrame(utterances["is_grammatical"].value_counts())
+    counts_2["context"] = True
+    counts_2.rename(columns={"is_grammatical": "count"}, inplace=True)
+
+
+    counts = pd.concat([counts_1, counts_2], ignore_index=False)
+    counts.reset_index(names="is_grammatical", inplace=True)
+    counts.replace({"0": False, "1": True}, inplace=True)
+
+    sns.barplot(data=counts, x="is_grammatical", y="count", hue="context")
+
+    plt.tight_layout()
+    plt.savefig("results/grammaticality/effect_of_context/effect_of_context.png", dpi=300)
+    plt.show()
 
 
 def parse_args():
