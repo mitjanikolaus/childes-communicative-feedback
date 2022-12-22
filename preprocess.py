@@ -18,6 +18,9 @@ from utils import (
 )
 
 
+CHILDES_DATA_BASE_PATH = os.path.expanduser(f"~/data/CHILDES/")
+
+
 def parse_args():
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
@@ -107,6 +110,8 @@ def preprocess_utterances(corpus, transcripts, args):
             # Child is not present in transcript, ignore
             continue
 
+        file_path = file.replace(CHILDES_DATA_BASE_PATH, "")
+
         # Make a dataframe
         utts_transcript = pd.DataFrame(
             [
@@ -130,7 +135,7 @@ def preprocess_utterances(corpus, transcripts, args):
                     "end_time": utt.time_marks[1] if utt.time_marks else None,
                     "age": round(age),
                     "corpus": corpus,
-                    "transcript_file": file,
+                    "transcript_file": file_path,
                     "child_name": child_name,
                 }
                 for id, utt in enumerate(utts_transcript)
@@ -193,7 +198,7 @@ def preprocess_transcripts(args):
     for corpus in args.corpora:
         print(f"Reading transcripts of {corpus} corpus.. ", end="")
         transcripts = pylangacq.read_chat(
-            os.path.expanduser(f"~/data/CHILDES/{corpus}/"),
+            os.path.join(CHILDES_DATA_BASE_PATH, corpus),
         )
         print("done.")
 
