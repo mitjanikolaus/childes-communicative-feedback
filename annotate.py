@@ -5,6 +5,7 @@ from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 tqdm.pandas()
@@ -14,7 +15,7 @@ from utils import (
     str2bool,
     remove_babbling,
     ANNOTATED_UTTERANCES_FILE,
-    split_into_words, PREPROCESSED_UTTERANCES_FILE,
+    split_into_words, PREPROCESSED_UTTERANCES_FILE, SPEAKER_CODE_CHILD, SPEAKER_CODES_CAREGIVER,
 )
 from utils import (
     remove_nonspeech_events,
@@ -96,7 +97,6 @@ def is_intelligible(
     return True
 
 
-
 def add_prev_utts_for_transcript(utterances_transcript):
     utts_speech_related = utterances_transcript[utterances_transcript.is_speech_related.isin([pd.NA, True])]
 
@@ -109,9 +109,21 @@ def add_prev_utts_for_transcript(utterances_transcript):
 
         return pd.NA
 
+    def add_prev_utt_speaker_code(utterance):
+        if utterance.name in utts_speech_related.index:
+            row_number = np.where(utts_speech_related.index.values == utterance.name)[0][0]
+            if row_number > 0:
+                prev_utt = utts_speech_related.loc[utts_speech_related.index[:row_number][-1]]
+                return prev_utt.speaker_code
+
+        return pd.NA
 
     utterances_transcript["prev_transcript_clean"] = utterances_transcript.apply(
         add_prev_utt,
+        axis=1
+    )
+    utterances_transcript["prev_speaker_code"] = utterances_transcript.apply(
+        add_prev_utt_speaker_code,
         axis=1
     )
 
@@ -153,6 +165,9 @@ def annotate(args):
 
     print("Adding previous utterances..")
     utterances = add_prev_utts(utterances)
+
+    print(f"prev utt speaker code {SPEAKER_CODE_CHILD}: {len(utterances[utterances.prev_speaker_code == SPEAKER_CODE_CHILD])/len(utterances)}")
+    print(f"prev utt speaker code caregiver: {len(utterances[utterances.prev_speaker_code.isin(SPEAKER_CODES_CAREGIVER)])/len(utterances)}")
 
     return utterances
 
