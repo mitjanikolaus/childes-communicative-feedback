@@ -117,17 +117,20 @@ RESPONSES_ACKNOWLEDGEMENT_CERTAIN = {"uhhuh", "uhuh", "uhhum", "mhm", "mm", "huh
 
 
 def response_is_acknowledgement(micro_conv):
-    response = micro_conv["response_transcript_clean"].lower()
-    words = [word.lower() for word in split_into_words(response, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True)]
-    if len(set(words) & (RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_IF_ALONE)) == len(set(words)):
-        # Consider sentences ending with full stop, but not exclamation marks or question marks, as they are changing
-        # the function of the word (i.e. "okay?" or "huh?" are not acknowledgements)
-        if len(response) > 0 and response[-1] == ".":
-            return True
-        else:
-            return False
-    elif words[0] in RESPONSES_ACKNOWLEDGEMENT_CERTAIN:
-        return True
+    if micro_conv["has_response"]:
+        response = micro_conv["response_transcript_clean"].lower()
+        words = [word.lower() for word in split_into_words(response, split_on_apostrophe=True, remove_commas=True,
+                                                           remove_trailing_punctuation=True)]
+        if len(words) > 0:
+            if len(set(words) & (RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_IF_ALONE)) == len(set(words)):
+                # Consider sentences ending with full stop, but not exclamation marks or question marks, as they are changing
+                # the function of the word (i.e. "okay?" or "huh?" are not acknowledgements)
+                if len(response) > 0 and response[-1] == ".":
+                    return True
+                else:
+                    return False
+            elif words[0] in RESPONSES_ACKNOWLEDGEMENT_CERTAIN:
+                return True
 
     return False
 
