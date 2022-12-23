@@ -73,26 +73,26 @@ def annotate_grammaticality(clean_utterances, model_name, label_empty_utterance=
 
 def plot_error_type_stats(utterances):
     if "is_grammatical" in utterances.columns:
-        utts = utterances.dropna(subset=["is_grammatical", "categories"]).copy()
-        utts["category"] = utts.categories.astype(str).apply(lambda x: x.replace("?", "").split(", "))
-        utts.drop(columns="categories", inplace=True)
-        utts = utts.explode("category")
-        utts.category.value_counts().plot(kind="barh")
+        utts = utterances.dropna(subset=["is_grammatical", "labels"]).copy()
+        utts["label"] = utts.labels.astype(str).apply(lambda x: x.replace("?", "").split(", "))
+        utts.drop(columns="labels", inplace=True)
+        utts = utts.explode("label")
+        utts.label.value_counts().plot(kind="barh")
         plt.subplots_adjust(left=0.2, right=0.99)
 
 
 def plot_errors(utterances):
     if "is_grammatical" in utterances.columns:
         plt.figure()
-        utts = utterances.dropna(subset=["is_grammatical", "categories"]).copy()
-        utts["category"] = utts.categories.astype(str).apply(lambda x: x.replace("?", "").split(", "))
-        utts.drop(columns="categories", inplace=True)
-        keep_columns = [column for column in utts.columns if "_is_correct" in column or column == "category"]
+        utts = utterances.dropna(subset=["is_grammatical", "labels"]).copy()
+        utts["label"] = utts.labels.astype(str).apply(lambda x: x.replace("?", "").split(", "))
+        utts.drop(columns="labels", inplace=True)
+        keep_columns = [column for column in utts.columns if "_is_correct" in column or column == "label"]
         utts = utts[keep_columns]
-        utts = utts.explode("category")
-        utts_grouped = utts.groupby("category").mean()
-        utts_melted = utts_grouped.reset_index().melt("category", var_name='cols', value_name='vals')
-        sns.barplot(data=utts_melted, x="category", y="vals", hue="cols")
+        utts = utts.explode("label")
+        utts_grouped = utts.groupby("label").mean()
+        utts_melted = utts_grouped.reset_index().melt("label", var_name='cols', value_name='vals')
+        sns.barplot(data=utts_melted, x="label", y="vals", hue="cols")
         plt.xticks(rotation=90)
         plt.subplots_adjust(bottom=0.25, top=0.99)
         plt.legend(loc='lower left', fontsize='5')

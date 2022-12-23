@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 
 ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
-    "results/grammaticality/effect_of_context/utterances_for_annotation_compare.csv"
+    "data/manual_annotation/grammaticality_eval_effect_of_context.csv"
 )
 
 
