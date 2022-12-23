@@ -1,8 +1,9 @@
-from datetime import datetime
 from typing import Optional
 
-import datasets
+import evaluate
+import pandas as pd
 import torch
+from datasets import Dataset, DatasetDict
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer, seed_everything
 from torch.utils.data import DataLoader
 from transformers import (
@@ -13,16 +14,14 @@ from transformers import (
     get_linear_schedule_with_warmup,
 )
 
-class GLUEDataModule(LightningDataModule):
 
-    task_text_field_map = {
-        "cola": ["sentence"],
-    }
+FILE_GRAMMATICALITY_ANNOTATIONS = "data/manual_annotation/grammaticality_manually_annotated.csv"
 
-    glue_task_num_labels = {
-        "cola": 2,
-    }
+DATA_SPLIT_RANDOM_STATE = 7
+FINE_TUNE_RANDOM_STATE = 1
 
+
+class CHILDESGrammarDataModule(LightningDataModule):
     loader_columns = [
         "datasets_idx",
         "input_ids",
@@ -36,7 +35,6 @@ class GLUEDataModule(LightningDataModule):
     def __init__(
         self,
         model_name_or_path: str,
-        task_name: str = "cola",
         max_seq_length: int = 128,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
@@ -44,17 +42,37 @@ class GLUEDataModule(LightningDataModule):
     ):
         super().__init__()
         self.model_name_or_path = model_name_or_path
-        self.task_name = task_name
         self.max_seq_length = max_seq_length
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
 
-        self.text_fields = self.task_text_field_map[task_name]
-        self.num_labels = self.glue_task_num_labels[task_name]
+        self.text_fields = ["sentences"]
+        self.num_labels = 2
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path, use_fast=True)
 
     def setup(self, stage: str):
-        self.dataset = datasets.load_dataset("glue", self.task_name)
+        data = pd.read_csv(FILE_GRAMMATICALITY_ANNOTATIONS, index_col=0)
+        data.dropna(subset=["is_grammatical"], inplace=True)
+
+        data["transcript_clean"] = data.transcript_clean.astype("string")
+        data["prev_transcript_clean"] = data.prev_transcript_clean.astype("string")
+        data["is_grammatical"] = data.is_grammatical.astype(int)
+
+        data["sentences"] = data["prev_transcript_clean"] + " " + data["transcript_clean"]
+
+        data.rename(columns={"is_grammatical": "label"}, inplace=True)
+        data = data[self.text_fields + ["label"]]
+
+        data_train = data.sample(int(len(data)/2), random_state=DATA_SPLIT_RANDOM_STATE)
+        data_val = data[~data.index.isin(data_train.index)]
+
+        assert(len(set(data_train.index) & set(data_val.index)) == 0)
+        ds_train = Dataset.from_pandas(data_train)
+        ds_val = Dataset.from_pandas(data_val)
+
+        self.dataset = DatasetDict()
+        self.dataset['train'] = ds_train
+        self.dataset['validation'] = ds_val
 
         for split in self.dataset.keys():
             self.dataset[split] = self.dataset[split].map(
@@ -66,10 +84,6 @@ class GLUEDataModule(LightningDataModule):
             self.dataset[split].set_format(type="torch", columns=self.columns)
 
         self.eval_splits = [x for x in self.dataset.keys() if "validation" in x]
-
-    def prepare_data(self):
-        datasets.load_dataset("glue", self.task_name)
-        AutoTokenizer.from_pretrained(self.model_name_or_path, use_fast=True)
 
     def train_dataloader(self):
         return DataLoader(self.dataset["train"], batch_size=self.train_batch_size, shuffle=True)
@@ -87,30 +101,23 @@ class GLUEDataModule(LightningDataModule):
             return [DataLoader(self.dataset[x], batch_size=self.eval_batch_size) for x in self.eval_splits]
 
     def convert_to_features(self, example_batch, indices=None):
+        texts = example_batch[self.text_fields[0]]
 
-        # Either encode single sentence or sentence pairs
-        if len(self.text_fields) > 1:
-            texts_or_text_pairs = list(zip(example_batch[self.text_fields[0]], example_batch[self.text_fields[1]]))
-        else:
-            texts_or_text_pairs = example_batch[self.text_fields[0]]
-
-        # Tokenize the text/text pairs
         features = self.tokenizer.batch_encode_plus(
-            texts_or_text_pairs, max_length=self.max_seq_length, pad_to_max_length=True, truncation=True
+            texts, max_length=self.max_seq_length, pad_to_max_length=True, truncation=True
         )
 
-        # Rename label to labels to make it easier to pass to model forward
         features["labels"] = example_batch["label"]
 
         return features
 
-class GLUETransformer(LightningModule):
+
+class CHILDESGrammarTransformer(LightningModule):
     def __init__(
         self,
         model_name_or_path: str,
         num_labels: int,
-        task_name: str,
-        learning_rate: float = 2e-5,
+        learning_rate: float = 1e-5,
         adam_epsilon: float = 1e-8,
         warmup_steps: int = 0,
         weight_decay: float = 0.0,
@@ -125,51 +132,49 @@ class GLUETransformer(LightningModule):
 
         self.config = AutoConfig.from_pretrained(model_name_or_path, num_labels=num_labels)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path, config=self.config)
-        self.metric = datasets.load_metric(
-            "glue", self.hparams.task_name, experiment_id=datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-        )
+        self.metric_mcc = evaluate.load("matthews_correlation")
+        self.metric_acc = evaluate.load("accuracy")
+        self.metrics = [self.metric_mcc, self.metric_acc]
 
     def forward(self, **inputs):
         return self.model(**inputs)
 
     def training_step(self, batch, batch_idx):
         outputs = self(**batch)
-        loss = outputs[0]
-        return loss
+        loss, logits = outputs[:2]
+
+        preds = torch.argmax(logits, axis=1)
+
+        labels = batch["labels"]
+
+        return {"loss": loss, "preds": preds, "labels": labels}
+
+    def training_epoch_end(self, outputs):
+        preds = torch.cat([x["preds"] for x in outputs]).detach().cpu().numpy()
+        labels = torch.cat([x["labels"] for x in outputs]).detach().cpu().numpy()
+
+        acc = self.metric_acc.compute(predictions=preds, references=labels)
+        acc = {"train_"+key: value for key, value in acc.items()}
+        self.log_dict(acc, prog_bar=True)
 
     def validation_step(self, batch, batch_idx, dataloader_idx=0):
         outputs = self(**batch)
         val_loss, logits = outputs[:2]
 
-        if self.hparams.num_labels > 1:
-            preds = torch.argmax(logits, axis=1)
-        elif self.hparams.num_labels == 1:
-            preds = logits.squeeze()
+        preds = torch.argmax(logits, axis=1)
 
         labels = batch["labels"]
 
         return {"loss": val_loss, "preds": preds, "labels": labels}
 
     def validation_epoch_end(self, outputs):
-        if self.hparams.task_name == "mnli":
-            for i, output in enumerate(outputs):
-                # matched or mismatched
-                split = self.hparams.eval_splits[i].split("_")[-1]
-                preds = torch.cat([x["preds"] for x in output]).detach().cpu().numpy()
-                labels = torch.cat([x["labels"] for x in output]).detach().cpu().numpy()
-                loss = torch.stack([x["loss"] for x in output]).mean()
-                self.log(f"val_loss_{split}", loss, prog_bar=True)
-                split_metrics = {
-                    f"{k}_{split}": v for k, v in self.metric.compute(predictions=preds, references=labels).items()
-                }
-                self.log_dict(split_metrics, prog_bar=True)
-            return loss
-
         preds = torch.cat([x["preds"] for x in outputs]).detach().cpu().numpy()
         labels = torch.cat([x["labels"] for x in outputs]).detach().cpu().numpy()
         loss = torch.stack([x["loss"] for x in outputs]).mean()
         self.log("val_loss", loss, prog_bar=True)
-        self.log_dict(self.metric.compute(predictions=preds, references=labels), prog_bar=True)
+
+        for metric in self.metrics:
+            self.log_dict(metric.compute(predictions=preds, references=labels), prog_bar=True)
 
     def configure_optimizers(self):
         """Prepare optimizer and schedule (linear warmup and decay)"""
@@ -197,22 +202,26 @@ class GLUETransformer(LightningModule):
 
 
 def main():
-    seed_everything(42)
+    seed_everything(FINE_TUNE_RANDOM_STATE)
 
-    dm = GLUEDataModule(model_name_or_path="albert-base-v2", task_name="cola")
+    dm = CHILDESGrammarDataModule(model_name_or_path="albert-base-v2", task_name="cola")
     dm.setup("fit")
-    model = GLUETransformer(
+    model = CHILDESGrammarTransformer(
         model_name_or_path="albert-base-v2",
         num_labels=dm.num_labels,
         eval_splits=dm.eval_splits,
-        task_name=dm.task_name,
     )
 
     trainer = Trainer(
-        max_epochs=1,
+        max_epochs=15,
         accelerator="auto",
         devices=1 if torch.cuda.is_available() else None,  # limiting got iPython runs
     )
+
+    print("\n\n\nInitial validation:")
+    trainer.validate(model, dm)
+
+    print("\n\n\nTraining:")
     trainer.fit(model, datamodule=dm)
 
     print("\n\n\nFinal validation:")
@@ -220,9 +229,9 @@ def main():
 
 
 if __name__ == "__main__":
-    dm = GLUEDataModule("distilbert-base-uncased")
+    dm = CHILDESGrammarDataModule("distilbert-base-uncased")
+
     dm.prepare_data()
     dm.setup("fit")
-    next(iter(dm.train_dataloader()))
 
     main()
