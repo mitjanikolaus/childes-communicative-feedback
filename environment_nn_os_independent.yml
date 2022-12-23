@@ -1,0 +1,22 @@
+name: cf_nn
+channels:
+  - conda-forge
+  - defaults
+  - ejolly/label/pre-release
+  - huggingface
+dependencies:
+  - python=3.8
+  - pandas=1.5
+  - tqdm
+  - rpy2
+  - hunspell-en
+  - pyenchant
+  - matplotlib
+  - pymer4=0.8.0
+  - seaborn
+  - statsmodels
+  - transformers
+  - datasets
+  - pytorch-lightning
+  - pip:
+      - evaluate
