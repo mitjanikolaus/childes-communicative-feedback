@@ -232,6 +232,7 @@ dependencies:
   - scipy=1.9.3
   - seaborn=0.12.1
   - seaborn-base=0.12.1
+  - sentencepiece=0.1.96
   - setuptools=65.5.0
   - sip=6.6.2
   - six=1.16.0

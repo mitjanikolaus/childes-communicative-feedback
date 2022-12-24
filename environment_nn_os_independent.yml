@@ -19,6 +19,7 @@ dependencies:
   - hunspell-en
   - tqdm
   - seaborn
+  - sentencepiece
   - matplotlib
   - pyenchant
   - pip
