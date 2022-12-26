@@ -94,6 +94,8 @@ def preprocess_utterances(file_path):
     utts_transcript["transcript_clean"] = utts_transcript.transcript_raw.apply(clean_utterance)
     utts_transcript["response_transcript_clean"] = utts_transcript.response_transcript_raw.apply(clean_utterance)
 
+    utts_transcript["prev_transcript_clean"] = "."
+
     return utts_transcript
 
 
