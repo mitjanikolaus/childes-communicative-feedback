@@ -4,7 +4,7 @@ from typing import Optional
 import evaluate
 import pandas as pd
 import torch
-from datasets import Dataset, DatasetDict
+from datasets import Dataset, DatasetDict, load_dataset
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer, seed_everything
 from torch.utils.data import DataLoader
 from transformers import (
@@ -66,8 +66,6 @@ class CHILDESGrammarDataModule(LightningDataModule):
             data = pd.read_csv(file_path, index_col=0)
             data.dropna(subset=["is_grammatical"], inplace=True)
 
-            data["transcript_clean"] = data.transcript_clean.astype("string")
-            data["prev_transcript_clean"] = data.prev_transcript_clean.astype("string")
             data["is_grammatical"] = data.is_grammatical.astype(int)
 
             data.rename(columns={"is_grammatical": "label"}, inplace=True)
@@ -83,6 +81,14 @@ class CHILDESGrammarDataModule(LightningDataModule):
             if ds_name == "hiller_fernandez":
                 data_hiller_fernandez = prepare_csv(HILLER_FERNANDEZ_DATA_OUT_PATH)
                 data_train = pd.concat([data_train, data_hiller_fernandez], ignore_index=True)
+            if ds_name == "blimp":
+                mor = load_dataset("metaeval/blimp_classification", "morphology")["train"].to_pandas()
+                syntax = load_dataset("metaeval/blimp_classification", "syntax")["train"].to_pandas()
+                data_blimp = pd.concat([mor, syntax], ignore_index=True)
+                data_blimp.rename(columns={"text": "transcript_clean"}, inplace=True)
+                data_blimp["prev_transcript_clean"] = "."
+                data_blimp.set_index("idx", inplace=True)
+                data_train = pd.concat([data_train, data_blimp], ignore_index=True)
 
         ds_train = Dataset.from_pandas(data_train)
         ds_val = Dataset.from_pandas(data_val)
