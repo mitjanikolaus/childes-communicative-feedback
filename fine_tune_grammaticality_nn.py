@@ -25,7 +25,7 @@ DATA_PATH_ZORRO = "zorro/sentences/babyberta"
 DATA_SPLIT_RANDOM_STATE = 7
 FINE_TUNE_RANDOM_STATE = 1
 
-BATCH_SIZE = 4
+DEFAULT_BATCH_SIZE = 16
 
 MODELS = [
     "yevheniimaslov/deberta-v3-large-cola",
@@ -49,9 +49,9 @@ class CHILDESGrammarDataModule(LightningDataModule):
     def __init__(
         self,
         model_name_or_path: str,
+        train_batch_size: int,
+        eval_batch_size: int,
         max_seq_length: int = 128,
-        train_batch_size: int = BATCH_SIZE,
-        eval_batch_size: int = BATCH_SIZE,
         **kwargs,
     ):
         super().__init__()
@@ -162,12 +162,12 @@ class CHILDESGrammarTransformer(LightningModule):
         self,
         model_name_or_path: str,
         num_labels: int,
+        train_batch_size: int,
+        eval_batch_size: int,
         learning_rate: float = 1e-5,
         adam_epsilon: float = 1e-8,
         warmup_steps: int = 0,
         weight_decay: float = 0.0,
-        train_batch_size: int = BATCH_SIZE,
-        eval_batch_size: int = BATCH_SIZE,
         eval_splits: Optional[list] = None,
         **kwargs,
     ):
@@ -253,16 +253,20 @@ class CHILDESGrammarTransformer(LightningModule):
 def main(args):
     seed_everything(FINE_TUNE_RANDOM_STATE)
 
-    dm = CHILDESGrammarDataModule(model_name_or_path=args.model)
+    dm = CHILDESGrammarDataModule(model_name_or_path=args.model,
+                                  eval_batch_size=args.batch_size,
+                                  train_batch_size=args.batch_size)
     dm.setup("fit")
     model = CHILDESGrammarTransformer(
+        eval_batch_size=args.batch_size,
+        train_batch_size=args.batch_size,
         model_name_or_path=args.model,
         num_labels=dm.num_labels,
         eval_splits=dm.eval_splits,
     )
 
     trainer = Trainer(
-        max_epochs=15,
+        max_epochs=10,
         accelerator="auto",
         devices=1 if torch.cuda.is_available() else None,  # limiting got iPython runs
     )
@@ -289,6 +293,11 @@ def parse_args():
         type=str,
         nargs="+",
         default=[],
+    )
+    argparser.add_argument(
+        "--batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
     )
 
     args = argparser.parse_args()
