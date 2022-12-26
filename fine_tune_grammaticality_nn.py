@@ -1,4 +1,5 @@
 import argparse
+import os
 from typing import Optional
 
 import evaluate
@@ -18,6 +19,8 @@ from transformers import (
 from read_hiller_fernandez_data import HILLER_FERNANDEZ_DATA_OUT_PATH
 
 FILE_GRAMMATICALITY_ANNOTATIONS = "data/manual_annotation/grammaticality_manually_annotated.csv"
+
+DATA_PATH_ZORRO = "zorro/sentences/babyberta"
 
 DATA_SPLIT_RANDOM_STATE = 7
 FINE_TUNE_RANDOM_STATE = 1
@@ -81,7 +84,7 @@ class CHILDESGrammarDataModule(LightningDataModule):
             if ds_name == "hiller_fernandez":
                 data_hiller_fernandez = prepare_csv(HILLER_FERNANDEZ_DATA_OUT_PATH)
                 data_train = pd.concat([data_train, data_hiller_fernandez], ignore_index=True)
-            if ds_name == "blimp":
+            elif ds_name == "blimp":
                 mor = load_dataset("metaeval/blimp_classification", "morphology")["train"].to_pandas()
                 syntax = load_dataset("metaeval/blimp_classification", "syntax")["train"].to_pandas()
                 data_blimp = pd.concat([mor, syntax], ignore_index=True)
@@ -89,6 +92,22 @@ class CHILDESGrammarDataModule(LightningDataModule):
                 data_blimp["prev_transcript_clean"] = "."
                 data_blimp.set_index("idx", inplace=True)
                 data_train = pd.concat([data_train, data_blimp], ignore_index=True)
+            elif ds_name == "zorro":
+                path = DATA_PATH_ZORRO
+                data_zorro = []
+                for root, dirs, files in os.walk(path):
+                    for file in files:
+                        if file.endswith(".txt"):
+                            file_path = os.path.join(root, file)
+                            with open(file_path, "r") as f:
+                                for i, line in enumerate(f.readlines()):
+                                    data_zorro.append({
+                                        "transcript_clean": line.replace("\n", ""),
+                                        "prev_transcript_clean": ".",
+                                        "label": 0 if i % 2 == 0 else 1
+                                    })
+                data_zorro = pd.DataFrame(data_zorro)
+                data_train = pd.concat([data_train, data_zorro], ignore_index=True)
 
         ds_train = Dataset.from_pandas(data_train)
         ds_val = Dataset.from_pandas(data_val)
