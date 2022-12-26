@@ -1,3 +1,4 @@
+import argparse
 from typing import Optional
 
 import evaluate
@@ -14,11 +15,21 @@ from transformers import (
     get_linear_schedule_with_warmup,
 )
 
+from read_hiller_fernandez_data import HILLER_FERNANDEZ_DATA_OUT_PATH
 
 FILE_GRAMMATICALITY_ANNOTATIONS = "data/manual_annotation/grammaticality_manually_annotated.csv"
 
 DATA_SPLIT_RANDOM_STATE = 7
 FINE_TUNE_RANDOM_STATE = 1
+
+BATCH_SIZE = 4
+
+MODELS = [
+    "yevheniimaslov/deberta-v3-large-cola",
+    "phueb/BabyBERTa-3",
+    "cointegrated/roberta-large-cola-krishna2020", # Inverted labels!!
+    "textattack/bert-base-uncased",
+]
 
 
 class CHILDESGrammarDataModule(LightningDataModule):
@@ -36,8 +47,8 @@ class CHILDESGrammarDataModule(LightningDataModule):
         self,
         model_name_or_path: str,
         max_seq_length: int = 128,
-        train_batch_size: int = 32,
-        eval_batch_size: int = 32,
+        train_batch_size: int = BATCH_SIZE,
+        eval_batch_size: int = BATCH_SIZE,
         **kwargs,
     ):
         super().__init__()
@@ -46,27 +57,33 @@ class CHILDESGrammarDataModule(LightningDataModule):
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
 
-        self.text_fields = ["sentences"]
+        self.text_fields = ["transcript_clean", "prev_transcript_clean"]
         self.num_labels = 2
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path, use_fast=True)
 
     def setup(self, stage: str):
-        data = pd.read_csv(FILE_GRAMMATICALITY_ANNOTATIONS, index_col=0)
-        data.dropna(subset=["is_grammatical"], inplace=True)
+        def prepare_csv(file_path):
+            data = pd.read_csv(file_path, index_col=0)
+            data.dropna(subset=["is_grammatical"], inplace=True)
 
-        data["transcript_clean"] = data.transcript_clean.astype("string")
-        data["prev_transcript_clean"] = data.prev_transcript_clean.astype("string")
-        data["is_grammatical"] = data.is_grammatical.astype(int)
+            data["transcript_clean"] = data.transcript_clean.astype("string")
+            data["prev_transcript_clean"] = data.prev_transcript_clean.astype("string")
+            data["is_grammatical"] = data.is_grammatical.astype(int)
 
-        data["sentences"] = data["prev_transcript_clean"] + " " + data["transcript_clean"]
+            data.rename(columns={"is_grammatical": "label"}, inplace=True)
+            data = data[self.text_fields + ["label"]]
+            return data
 
-        data.rename(columns={"is_grammatical": "label"}, inplace=True)
-        data = data[self.text_fields + ["label"]]
-
-        data_train = data.sample(int(len(data)/2), random_state=DATA_SPLIT_RANDOM_STATE)
-        data_val = data[~data.index.isin(data_train.index)]
-
+        data_childes = prepare_csv(FILE_GRAMMATICALITY_ANNOTATIONS)
+        data_train = data_childes.sample(int(len(data_childes)/2), random_state=DATA_SPLIT_RANDOM_STATE)
+        data_val = data_childes[~data_childes.index.isin(data_train.index)]
         assert(len(set(data_train.index) & set(data_val.index)) == 0)
+
+        for ds_name in args.add_train_data:
+            if ds_name == "hiller_fernandez":
+                data_hiller_fernandez = prepare_csv(HILLER_FERNANDEZ_DATA_OUT_PATH)
+                data_train = pd.concat([data_train, data_hiller_fernandez], ignore_index=True)
+
         ds_train = Dataset.from_pandas(data_train)
         ds_val = Dataset.from_pandas(data_val)
 
@@ -100,14 +117,17 @@ class CHILDESGrammarDataModule(LightningDataModule):
         elif len(self.eval_splits) > 1:
             return [DataLoader(self.dataset[x], batch_size=self.eval_batch_size) for x in self.eval_splits]
 
-    def convert_to_features(self, example_batch, indices=None):
-        texts = example_batch[self.text_fields[0]]
+    def convert_to_features(self, batch):
+        if len(self.text_fields) > 1:
+            texts = list(zip(batch[self.text_fields[0]], batch[self.text_fields[1]]))
+        else:
+            texts = batch[self.text_fields[0]]
 
         features = self.tokenizer.batch_encode_plus(
-            texts, max_length=self.max_seq_length, pad_to_max_length=True, truncation=True
+            texts, max_length=self.max_seq_length, padding='max_length', truncation=True
         )
 
-        features["labels"] = example_batch["label"]
+        features["labels"] = batch["label"]
 
         return features
 
@@ -121,8 +141,8 @@ class CHILDESGrammarTransformer(LightningModule):
         adam_epsilon: float = 1e-8,
         warmup_steps: int = 0,
         weight_decay: float = 0.0,
-        train_batch_size: int = 32,
-        eval_batch_size: int = 32,
+        train_batch_size: int = BATCH_SIZE,
+        eval_batch_size: int = BATCH_SIZE,
         eval_splits: Optional[list] = None,
         **kwargs,
     ):
@@ -162,7 +182,6 @@ class CHILDESGrammarTransformer(LightningModule):
         val_loss, logits = outputs[:2]
 
         preds = torch.argmax(logits, axis=1)
-
         labels = batch["labels"]
 
         return {"loss": val_loss, "preds": preds, "labels": labels}
@@ -175,6 +194,11 @@ class CHILDESGrammarTransformer(LightningModule):
 
         for metric in self.metrics:
             self.log_dict(metric.compute(predictions=preds, references=labels), prog_bar=True)
+
+        acc_pos = self.metric_acc.compute(predictions=preds[labels == 1], references=labels[labels == 1])
+        acc_neg = self.metric_acc.compute(predictions=preds[labels == 0], references=labels[labels == 0])
+        self.log("accuracy_pos", acc_pos["accuracy"])
+        self.log("accuracy_neg", acc_neg["accuracy"])
 
     def configure_optimizers(self):
         """Prepare optimizer and schedule (linear warmup and decay)"""
@@ -201,13 +225,13 @@ class CHILDESGrammarTransformer(LightningModule):
         return [optimizer], [scheduler]
 
 
-def main():
+def main(args):
     seed_everything(FINE_TUNE_RANDOM_STATE)
 
-    dm = CHILDESGrammarDataModule(model_name_or_path="albert-base-v2", task_name="cola")
+    dm = CHILDESGrammarDataModule(model_name_or_path=args.model)
     dm.setup("fit")
     model = CHILDESGrammarTransformer(
-        model_name_or_path="albert-base-v2",
+        model_name_or_path=args.model,
         num_labels=dm.num_labels,
         eval_splits=dm.eval_splits,
     )
@@ -228,10 +252,26 @@ def main():
     trainer.validate(model, dm)
 
 
+def parse_args():
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument(
+        "--model",
+        type=str,
+        required=True,
+    )
+    argparser.add_argument(
+        "--add-train-data",
+        type=str,
+        nargs="+",
+        default=[],
+    )
+
+    args = argparser.parse_args()
+
+    return args
+
+
 if __name__ == "__main__":
-    dm = CHILDESGrammarDataModule("distilbert-base-uncased")
+    args = parse_args()
 
-    dm.prepare_data()
-    dm.setup("fit")
-
-    main()
+    main(args)
