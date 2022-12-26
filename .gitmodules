@@ -1,0 +1,3 @@
+[submodule "zorro"]
+	path = zorro
+	url = git@github.com:phueb/Zorro.git
