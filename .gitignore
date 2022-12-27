@@ -136,3 +136,6 @@ results/
 
 # Jupyter
 lightning_logs/
+
+# Data
+data/hiller_fernandez_2016/

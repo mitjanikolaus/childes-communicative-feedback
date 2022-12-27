@@ -9,7 +9,7 @@ from utils import (
 )
 
 DATA_PATH = "data/hiller_fernandez_2016/data/annotated_data"
-HILLER_FERNANDEZ_DATA_OUT_PATH = "data/hiller_fernandez_2016/hiller_fernandez_preprocessed.csv"
+HILLER_FERNANDEZ_DATA_OUT_PATH = "data/hiller_fernandez_preprocessed.csv"
 
 LABEL_TRANSFORMATION = {
     'other': "other",
