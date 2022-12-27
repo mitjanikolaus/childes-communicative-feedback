@@ -5,11 +5,7 @@ import pandas as pd
 
 from utils import (
     remove_superfluous_annotations,
-    is_empty,
-    get_all_paralinguistic_events,
-    remove_punctuation,
-    get_paralinguistic_event,
-    paralinguistic_event_is_external, clean_utterance,
+    clean_utterance,
 )
 
 DATA_PATH = "data/hiller_fernandez_2016/data/annotated_data"
@@ -97,20 +93,6 @@ def preprocess_utterances(file_path):
     utts_transcript["prev_transcript_clean"] = "."
 
     return utts_transcript
-
-
-def has_multiple_events(utterance):
-    return len(get_all_paralinguistic_events(utterance)) > 1
-
-
-def is_external_event(utterance):
-    utterance = remove_punctuation(utterance)
-
-    event = get_paralinguistic_event(utterance)
-    if event and paralinguistic_event_is_external(event) and utterance == event:
-        return True
-
-    return False
 
 
 def preprocess_transcripts():
