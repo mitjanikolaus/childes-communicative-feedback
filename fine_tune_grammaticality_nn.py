@@ -25,6 +25,8 @@ DATA_PATH_ZORRO = "zorro/sentences/babyberta"
 DATA_SPLIT_RANDOM_STATE = 7
 FINE_TUNE_RANDOM_STATE = 1
 
+MAX_EPOCHS = 15
+
 DEFAULT_BATCH_SIZE = 16
 
 MODELS = [
@@ -266,7 +268,7 @@ def main(args):
     )
 
     trainer = Trainer(
-        max_epochs=10,
+        max_epochs=MAX_EPOCHS,
         accelerator="auto",
         devices=1 if torch.cuda.is_available() else None,  # limiting got iPython runs
     )
