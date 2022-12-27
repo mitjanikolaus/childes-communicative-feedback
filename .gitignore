@@ -133,3 +133,6 @@ dmypy.json
 
 # Results
 results/
+
+# Jupyter
+lightning_logs/
