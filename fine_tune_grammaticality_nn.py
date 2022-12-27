@@ -34,6 +34,7 @@ MODELS = [
     "phueb/BabyBERTa-3",
     "cointegrated/roberta-large-cola-krishna2020", # Inverted labels!!
     "textattack/bert-base-uncased",
+    "textattack/bert-base-uncased-CoLA",
 ]
 
 
