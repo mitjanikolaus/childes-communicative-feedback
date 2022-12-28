@@ -71,7 +71,7 @@ class CHILDESGrammarDataModule(LightningDataModule):
     def setup(self, stage: str):
         def prepare_csv(file_path):
             data = pd.read_csv(file_path, index_col=0)
-            data.dropna(subset=["is_grammatical"], inplace=True)
+            data.dropna(subset=["is_grammatical", "transcript_clean", "prev_transcript_clean"], inplace=True)
 
             data["is_grammatical"] = data.is_grammatical.astype(int)
 
