@@ -23,7 +23,7 @@ def get_omission_type(row):
     for token, gra in zip(row["tokens"], row["gra"]):
         if token.startswith("0"):
             rel = gra["rel"]
-
+            word = token[1:]
             if rel in ['SUBJ']:
                 errors.append("subject")
             elif rel in ["OBJ", "OBJ2"]:
@@ -32,50 +32,30 @@ def get_omission_type(row):
                 errors.append("verb")
             elif rel in ["DET"]:
                 errors.append("determiner")
-            elif rel in ["JCT", "NJCT"]: # Adjunct
+            elif rel in ["JCT", "NJCT"]:
                 errors.append("preposition")
-            elif rel in ["INF"]: # "to" for infintive verbs
-                errors.append("infinitive")
+            elif rel in ["INF"]:    # "to" for infintive verbs
+                errors.append("verb")
             elif rel in ["AUX"]:
                 errors.append("auxiliary")
-            elif rel in ["LP", "PUNCT"]:
-                print(f"{rel}: {row['tokens']}")
-                errors.append("???")
-            elif rel in ["INCROOT", "OM", "NEG", "LINK", "CONJ", "QUANT", "PQ", "ENUM", "MOD", "COORD", "COM", "DATE", "NAME", "POSTMOD"]:
-                errors.append("other")
+            elif rel in ["LP", "PUNCT", "INCROOT", "OM", "NEG", "LINK", "CONJ", "QUANT", "PQ", "ENUM", "MOD", "COORD", "COM", "DATE", "NAME", "POSTMOD"]:
+                # Fallback: check whether we can guess the category by looking at the actual omitted word
+                if word in ["det", "a", "an", "the"]:
+                    errors.append("determiner")
+                elif word in ["is", "am", "are", "were", "was", "v", "be", "want", "like", "see", "know", "need", "think", "come", "put", "said", "says", "play", "look", "make"]:
+                    errors.append("verb")
+                elif word in ["will", "had", "do", "does", "did", "have", "has", "can", "may", "would", "could"]:
+                    errors.append("auxiliary")
+                elif word in ["to", "of", "at", "off", "up", "in", "on", "from", "as", "for", "about", "with"]:
+                    errors.append("preposition")
+                elif word in ["i", "pro", "you", "it", "they", "he", "we"]:
+                    errors.append("subject")
+                else:
+                    errors.append("other")
             else:
-                print(rel)
-
-                # if word in ["det", "a", "an", "the"]:
-                #     errors.append("determiner")
-                # elif word in ["is", "am", "are", "was", "v", "be", "looks", "said", "let", "wanna", "think", "come", "look", "brought", "take", "know", "go", "going", "put", "like", "say", "play", "got", "want", "been", "remember", "hear", "says", "make", "see", "need", "went", "goes", "give", "get"]:
-                #     errors.append("verb")
-                # elif word in ["will", "do", "does", "can", "has", "had", "did", "could", "may", "gonna", "should", "shall", "would"]:
-                #     errors.append("auxiliary")
-                # elif word in ["it", "where", "he", "they", "ya", "we", "pro", "you"]:
-                #     errors.append("subject")
-                # elif word in ["truck", "here"]:
-                #     errors.append("object")
-                # elif word in ["to", "of", "at", "off", "up", "in", "on", "from", "as", "for", "about", "with"]:
-                #     errors.append("preposition")
-                # elif word in ["isn't"]:
-                #     errors.append("verb")
-                #     errors.append("other")
-                # elif word in ["let's"]:
-                #     errors.append("verb")
-                #     errors.append("object")
-                # elif word in ["we'll", "what's", "that's", "it's", "there's"]:
-                #     errors.append("subject")
-                #     errors.append("verb")
-                # elif word in ["not", "their", "well", "out", "if", "his", "ones", "how", "oh", "lot", "all", "us", "house", "there", "more", "ton", "class", "brush", "enough", "and", "alright", "which", "little", "her", "chair", "shirt", "apron", "zero", "x"]:
-                #     errors.append("other")
-                # elif word in {'donald', 'someone', 'she', 'any', 'just', 'who', 'then', 'one', 'what', 'many', 'went', 'birthday', 'have', 'baby', 'were', 'down', 'or', 'you', 'your', 'n', 'day', 'thing', 'when', 'i', 'me', 'as', 'this', 'for', 'room', 'babies', 'him', 'okay', 'with', 'about', 'wrist', 'give', 'pies', 'so', 'bear', 'time', 'why', 'e', 'good', 'no', 'my', 'right', 'some', 'get', 'pro', 'that', 'them'}:
-                #     errors.append("other")
-                # else:
-                #     print(f"Warning: Word not covered: {word}")
+                print(f"Warning: Rel not covered: {rel}")
 
     if len(errors) > 1:
-        print(errors)
         return str(", ".join(errors))[1:-1]
     else:
         return errors[0]
@@ -86,7 +66,6 @@ def prepare(args):
     utterances["is_grammatical"] = ~utterances.tokens.apply(has_omission)
     utterances = utterances[~utterances.is_grammatical]
     utterances["labels"] = utterances.apply(get_omission_type, axis=1)
-
     return utterances
 
 
