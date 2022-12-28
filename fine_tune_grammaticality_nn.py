@@ -7,6 +7,7 @@ import pandas as pd
 import torch
 from datasets import Dataset, DatasetDict, load_dataset
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer, seed_everything
+from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 from transformers import (
     AdamW,
@@ -33,7 +34,7 @@ DEFAULT_BATCH_SIZE = 16
 MODELS = [
     "yevheniimaslov/deberta-v3-large-cola",
     "phueb/BabyBERTa-3",
-    "cointegrated/roberta-large-cola-krishna2020", # Inverted labels!!
+    "cointegrated/roberta-large-cola-krishna2020",  # Inverted labels!!
     "textattack/bert-base-uncased",
     "textattack/bert-base-uncased-CoLA",
 ]
@@ -51,12 +52,12 @@ class CHILDESGrammarDataModule(LightningDataModule):
     ]
 
     def __init__(
-        self,
-        model_name_or_path: str,
-        train_batch_size: int,
-        eval_batch_size: int,
-        max_seq_length: int = 128,
-        **kwargs,
+            self,
+            model_name_or_path: str,
+            train_batch_size: int,
+            eval_batch_size: int,
+            max_seq_length: int = 128,
+            **kwargs,
     ):
         super().__init__()
         self.model_name_or_path = model_name_or_path
@@ -80,9 +81,9 @@ class CHILDESGrammarDataModule(LightningDataModule):
             return data
 
         data_childes = prepare_csv(FILE_GRAMMATICALITY_ANNOTATIONS)
-        data_train = data_childes.sample(int(len(data_childes)/2), random_state=DATA_SPLIT_RANDOM_STATE)
+        data_train = data_childes.sample(int(len(data_childes) / 2), random_state=DATA_SPLIT_RANDOM_STATE)
         data_val = data_childes[~data_childes.index.isin(data_train.index)]
-        assert(len(set(data_train.index) & set(data_val.index)) == 0)
+        assert (len(set(data_train.index) & set(data_val.index)) == 0)
 
         for ds_name in args.add_train_data:
             if ds_name == "hiller_fernandez":
@@ -166,17 +167,18 @@ class CHILDESGrammarDataModule(LightningDataModule):
 
 class CHILDESGrammarTransformer(LightningModule):
     def __init__(
-        self,
-        model_name_or_path: str,
-        num_labels: int,
-        train_batch_size: int,
-        eval_batch_size: int,
-        learning_rate: float = 1e-5,
-        adam_epsilon: float = 1e-8,
-        warmup_steps: int = 0,
-        weight_decay: float = 0.0,
-        eval_splits: Optional[list] = None,
-        **kwargs,
+            self,
+            class_weights,
+            model_name_or_path: str,
+            num_labels: int,
+            train_batch_size: int,
+            eval_batch_size: int,
+            learning_rate: float = 1e-5,
+            adam_epsilon: float = 1e-8,
+            warmup_steps: int = 0,
+            weight_decay: float = 0.0,
+            eval_splits: Optional[list] = None,
+            **kwargs,
     ):
         super().__init__()
 
@@ -188,16 +190,22 @@ class CHILDESGrammarTransformer(LightningModule):
         self.metric_acc = evaluate.load("accuracy")
         self.metrics = [self.metric_mcc, self.metric_acc]
 
+        self.loss_fct = CrossEntropyLoss(weight=class_weights)
+
     def forward(self, **inputs):
         return self.model(**inputs)
 
     def training_step(self, batch, batch_idx):
-        outputs = self(**batch)
-        loss, logits = outputs[:2]
+        output = self(
+            input_ids=batch["input_ids"],
+            token_type_ids=batch["token_type_ids"],
+            attention_mask=batch["attention_mask"]
+        )
+        logits = output["logits"]
+        labels = batch["labels"]
+        loss = self.loss_fct(logits.view(-1, self.model.num_labels), labels.view(-1))
 
         preds = torch.argmax(logits, axis=1)
-
-        labels = batch["labels"]
 
         return {"loss": loss, "preds": preds, "labels": labels}
 
@@ -206,15 +214,20 @@ class CHILDESGrammarTransformer(LightningModule):
         labels = torch.cat([x["labels"] for x in outputs]).detach().cpu().numpy()
 
         acc = self.metric_acc.compute(predictions=preds, references=labels)
-        acc = {"train_"+key: value for key, value in acc.items()}
+        acc = {"train_" + key: value for key, value in acc.items()}
         self.log_dict(acc, prog_bar=True)
 
     def validation_step(self, batch, batch_idx, dataloader_idx=0):
-        outputs = self(**batch)
-        val_loss, logits = outputs[:2]
+        output = self(
+            input_ids=batch["input_ids"],
+            token_type_ids=batch["token_type_ids"],
+            attention_mask=batch["attention_mask"]
+        )
+        logits = output["logits"]
+        labels = batch["labels"]
+        val_loss = self.loss_fct(logits.view(-1, self.model.num_labels), labels.view(-1))
 
         preds = torch.argmax(logits, axis=1)
-        labels = batch["labels"]
 
         return {"loss": val_loss, "preds": preds, "labels": labels}
 
@@ -257,6 +270,12 @@ class CHILDESGrammarTransformer(LightningModule):
         return [optimizer], [scheduler]
 
 
+def calc_class_weights(dm):
+    class_weight_pos = dm.dataset["train"]["labels"].sum() / dm.dataset["train"]["labels"].shape[0]
+    class_weights = torch.stack([class_weight_pos, 1 - class_weight_pos])
+    return class_weights
+
+
 def main(args):
     seed_everything(FINE_TUNE_RANDOM_STATE)
 
@@ -265,6 +284,7 @@ def main(args):
                                   train_batch_size=args.batch_size)
     dm.setup("fit")
     model = CHILDESGrammarTransformer(
+        class_weights=calc_class_weights(dm),
         eval_batch_size=args.batch_size,
         train_batch_size=args.batch_size,
         model_name_or_path=args.model,
