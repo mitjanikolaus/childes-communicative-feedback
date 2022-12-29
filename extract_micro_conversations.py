@@ -55,6 +55,9 @@ def get_dict_with_prefix(series, prefix, keep_keys=KEEP_KEYS):
 
 
 def get_micro_conversations_for_transcript(utterances_transcript, response_latency):
+    utterances_transcript["speaker_code_next"] = utterances_transcript["speaker_code"].shift(-1)
+    utterances_transcript["start_time_next"] = utterances_transcript.start_time.shift(-1, fill_value=pd.NA)
+
     micro_convs = []
     utterances_child = utterances_transcript[
         utterances_transcript.speaker_code == SPEAKER_CODE_CHILD
@@ -120,6 +123,7 @@ def get_micro_conversations_for_transcript(utterances_transcript, response_laten
 
             micro_convs.append(conversation)
 
+    utterances_transcript.drop(subset=["speaker_code_next", "start_time_next"], axis=1, inplace=True)
     return micro_convs
 
 
@@ -190,13 +194,6 @@ def parse_args():
         "--utterances-file",
         type=str,
         default=UTTERANCES_WITH_SPEECH_ACTS_FILE,
-    )
-    argparser.add_argument(
-        "--add-prev-utterance",
-        type=str2bool,
-        const=True,
-        nargs="?",
-        default=False,
     )
     argparser.add_argument(
         "--discard-non-speech-related-utterances",
