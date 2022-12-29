@@ -4,7 +4,7 @@ import os
 import pandas as pd
 
 from utils import (
-    UTTERANCES_WITH_SPEECH_ACTS_FILE, SPEAKER_CODE_CHILD, get_num_unique_words,
+    UTTERANCES_WITH_SPEECH_ACTS_FILE, SPEAKER_CODE_CHILD, get_num_unique_words, add_prev_utts,
 )
 
 TO_ANNOTATE_UTTERANCES_FILE = os.path.expanduser(
@@ -14,6 +14,9 @@ TO_ANNOTATE_UTTERANCES_FILE = os.path.expanduser(
 
 def prepare(args):
     utterances = pd.read_csv(args.utterances_file, index_col=0)
+
+    print("Adding previous utterances..")
+    utterances = add_prev_utts(utterances)
 
     if args.annotated_utterances_file:
         annotated_utts = pd.read_csv(args.annotated_utterances_file, index_col=0)

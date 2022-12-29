@@ -1,9 +1,12 @@
 import argparse
 import os
 import re
+from multiprocessing import Pool
 
 import enchant
+import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 SPEAKER_CODE_CHILD = "CHI"
 
@@ -312,6 +315,8 @@ def remove_nonspeech_events(utterance):
 
 
 def clean_utterance(utterance):
+    utterance = remove_superfluous_annotations(utterance)
+
     final_punctuation = None
     while len(utterance) > 0 and utterance[-1] in [".", "!", "?"]:
         final_punctuation = utterance[-1]
@@ -349,10 +354,14 @@ def clean_utterance(utterance):
     return utt_clean
 
 
-def remove_superfluous_annotations(utterance):
-    """Remove all superfluous annotation information."""
+def remove_timing_information(utterance):
     # Remove timing information:
     utterance = re.sub(r"[^]+?", "", utterance)
+    return utterance
+
+
+def remove_superfluous_annotations(utterance):
+    """Remove all superfluous annotation information."""
     # remove postcodes
     utterance = re.sub(r"\[\+[^]]*]", "", utterance)
     # remove precodes
@@ -739,3 +748,52 @@ def filter_transcripts_based_on_num_child_utts(
     return conversations[
         conversations.transcript_file.isin(transcripts_enough_utts.index)
     ]
+
+
+def add_prev_utts_for_transcript(utterances_transcript):
+    utts_speech_related = utterances_transcript[utterances_transcript.is_speech_related.isin([pd.NA, True])]
+
+    def add_prev_utt(utterance):
+        if utterance.name in utts_speech_related.index:
+            row_number = np.where(utts_speech_related.index.values == utterance.name)[0][0]
+            if row_number > 0:
+                prev_utt = utts_speech_related.loc[utts_speech_related.index[:row_number][-1]]
+                return prev_utt.transcript_clean
+
+        return pd.NA
+
+    def add_prev_utt_speaker_code(utterance):
+        if utterance.name in utts_speech_related.index:
+            row_number = np.where(utts_speech_related.index.values == utterance.name)[0][0]
+            if row_number > 0:
+                prev_utt = utts_speech_related.loc[utts_speech_related.index[:row_number][-1]]
+                return prev_utt.speaker_code
+
+        return pd.NA
+
+    utterances_transcript["prev_transcript_clean"] = utterances_transcript.apply(
+        add_prev_utt,
+        axis=1
+    )
+    utterances_transcript["prev_speaker_code"] = utterances_transcript.apply(
+        add_prev_utt_speaker_code,
+        axis=1
+    )
+
+    return utterances_transcript
+
+
+def add_prev_utts(utterances):
+    # Single-process version for debugging:
+    # results = [add_prev_utts_for_transcript(utts_transcript)
+    #     for utts_transcript in tqdm([group for _, group in utterances.groupby("transcript_file")])]
+    utterances_grouped = [[group] for _, group in utterances.groupby("transcript_file")]
+    with Pool(processes=8) as pool:
+        results = pool.starmap(
+            add_prev_utts_for_transcript,
+            tqdm(utterances_grouped, total=len(utterances_grouped)),
+        )
+
+    utterances = pd.concat(results, verify_integrity=True)
+
+    return utterances
