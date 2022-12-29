@@ -18,7 +18,7 @@ from transformers import (
 )
 
 from prepare_hiller_fernandez_data import HILLER_FERNANDEZ_DATA_OUT_PATH
-from prepare_omission_data import OMISSIONS_DATA_FILE
+from prepare_childes_error_data import CHILDES_ERRORS_DATA_FILE
 
 FILE_GRAMMATICALITY_ANNOTATIONS = "data/manual_annotation/grammaticality_manually_annotated.csv"
 
@@ -98,7 +98,7 @@ class CHILDESGrammarDataModule(LightningDataModule):
                 data_blimp.set_index("idx", inplace=True)
                 data_train = pd.concat([data_train, data_blimp], ignore_index=True)
             elif ds_name == "omissions":
-                data_omissions = prepare_csv(OMISSIONS_DATA_FILE)
+                data_omissions = prepare_csv(CHILDES_ERRORS_DATA_FILE)
                 data_train = pd.concat([data_train, data_omissions], ignore_index=True)
             elif ds_name == "zorro":
                 path = DATA_PATH_ZORRO
