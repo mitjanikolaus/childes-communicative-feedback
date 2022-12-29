@@ -201,6 +201,7 @@ def preprocess_utterances(corpus, transcripts, start_index, args):
                     "corpus": corpus,
                     "transcript_file": file_path,
                     "child_name": child_name,
+                    "error": utt.tiers["%err"] if "%err" in utt.tiers.keys() else None
                 }
                 for id, utt in enumerate(utts_transcript)
             ]
