@@ -123,7 +123,7 @@ def get_micro_conversations_for_transcript(utterances_transcript, response_laten
 
             micro_convs.append(conversation)
 
-    utterances_transcript.drop(subset=["speaker_code_next", "start_time_next"], axis=1, inplace=True)
+    utterances_transcript.drop(["speaker_code_next", "start_time_next"], axis=1, inplace=True)
     return micro_convs
 
 
