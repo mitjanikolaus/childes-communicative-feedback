@@ -96,7 +96,7 @@ def is_intelligible(
 
 
 def annotate(args):
-    utterances = pd.read_csv(args.utterances_file, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval})
+    utterances = pd.read_csv(args.utterances_file, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval}, dtype={"error": object})
     utterances.dropna(subset=["transcript_raw"], inplace=True)
     raw_transcripts = utterances["transcript_raw"].apply(
         remove_superfluous_annotations

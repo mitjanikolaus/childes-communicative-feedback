@@ -586,7 +586,7 @@ if __name__ == "__main__":
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    conversations = pd.read_csv(MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE, index_col=0)
+    conversations = pd.read_csv(MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE, index_col=0, dtype={"error": object})
 
     print("Excluding corpora: ", args.excluded_corpora)
     conversations = conversations[~conversations.corpus.isin(args.excluded_corpora)]

@@ -172,7 +172,7 @@ def get_micro_conversations(utterances, response_latency, max_response_latency_f
 
 
 def extract(args):
-    utterances = pd.read_csv(args.utterances_file, index_col=0)
+    utterances = pd.read_csv(args.utterances_file, index_col=0, dtype={"error": object})
 
     utterances.drop(["tokens", "pos", "gra"], axis=1, inplace=True)
 
