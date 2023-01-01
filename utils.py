@@ -64,7 +64,7 @@ POS_PUNCTUATION = [
 ]
 
 # codes that will be excluded from analysis
-IS_UNTRANSCRIBED = lambda word: "www" in word and not word.startswith("&")
+IS_UNTRANSCRIBED = lambda word: word.replace(".", "") == "www"
 IS_INTERRUPTION = lambda word: word.startswith("+/")
 IS_SELF_INTERRUPTION = lambda word: word == "+//"
 IS_TRAILING_OFF = lambda word: word == "+..."
@@ -425,7 +425,7 @@ def remove_superfluous_annotations(utterance):
     # remove stress markers
     utterance = re.sub(r"\[!+]", "", utterance)
     # Remove "complex local events"
-    utterance = re.sub(r"\[\^\S*]", "", utterance)
+    utterance = re.sub(r"\[\^ \S*]", "", utterance)
     # Remove arrows:
     utterance = re.sub(r"↓", "", utterance)
     utterance = re.sub(r"→", "", utterance)
