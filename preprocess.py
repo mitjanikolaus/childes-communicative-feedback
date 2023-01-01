@@ -6,6 +6,7 @@ import re
 import pandas as pd
 import pylangacq
 from tqdm import tqdm
+tqdm.pandas()
 
 from utils import (
     is_empty,
@@ -16,6 +17,7 @@ from utils import (
     remove_punctuation,
     get_paralinguistic_event,
     paralinguistic_event_is_external, clean_utterance, remove_timing_information, SPEAKER_CODES_CAREGIVER,
+    replace_actually_said_words,
 )
 
 NAMES_PATH = "data/names.csv"
@@ -123,6 +125,18 @@ def replace_untranscribed_names(utterances):
 
     utterances["transcript_raw"] = utterances.transcript_raw.apply(replace_names)
     return utterances
+
+
+def add_error_codes_from_actually_said_words(row):
+    if "actually says" in row["transcript_raw"]:
+        utt_replaced, error_codes = replace_actually_said_words(row["transcript_raw"])
+        row["transcript_clean"] = utt_replaced
+        if pd.isna(row["error"]) or row["error"] == "":
+            row["error"] = ";".join(error_codes)
+        else:
+            row["error"] += ";" + ";".join(error_codes)
+
+    return row
 
 
 def preprocess_utterances(corpus, transcripts, start_index, args):
@@ -242,7 +256,9 @@ def preprocess_utterances(corpus, transcripts, start_index, args):
     if corpus == "MPI-EVA-Manchester":
         utterances = replace_untranscribed_names(utterances)
 
-    utterances["transcript_clean"] = utterances.transcript_raw.apply(clean_utterance)
+    utterances["transcript_clean"] = utterances["transcript_raw"]
+    utterances = utterances.apply(add_error_codes_from_actually_said_words, axis=1)
+    utterances["transcript_clean"] = utterances.transcript_clean.apply(clean_utterance)
 
     utterances.index = pd.RangeIndex(start_index, start_index+len(utterances))
     if start_index == 0:

@@ -64,7 +64,7 @@ POS_PUNCTUATION = [
 ]
 
 # codes that will be excluded from analysis
-IS_UNTRANSCRIBED = lambda word: "www" in word
+IS_UNTRANSCRIBED = lambda word: "www" in word and not word.startswith("&")
 IS_INTERRUPTION = lambda word: word.startswith("+/")
 IS_SELF_INTERRUPTION = lambda word: word == "+//"
 IS_TRAILING_OFF = lambda word: word == "+..."
@@ -332,7 +332,7 @@ def clean_utterance(utterance):
     # Remove spacing before commas and double commas
     utt_clean = utt_clean.replace(" ,", ",")
     utt_clean = utt_clean.replace(",,", ",")
-    utt_clean = utt_clean.replace(" .", ".")
+    utt_clean = re.sub("\s\.$", ".", utt_clean)
     utt_clean = utt_clean.replace(",.", ".")
 
     # Strip:
@@ -360,6 +360,43 @@ def remove_timing_information(utterance):
     return utterance
 
 
+def replace_actually_said_words(utterance):
+    # Remove incomplete annotations
+    utterance = utterance.replace("[= actually says]", "")
+
+    # Recursively replace replacements
+    match = re.search("(\[[\*|\?]]\s)*\[=[?|!]? actually says[^]]+](\s\[\*])*", utterance)
+    error_tags = []
+    while match:
+        replacement = match[0].split("actually says")[-1].split("]")[0].strip()
+        replacement = remove_superfluous_annotations(replacement)
+        num_words = len(replacement.split(" "))
+        before = utterance[0: match.span()[0]].strip()
+        before = remove_superfluous_annotations(before)
+        event = get_paralinguistic_event(before)
+        if event:
+            before = before.replace(event, "")
+        before = before.split(" ")
+        words_to_replace = " ".join(before[len(before) - num_words:])
+        if replacement == "dunno" and words_to_replace == "know":
+            num_words += 1
+            words_to_replace = " ".join(before[len(before) - num_words:])
+        if "'" in replacement and "'" not in words_to_replace:
+            num_words += 1
+            words_to_replace = " ".join(before[len(before) - num_words:])
+
+        after = utterance[match.span()[1]:].strip()
+        before = " ".join(before[:len(before) - num_words])
+        if event:
+            before = before + " " + event
+        utterance = " ".join([before, replacement, after])
+        error_tags.append(f"{replacement}={words_to_replace}")
+
+        match = re.search("(\[[\*|\?]\]\s)*\[=[?|!]? actually says [^\]]+\](\s\[\*\])*", utterance)
+
+    return utterance, error_tags
+
+
 def remove_superfluous_annotations(utterance):
     """Remove all superfluous annotation information."""
     # remove postcodes
@@ -369,7 +406,8 @@ def remove_superfluous_annotations(utterance):
     # remove comments
     utterance = re.sub(r"\[%[^]]*]", "", utterance)
     # remove explanations:
-    utterance = re.sub(r"\[= [^]]*]", "", utterance)
+    if not "[= actually says" in utterance:
+        utterance = re.sub(r"\[= [^]]*]", "", utterance)
     # remove replacements:
     utterance = re.sub(r"\[:+ [^]]*]", "", utterance)
     # remove error codes:
