@@ -714,20 +714,6 @@ def replace_slang_forms(utterance):
     return cleaned_utterance.strip()
 
 
-def find_repeated_sequence(utterance):
-    words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=False)
-
-    for rep_len in range(len(words)//2, 0, -1):
-        candidates = ["__".join(words[i:i+rep_len]) for i in range(len(words)) if len(words[i:i+rep_len]) == rep_len]
-        repetitions = [candidates[i] for i in range(len(candidates) - rep_len) if candidates[i+rep_len] == candidates[i]]
-        repetitions = [rep.replace("__", " ") for rep in repetitions]
-        repetitions = [rep for rep in repetitions if rep in utterance]
-        if len(repetitions) > 0:
-            return repetitions[0]
-
-    return None
-
-
 DISFLUENCIES = ["uhm", "um", "uh", "erh", "err", "aw", "ehm", "hm"]
 
 
@@ -735,16 +721,6 @@ def clean_disfluencies(utterance):
     words = utterance.split(" ")
     words = [word for word in words if not word.replace(",", "") in DISFLUENCIES]
     utterance = " ".join(words)
-
-    duplicate = find_repeated_sequence(remove_punctuation(utterance, remove_commas=True))
-    while duplicate:
-        if (len(remove_punctuation(utterance.replace(duplicate, ""), remove_commas=True).strip()) == 0) and (len(duplicate.split(" ")) == 1):
-            # Cases like "bye bye", "no no no!"
-            return utterance
-        utterance = re.sub(f"(^|\s){duplicate}(\s|$|\.|\,)", " ", utterance, count=1)
-        utterance = utterance.strip().replace("  ", " ")
-        duplicate = find_repeated_sequence(utterance)
-
     return utterance
 
 
