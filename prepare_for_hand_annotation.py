@@ -4,7 +4,8 @@ import os
 import pandas as pd
 
 from utils import (
-    UTTERANCES_WITH_SPEECH_ACTS_FILE, SPEAKER_CODE_CHILD, get_num_unique_words, add_prev_utts,
+    SPEAKER_CODE_CHILD, get_num_unique_words,
+    UTTERANCES_WITH_PREV_UTTS_FILE,
 )
 
 TO_ANNOTATE_UTTERANCES_FILE = os.path.expanduser(
@@ -15,12 +16,9 @@ TO_ANNOTATE_UTTERANCES_FILE = os.path.expanduser(
 def prepare(args):
     utterances = pd.read_csv(args.utterances_file, index_col=0)
 
-    print("Adding previous utterances..")
-    utterances = add_prev_utts(utterances)
-
     if args.annotated_utterances_file:
         annotated_utts = pd.read_csv(args.annotated_utterances_file, index_col=0)
-        annotated_utts = annotated_utts[["is_grammatical", "categories", "note"]]
+        annotated_utts = annotated_utts[["is_grammatical", "labels", "note"]]
 
         utterances = utterances.merge(annotated_utts, how="left", left_index=True, right_index=True)
         utterances.dropna(subset=["is_grammatical"], inplace=True)
@@ -44,7 +42,7 @@ def parse_args():
     argparser.add_argument(
         "--utterances-file",
         type=str,
-        default=UTTERANCES_WITH_SPEECH_ACTS_FILE,
+        default=UTTERANCES_WITH_PREV_UTTS_FILE,
     )
     argparser.add_argument(
         "--annotated-utterances-file",

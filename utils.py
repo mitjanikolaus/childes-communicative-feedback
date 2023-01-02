@@ -31,6 +31,10 @@ UTTERANCES_WITH_SPEECH_ACTS_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances_with_speech_acts.csv"
 )
 
+UTTERANCES_WITH_PREV_UTTS_FILE = os.path.expanduser(
+    "~/data/communicative_feedback/utterances_with_prev_utts.csv"
+)
+
 ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances_annotated.csv"
 )
@@ -882,7 +886,7 @@ def filter_transcripts_based_on_num_child_utts(
     ]
 
 
-def add_prev_utts_for_transcript(utterances_transcript, num_utts=1, add_prev_speaker_code=False):
+def add_prev_utts_for_transcript(utterances_transcript, num_utts=1, add_speaker_codes=True):
     utts_speech_related = utterances_transcript[utterances_transcript.is_speech_related.isin([pd.NA, True])]
 
     def add_prev_utt(utterance):
@@ -894,12 +898,12 @@ def add_prev_utts_for_transcript(utterances_transcript, num_utts=1, add_prev_spe
 
         return pd.NA
 
-    def add_prev_utt_speaker_code(utterance):
+    def add_prev_utt_speaker_codes(utterance):
         if utterance.name in utts_speech_related.index:
             row_number = np.where(utts_speech_related.index.values == utterance.name)[0][0]
             if row_number > 0:
-                prev_utt = utts_speech_related.loc[utts_speech_related.index[:row_number][-1]]
-                return prev_utt.speaker_code
+                prev_utts = utts_speech_related.loc[utts_speech_related.index[:row_number][-num_utts:]]
+                return " ".join(prev_utts.speaker_code)
 
         return pd.NA
 
@@ -908,9 +912,9 @@ def add_prev_utts_for_transcript(utterances_transcript, num_utts=1, add_prev_spe
         axis=1
     )
 
-    if add_prev_speaker_code:
+    if add_speaker_codes:
         utterances_transcript["prev_speaker_code"] = utterances_transcript.apply(
-            add_prev_utt_speaker_code,
+            add_prev_utt_speaker_codes,
             axis=1
         )
 
