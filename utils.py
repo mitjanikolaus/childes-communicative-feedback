@@ -74,7 +74,6 @@ IS_SELF_INTERRUPTION = lambda word: word == "+//"
 IS_TRAILING_OFF = lambda word: word == "+..."
 IS_TRAILING_OFF_2 = lambda word: word == "+.."
 IS_EXCLUDED_WORD = lambda word: "@x" in word
-IS_PAUSE = lambda word: word == "..."
 IS_OMITTED_WORD = lambda word: word.startswith("0")
 IS_SATELLITE_MARKER = lambda word: word == "‡"
 IS_QUOTATION_MARKER = lambda word: word in ['+"/', '+"/.', '+"', '+".']
@@ -171,9 +170,6 @@ def word_is_speech_related(word):
         return False
 
     if word.lower() in OTHER_NONSPEECH:
-        return False
-
-    if IS_PAUSE(word):
         return False
 
     return True
@@ -340,6 +336,7 @@ def clean_utterance(utterance):
     utt_clean = utt_clean.replace(",,", ",")
     utt_clean = re.sub("\s\.$", ".", utt_clean)
     utt_clean = utt_clean.replace(",.", ".")
+    utt_clean = re.sub(r"\.\.\.(\s\.\.\.)*", "...", utt_clean)
 
     # Strip:
     utt_clean = utt_clean.strip()
@@ -570,8 +567,7 @@ def remove_superfluous_annotations(utterance):
     utterance = utterance.replace("☺", "")
 
     # Replace pauses
-    utterance = re.sub(r"\(\.*\)", "...", utterance)
-    utterance = re.sub(r"\.\.\.(\s\.\.\.)*", "...", utterance)
+    utterance = re.sub(r"\(\.*\)", "", utterance)
 
     # Remove omitted words
     utterance = re.sub(r"\(\S*\)", "", utterance)
@@ -907,13 +903,19 @@ def add_prev_utts_for_transcript(utterances_transcript, num_utts=1, add_speaker_
 
         return pd.NA
 
-    utterances_transcript["prev_transcript_clean"] = utterances_transcript.apply(
+    column_name = "prev_transcript_clean"
+    if num_utts > 1:
+        column_name = "prev_transcript_clean_" + str(num_utts)
+    utterances_transcript[column_name] = utterances_transcript.apply(
         add_prev_utt,
         axis=1
     )
 
     if add_speaker_codes:
-        utterances_transcript["prev_speaker_code"] = utterances_transcript.apply(
+        column_name = "prev_speaker_code"
+        if num_utts > 1:
+            column_name = "prev_speaker_code" + str(num_utts)
+        utterances_transcript[column_name] = utterances_transcript.apply(
             add_prev_utt_speaker_codes,
             axis=1
         )

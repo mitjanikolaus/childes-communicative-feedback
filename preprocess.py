@@ -118,7 +118,7 @@ def replace_untranscribed_names(utterances):
         for match in matches:
             if match not in ["eeeowww", "miaoowww"]:
                 new_name = name_dict[match]
-                if "_" in match:
+                if "_" in match and not "www" in match.split("_")[0]:
                     new_name = match.split("_")[0] + " " + new_name
                 utt = utt.replace(match, new_name)
         return utt
