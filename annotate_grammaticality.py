@@ -10,7 +10,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 import matplotlib
 
-from utils import get_num_unique_words
+from utils import get_num_unique_words, ERR_UNKNOWN
 
 if os.environ["DISPLAY"] != ":0":
     matplotlib.use("Agg")
@@ -71,12 +71,15 @@ def annotate_grammaticality(clean_utterances, model_name, label_empty_utterance=
     return grammaticalities
 
 
-def plot_error_type_stats(utterances):
+def plot_error_type_stats(utterances, drop_unknown=True):
     if "is_grammatical" in utterances.columns:
         utts = utterances.dropna(subset=["is_grammatical", "labels"]).copy()
-        utts["label"] = utts.labels.astype(str).apply(lambda x: x.replace("?", "").split(", "))
+        utts["label"] = utts.labels.astype(str).apply(lambda x: x.split(", "))
         utts.drop(columns="labels", inplace=True)
         utts = utts.explode("label")
+        if drop_unknown:
+            print(f"removing {len(utts[utts.label == ERR_UNKNOWN])} rows with unknown errors")
+            utts = utts[utts.label != ERR_UNKNOWN]
         utts.label.value_counts().plot(kind="barh")
         plt.subplots_adjust(left=0.2, right=0.99)
 

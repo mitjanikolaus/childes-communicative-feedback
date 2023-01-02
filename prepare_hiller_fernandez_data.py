@@ -5,29 +5,30 @@ import pandas as pd
 
 from utils import (
     remove_superfluous_annotations,
-    clean_utterance,
+    clean_utterance, ERR_OTHER, ERR_SUBJECT, ERR_OBJECT, ERR_VERB, ERR_AUXILIARY, ERR_DETERMINER, ERR_PAST,
+    ERR_PREPOSITION, ERR_SV_AGREEMENT, ERR_POSSESSIVE, ERR_PRESENT_PROGRESSIVE, ERR_PLURAL,
 )
 
 DATA_PATH = "data/hiller_fernandez_2016/data/annotated_data"
 HILLER_FERNANDEZ_DATA_OUT_PATH = "data/hiller_fernandez_preprocessed.csv"
 
 LABEL_TRANSFORMATION = {
-    'other': "other",
-    'synt:subj': "subject",
-    'synt:obj': "object",
-    'synt:verb': "verb",
-    'umorph:auxverb': "auxiliary",
-    'umorph:det': "determiner",
-    'vmorph:regpast': "past",
-    'vmorph:other': "other",
-    'umorph:prep': "preposition",
-    'vmorph:3rdpers': "sv_agreement",
-    'nmorph:poss': "possessive",
-    'vmorph:irrpast': "past",
-    'umorph:presprogr': "present_progressive",
-    'nmorph:regplural': "plural",
-    'nmorph:irrplural': "plural",
-    'umorph:other': "other"
+    'other': ERR_OTHER,
+    'synt:subj': ERR_SUBJECT,
+    'synt:obj': ERR_OBJECT,
+    'synt:verb': ERR_VERB,
+    'umorph:auxverb': ERR_AUXILIARY,
+    'umorph:det': ERR_DETERMINER,
+    'vmorph:regpast': ERR_PAST,
+    'vmorph:other': ERR_OTHER,
+    'umorph:prep': ERR_PREPOSITION,
+    'vmorph:3rdpers': ERR_SV_AGREEMENT,
+    'nmorph:poss': ERR_POSSESSIVE,
+    'vmorph:irrpast': ERR_PAST,
+    'umorph:presprogr': ERR_PRESENT_PROGRESSIVE,
+    'nmorph:regplural': ERR_PLURAL,
+    'nmorph:irrplural': ERR_PLURAL,
+    'umorph:other': ERR_OTHER
 }
 
 
