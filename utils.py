@@ -70,7 +70,7 @@ IS_SELF_INTERRUPTION = lambda word: word == "+//"
 IS_TRAILING_OFF = lambda word: word == "+..."
 IS_TRAILING_OFF_2 = lambda word: word == "+.."
 IS_EXCLUDED_WORD = lambda word: "@x" in word
-IS_PAUSE = lambda word: bool(re.match(r"\(\d*?\.*\d*?\)", word))
+IS_PAUSE = lambda word: word == "..."
 IS_OMITTED_WORD = lambda word: word.startswith("0")
 IS_SATELLITE_MARKER = lambda word: word == "‡"
 IS_QUOTATION_MARKER = lambda word: word in ['+"/', '+"/.', '+"', '+".']
@@ -104,7 +104,6 @@ def is_excluded_code(word):
         or IS_TRAILING_OFF(word)
         or IS_TRAILING_OFF_2(word)
         or IS_EXCLUDED_WORD(word)
-        or IS_PAUSE(word)
         or IS_OMITTED_WORD(word)
         or IS_SATELLITE_MARKER(word)
         or IS_QUOTATION_MARKER(word)
@@ -168,6 +167,9 @@ def word_is_speech_related(word):
         return False
 
     if word.lower() in OTHER_NONSPEECH:
+        return False
+
+    if IS_PAUSE(word):
         return False
 
     return True
@@ -565,6 +567,7 @@ def remove_superfluous_annotations(utterance):
 
     # Replace pauses
     utterance = re.sub(r"\(\.*\)", "...", utterance)
+    utterance = re.sub(r"\.\.\.(\s\.\.\.)*", "...", utterance)
 
     # Remove omitted words
     utterance = re.sub(r"\(\S*\)", "", utterance)
@@ -879,15 +882,15 @@ def filter_transcripts_based_on_num_child_utts(
     ]
 
 
-def add_prev_utts_for_transcript(utterances_transcript):
+def add_prev_utts_for_transcript(utterances_transcript, num_utts=1, add_prev_speaker_code=False):
     utts_speech_related = utterances_transcript[utterances_transcript.is_speech_related.isin([pd.NA, True])]
 
     def add_prev_utt(utterance):
         if utterance.name in utts_speech_related.index:
             row_number = np.where(utts_speech_related.index.values == utterance.name)[0][0]
             if row_number > 0:
-                prev_utt = utts_speech_related.loc[utts_speech_related.index[:row_number][-1]]
-                return prev_utt.transcript_clean
+                prev_utts = utts_speech_related.loc[utts_speech_related.index[:row_number][-num_utts:]]
+                return " ".join(prev_utts.transcript_clean)
 
         return pd.NA
 
@@ -904,25 +907,27 @@ def add_prev_utts_for_transcript(utterances_transcript):
         add_prev_utt,
         axis=1
     )
-    utterances_transcript["prev_speaker_code"] = utterances_transcript.apply(
-        add_prev_utt_speaker_code,
-        axis=1
-    )
+
+    if add_prev_speaker_code:
+        utterances_transcript["prev_speaker_code"] = utterances_transcript.apply(
+            add_prev_utt_speaker_code,
+            axis=1
+        )
 
     return utterances_transcript
 
 
-def add_prev_utts(utterances):
+def add_prev_utts(utterances, num_utts=1):
     # Single-process version for debugging:
-    # results = [add_prev_utts_for_transcript(utts_transcript)
+    # results = [add_prev_utts_for_transcript(utts_transcript, num_utts)
     #     for utts_transcript in tqdm([group for _, group in utterances.groupby("transcript_file")])]
-    utterances_grouped = [[group] for _, group in utterances.groupby("transcript_file")]
+    utterances_grouped = [[group, num_utts] for _, group in utterances.groupby("transcript_file")]
     with Pool(processes=8) as pool:
         results = pool.starmap(
             add_prev_utts_for_transcript,
             tqdm(utterances_grouped, total=len(utterances_grouped)),
         )
 
-    utterances = pd.concat(results, verify_integrity=True)
+    utterances = pd.concat(results)
 
     return utterances
