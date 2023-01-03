@@ -913,7 +913,7 @@ def add_prev_utts_for_transcript(utterances_transcript, num_utts=1, add_speaker_
     if add_speaker_codes:
         column_name = "prev_speaker_code"
         if num_utts > 1:
-            column_name = "prev_speaker_code" + str(num_utts)
+            column_name = "prev_speaker_code_" + str(num_utts)
         utterances_transcript[column_name] = utterances_transcript.apply(
             add_prev_utt_speaker_codes,
             axis=1
