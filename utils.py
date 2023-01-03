@@ -922,6 +922,47 @@ def add_prev_utts_for_transcript(utterances_transcript, num_utts=1, add_speaker_
     return utterances_transcript
 
 
+def add_following_utts_for_transcript(utterances_transcript, num_utts=1, add_speaker_codes=True):
+    utts_speech_related = utterances_transcript[utterances_transcript.is_speech_related.isin([pd.NA, True])]
+
+    def add_following_utt(utterance):
+        if utterance.name in utts_speech_related.index:
+            row_number = np.where(utts_speech_related.index.values == utterance.name)[0][0]
+            if row_number > 0:
+                following_utts = utts_speech_related.loc[utts_speech_related.index[row_number:][:num_utts]]
+                return " ".join(following_utts.transcript_clean)
+
+        return pd.NA
+
+    def add_following_utt_speaker_codes(utterance):
+        if utterance.name in utts_speech_related.index:
+            row_number = np.where(utts_speech_related.index.values == utterance.name)[0][0]
+            if row_number > 0:
+                following_utts = utts_speech_related.loc[utts_speech_related.index[row_number:][:num_utts]]
+                return " ".join(following_utts.speaker_code)
+
+        return pd.NA
+
+    column_name = "following_transcript_clean"
+    if num_utts > 1:
+        column_name = "following_transcript_clean_" + str(num_utts)
+    utterances_transcript[column_name] = utterances_transcript.apply(
+        add_following_utt,
+        axis=1
+    )
+
+    if add_speaker_codes:
+        column_name = "following_speaker_code"
+        if num_utts > 1:
+            column_name = "following_speaker_code_" + str(num_utts)
+        utterances_transcript[column_name] = utterances_transcript.apply(
+            add_following_utt_speaker_codes,
+            axis=1
+        )
+
+    return utterances_transcript
+
+
 def add_prev_utts(utterances, num_utts=1):
     # Single-process version for debugging:
     # results = [add_prev_utts_for_transcript(utts_transcript, num_utts)
@@ -930,6 +971,21 @@ def add_prev_utts(utterances, num_utts=1):
     with Pool(processes=8) as pool:
         results = pool.starmap(
             add_prev_utts_for_transcript,
+            tqdm(utterances_grouped, total=len(utterances_grouped)),
+        )
+
+    utterances = pd.concat(results)
+
+    return utterances
+
+def add_following_utts(utterances, num_utts=1):
+    # Single-process version for debugging:
+    # results = [add_prev_utts_for_transcript(utts_transcript, num_utts)
+    #     for utts_transcript in tqdm([group for _, group in utterances.groupby("transcript_file")])]
+    utterances_grouped = [[group, num_utts] for _, group in utterances.groupby("transcript_file")]
+    with Pool(processes=8) as pool:
+        results = pool.starmap(
+            add_following_utts_for_transcript,
             tqdm(utterances_grouped, total=len(utterances_grouped)),
         )
 

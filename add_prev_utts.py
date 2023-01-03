@@ -5,7 +5,7 @@ import pandas as pd
 
 from utils import (
     UTTERANCES_WITH_SPEECH_ACTS_FILE, add_prev_utts,
-    UTTERANCES_WITH_PREV_UTTS_FILE, ANNOTATED_UTTERANCES_FILE,
+    UTTERANCES_WITH_PREV_UTTS_FILE, ANNOTATED_UTTERANCES_FILE, add_following_utts,
 )
 
 
@@ -19,7 +19,10 @@ def parse_args():
     argparser.add_argument(
         "--num-utts",
         type=int,
-        default=1,
+    )
+    argparser.add_argument(
+        "--num-following-utts",
+        type=int,
     )
 
     args = argparser.parse_args()
@@ -34,7 +37,11 @@ if __name__ == "__main__":
     utterances = pd.read_csv(args.utterances_file, index_col=0)
 
     print("Adding previous utterances..")
-    utterances = add_prev_utts(utterances, num_utts=args.num_utts)
+    if args.num_utts:
+        utterances = add_prev_utts(utterances, num_utts=args.num_utts)
+
+    if args.num_following_utts:
+        utterances = add_following_utts(utterances, num_utts=args.num_following_utts)
 
     os.makedirs(os.path.dirname(UTTERANCES_WITH_PREV_UTTS_FILE), exist_ok=True)
     utterances.to_csv(UTTERANCES_WITH_PREV_UTTS_FILE)
