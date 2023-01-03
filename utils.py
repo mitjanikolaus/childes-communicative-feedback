@@ -569,9 +569,6 @@ def remove_superfluous_annotations(utterance):
     # Replace pauses
     utterance = re.sub(r"\(\.*\)", "", utterance)
 
-    # Remove omitted words
-    utterance = re.sub(r"\(\S*\)", "", utterance)
-
     words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=False, remove_trailing_punctuation=False)
     cleaned_utterance = []
     for word in words:
@@ -602,6 +599,8 @@ def remove_superfluous_annotations(utterance):
             word = re.sub(r"@s\S*", "", word)
             # metalinguistic
             word = re.sub(r"@q", "", word)
+            # Remove dialect omission annotations
+            word = word.replace("(", "").replace(")", "")
             # remove brackets
             word = word.replace("<", "").replace(">", "")
             word = word.replace("‹", "").replace("›", "")
