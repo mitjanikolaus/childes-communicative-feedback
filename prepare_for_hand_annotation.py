@@ -5,8 +5,12 @@ import pandas as pd
 
 from utils import (
     SPEAKER_CODE_CHILD, get_num_unique_words,
-    UTTERANCES_WITH_PREV_UTTS_FILE,
+    UTTERANCES_WITH_PREV_UTTS_FILE
 )
+
+from tqdm import tqdm
+tqdm.pandas()
+
 
 TO_ANNOTATE_UTTERANCES_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances_for_annotation.csv"
@@ -18,12 +22,36 @@ def prepare(args):
 
     if args.annotated_utterances_file:
         annotated_utts = pd.read_csv(args.annotated_utterances_file, index_col=0)
-        annotated_utts = annotated_utts[["is_grammatical", "labels", "note"]]
 
-        utterances = utterances.merge(annotated_utts, how="left", left_index=True, right_index=True)
+        utterances.dropna(subset=["prev_transcript_clean"], inplace=True)
+
+        utterances["is_grammatical"] = pd.NA
+        utterances["labels"] = pd.NA
+        utterances["note"] = pd.NA
+
+        def find_match(utt):
+            same_transcript = utterances[utterances.transcript_file == utt.transcript_file]
+            same_id = same_transcript[same_transcript.utterance_id == utt.utterance_id]
+            if len(same_id) > 0:
+                utterances.loc[same_id.iloc[0].name, "is_grammatical"] = utt.is_grammatical
+                utterances.loc[same_id.iloc[0].name, "labels"] = utt.labels
+                utterances.loc[same_id.iloc[0].name, "note"] = utt.note
+                if not same_id.iloc[0].transcript_clean == utt.transcript_clean:
+                    print()
+                    print(same_id.iloc[0].transcript_raw)
+                    print(same_id.iloc[0].transcript_clean)
+                    print(utt.transcript_clean)
+                    print()
+            else:
+                print(f"utt not found: id {utt.utterance_id} in {utt.transcript_file}")
+
+        annotated_utts.progress_apply(find_match, axis=1)
+
         utterances.dropna(subset=["is_grammatical"], inplace=True)
 
-    utterances.dropna(subset=["prev_transcript_clean"], inplace=True)
+        print(f"len before drop: {len(utterances)}")
+        utterances.drop_duplicates(subset=["transcript_clean", "prev_transcript_clean"], inplace=True)
+        print(f"len after drop: {len(utterances)}")
 
     utts_to_annotate = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD]
 
