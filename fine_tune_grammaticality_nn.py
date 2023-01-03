@@ -182,6 +182,8 @@ class CHILDESGrammarTransformer(LightningModule):
     ):
         super().__init__()
 
+        print(f"Model loss class weights: {class_weights}")
+        self.class_weights = class_weights
         self.save_hyperparameters()
 
         self.config = AutoConfig.from_pretrained(model_name_or_path, num_labels=num_labels)
