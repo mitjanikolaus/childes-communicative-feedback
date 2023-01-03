@@ -5,7 +5,7 @@ import pandas as pd
 
 from utils import (
     UTTERANCES_WITH_SPEECH_ACTS_FILE, add_prev_utts,
-    UTTERANCES_WITH_PREV_UTTS_FILE,
+    UTTERANCES_WITH_PREV_UTTS_FILE, ANNOTATED_UTTERANCES_FILE,
 )
 
 
@@ -14,7 +14,7 @@ def parse_args():
     argparser.add_argument(
         "--utterances-file",
         type=str,
-        default=UTTERANCES_WITH_SPEECH_ACTS_FILE,
+        default=ANNOTATED_UTTERANCES_FILE,
     )
     argparser.add_argument(
         "--num-utts",
