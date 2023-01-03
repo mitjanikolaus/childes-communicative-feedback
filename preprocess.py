@@ -72,13 +72,14 @@ def replace_untranscribed_names(utterances):
     words_not_transcribed = []
     for utt in utterances.transcript_raw.values:
         words = utt.split(" ")
-        words_not_transcribed.extend(list(itertools.chain(*[re.findall("[_|A-Z|a-z]+www", word) for word in words])))
+        words_not_transcribed.extend(list(itertools.chain(*[re.findall("[_().A-Za-z]+www", word) for word in words])))
 
     name_templates = sorted(set(words_not_transcribed))
 
     name_dict = dict()
     for name in name_templates:
-        name_no_www = re.sub("[www[w]+_[W]*www[w]*|www[w]*", "", name)
+        name_no_www = re.sub("(www[w]*)+_[W]*www[w]*|www[w]*", "", name)
+        name_no_www = name_no_www.replace("(.)", "")
         first_letter = name_no_www[-1].upper()
         if len(name_no_www) == 2:
             first_letter = name_no_www[0].upper()
@@ -94,12 +95,14 @@ def replace_untranscribed_names(utterances):
                 if prefix in ["Mrs", "Miss", "Aunty", "Auntie", "Missus", "Jeannine", "Gina", "Eleanor",
                               "Granny"]:
                     candidates = names[names.sex == "girl"].name
-                if prefix in ["Uncle"]:
+                elif prefix in ["Uncle", "Mr"]:
                     candidates = names[names.sex == "boy"].name
+                else:
+                    candidates = names.name
         if prefix[:-1] in ["Mummypig", "Uncle", "Auntie"]:
             prefix = prefix[:-1]
         if "www" in prefix:
-            first_letter_2 = re.sub("[www[w]*_[W]*www[w]*|www[w]*", "", prefix)[-1].upper()
+            first_letter_2 = re.sub("(www[w]*)+_[W]*www[w]*|www[w]*", "", prefix)[-1].upper()
             candidates_2 = names[names.name.str.startswith(first_letter_2)].name
             candidate_2 = candidates_2.iloc[0]
         i = 0
@@ -114,7 +117,8 @@ def replace_untranscribed_names(utterances):
         name_dict[name] = candidate
 
     def replace_names(utt):
-        matches = re.findall("[_|A-Z|a-z]+www", utt)
+        matches = re.findall("[_().A-Za-z]+www", utt)
+        matches = sorted(matches, key=len, reverse=True)
         for match in matches:
             if match not in ["eeeowww", "miaoowww"]:
                 new_name = name_dict[match]
@@ -253,8 +257,7 @@ def preprocess_utterances(corpus, transcripts, start_index, args):
 
     utterances = pd.concat(all_utts, ignore_index=True)
 
-    if corpus == "MPI-EVA-Manchester":
-        utterances = replace_untranscribed_names(utterances)
+    utterances = replace_untranscribed_names(utterances)
 
     utterances["transcript_clean"] = utterances["transcript_raw"]
     utterances = utterances.apply(add_error_codes_from_actually_said_words, axis=1)
