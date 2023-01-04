@@ -2,7 +2,6 @@ import argparse
 import os
 import re
 from ast import literal_eval
-from collections import Counter
 
 import pandas as pd
 
@@ -17,9 +16,6 @@ tqdm.pandas()
 CHILDES_ERRORS_DATA_FILE = os.path.expanduser(
     "data/utterances_errors.csv"
 )
-
-collect = []
-collect_2 = []
 
 
 def get_errors_marked_with_star(row):
@@ -121,7 +117,7 @@ def get_error_from_whole_utt(row):
         return ERR_PRESENT_PROGRESSIVE
 
     if prev_word in ["what", "it", "i", "you", "he", "it", "that", "who", "where", "mummy", "they", "there"] and following_word in \
-            ["you", "here", "broken", "better", "mine", "that", "there", "these", "this", "not", "dada", "daddy", "jacob", "pilchard", "the", "my", "his", "her", "our", "your", "not", "no", "what", "all", "lots", "a"]:
+            ["you", "here", "broken", "better", "mine", "that", "there", "these", "this", "not", "dada", "daddy", "jacob", "pilchard", "the", "my", "his", "her", "our", "your", "not", "no", "what", "all", "lots", "a", "dizzy"]:
         return ERR_VERB
     for t in ["here it [*]", "what [?] [*] that", "where [*] dada", "who's [*] a girl", "<a@p this> [*]"]:
         if t in utt:
@@ -278,9 +274,6 @@ def prepare(args):
     utterances = pd.read_csv(args.utterances_file, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval, "gra": literal_eval}, dtype={"error": object})
 
     utterances["labels"] = utterances.apply(get_errors, axis=1)
-
-    print([(k, v) for k, v in Counter(collect).most_common() if v > 9])
-    print([(k, v) for k, v in Counter(collect_2).most_common() if v > 9])
 
     utterances["is_grammatical"] = utterances.labels.isna()
 
