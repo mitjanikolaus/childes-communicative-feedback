@@ -110,13 +110,13 @@ def get_error_from_whole_utt(row):
         if t in utt:
             return ERR_AUXILIARY
 
-    if prev_word in ["i", "you", "he", "she", "we", "they"] and following_word in ["done", "go", "do", "finished", "show", "get", "finish", "found", "broken", "put", "be", "got", "make", "like", "gone"]:
+    if prev_word in ["i", "you", "he", "she", "we", "they"] and following_word in ["done", "go", "do", "finished", "show", "get", "finish", "found", "broken", "put", "be", "got", "make", "like", "gone", "read"]:
         return ERR_AUXILIARY
 
     if re.search("\[\*] \S*[\s\S]+ing", utt):
         return ERR_PRESENT_PROGRESSIVE
 
-    if prev_word in ["what", "it", "i", "you", "he", "it", "that", "who", "where", "mummy", "they", "there"] and following_word in \
+    if prev_word in ["what", "it", "i", "you", "he", "it", "that", "who", "where", "mummy", "they", "there", "this"] and following_word in \
             ["you", "here", "broken", "better", "mine", "that", "there", "these", "this", "not", "dada", "daddy", "jacob", "pilchard", "the", "my", "his", "her", "our", "your", "not", "no", "what", "all", "lots", "a", "dizzy"]:
         return ERR_VERB
     for t in ["here it [*]", "what [?] [*] that", "where [*] dada", "who's [*] a girl", "<a@p this> [*]"]:
