@@ -2,12 +2,14 @@ import argparse
 import os
 import re
 from ast import literal_eval
+from collections import Counter
 
 import pandas as pd
 
-from utils import categorize_error, ANNOTATED_UTTERANCES_FILE, ERR_VERB, ERR_AUXILIARY, ERR_PREPOSITION, \
+from utils import categorize_error, ERR_VERB, ERR_AUXILIARY, ERR_PREPOSITION, \
     ERR_SUBJECT, ERR_OBJECT, ERR_POSSESSIVE, ERR_SV_AGREEMENT, ERR_DETERMINER, ERR_UNKNOWN, \
-    remove_superfluous_annotations, add_prev_utts
+    remove_superfluous_annotations, UTTERANCES_WITH_PREV_UTTS_FILE, \
+    ERR_PRESENT_PROGRESSIVE, ERR_PAST, ERR_PLURAL
 from tqdm import tqdm
 tqdm.pandas()
 
@@ -16,13 +18,54 @@ CHILDES_ERRORS_DATA_FILE = os.path.expanduser(
     "data/utterances_errors.csv"
 )
 
+collect = []
+collect_2 = []
+
+
+def get_errors_marked_with_star(row):
+    utt = row["transcript_raw"]
+    if "[:" in utt:
+        # Error with colons have already been processed
+        return []
+    if "[*]" in utt:
+        err = get_error_from_whole_utt(row)
+        return [err]
+    else:
+        errors = []
+        matches = re.finditer("\[\* [^]]*]", utt)
+        for m in matches:
+            word = m[0][2:-1].strip()
+            if word.startswith("0"):
+                before = utt[0: m.span()[0]].strip()
+                prev_word = before.split(" ")[-1]
+                errs = guess_omission_error_types(word.replace("0", ""), row, prev_word)
+                errors.extend(errs)
+            elif "0" in word:
+                word_error = word.split("0")[0].strip().lower()
+                word_corrected = word.replace("0", "").strip().lower()
+                errs = categorize_error(word_error, word_corrected, row)
+                errors.extend(errs)
+            elif word == "pos":
+                errors.append(ERR_SUBJECT)
+            elif word in ["m:=ed", "+ed"]:
+                errors.append(ERR_PAST)
+            elif word in["m:=s"]:
+                errors.append(ERR_PLURAL)
+            else:
+                errors.append(ERR_UNKNOWN)
+
+        return errors
+
 
 def get_errors(row):
     errors_tier = get_errors_marked_on_tier(row)
     errors_omission = get_omission_errors(row)
     errors_colon = get_errors_marked_with_colon(row)
-
     errors = set(errors_tier + errors_omission + errors_colon)
+
+    if len(errors) == 0 and "[*" in row["transcript_raw"]:
+        errors_star = get_errors_marked_with_star(row)
+        errors = set(errors_star)
 
     if len(errors) == 0:
         return pd.NA
@@ -30,6 +73,61 @@ def get_errors(row):
         return errors.pop()
     else:
         return str(", ".join(errors))
+
+
+def get_error_from_whole_utt(row):
+    utt = row["transcript_raw"].lower()
+    prev_word = utt.split("[*]")[0].strip().split(" ")[-1]
+    following_word = utt.split("[*]")[1].strip().split(" ")[0]
+
+    if prev_word in ["here", "there"] and following_word in ["are", "go"]:
+        return ERR_SUBJECT
+
+    for t in ["what are them [*]", "do [*] like this"]:
+        if t in utt:
+            return ERR_OBJECT
+
+    if prev_word in ["do"] and following_word in ["again"]:
+        return ERR_OBJECT
+
+    if prev_word in ["a"] and following_word[0] in ["a", "e", "i", "o", "u"]:
+        return ERR_DETERMINER
+
+    if prev_word in ["this"] and following_word in ["beginning"]:
+        return ERR_DETERMINER
+
+    if prev_word in ["want"] and following_word in ["do", "play", "go", "put"]:
+        return ERR_PREPOSITION
+
+    for t in ["i done [*] it", "finish [*]", "fall [*] over"]:
+        if t in utt:
+            return ERR_PAST
+
+    if prev_word in ["throwed", "falled", "telled"]:
+        return ERR_PAST
+
+    for t in ["that go [*]", "this go [*]", "lion go [*]", "i weren't [*]", "what's [*] these", "go [*] there", "what happen [*]", "he do [*]", "he want [*]"]:
+        if t in utt:
+            return ERR_SV_AGREEMENT
+
+    for t in ["what [*] that say", "i [*] done it", "where [*] that go", "where [*] this go", "what [*] he", "what [*] she"]:
+        if t in utt:
+            return ERR_AUXILIARY
+
+    if prev_word in ["i", "you", "he", "she", "we", "they"] and following_word in ["done", "go", "do", "finished", "show", "get", "finish", "found", "broken", "put", "be", "got", "make", "like", "gone"]:
+        return ERR_AUXILIARY
+
+    if re.search("\[\*] \S*[\s\S]+ing", utt):
+        return ERR_PRESENT_PROGRESSIVE
+
+    if prev_word in ["what", "it", "i", "you", "he", "it", "that", "who", "where", "mummy", "they", "there"] and following_word in \
+            ["you", "here", "broken", "better", "mine", "that", "there", "these", "this", "not", "dada", "daddy", "jacob", "pilchard", "the", "my", "his", "her", "our", "your", "not", "no", "what", "all", "lots", "a"]:
+        return ERR_VERB
+    for t in ["here it [*]", "what [?] [*] that", "where [*] dada", "who's [*] a girl", "<a@p this> [*]"]:
+        if t in utt:
+            return ERR_VERB
+
+    return ERR_UNKNOWN
 
 
 def get_errors_marked_on_tier(row):
@@ -103,12 +201,12 @@ def get_errors_marked_with_colon(row):
     return errors
 
 
-def guess_omission_error_types(word, utt):
+def guess_omission_error_types(word, utt, prev_word=None):
     word = word.lower()
     if word in ["what's", "that's", "i'm", "i've", "he's", "it's", "there's"]:
         errors = [ERR_SUBJECT, ERR_VERB]
         return errors
-    elif word in ["det", "a", "an", "the"]:
+    elif word in ["det", "a", "an", "the"] or word == "n" and prev_word == "a":
         error = ERR_DETERMINER
     elif word in ["is", "am", "are", "were", "was", "v", "be", "want", "like", "see", "know", "need", "think", "come",
                   "put", "said", "says", "play", "look", "make", "let's", "go", "ran", "got", "came", "hear", "get",
@@ -125,13 +223,19 @@ def guess_omission_error_types(word, utt):
         error = ERR_OBJECT
     elif word in ["'s", "0's", "my", "his"]:
         error = ERR_POSSESSIVE
-    elif word in ["s"] and "says" in utt["tokens"]:
+    elif word in ["ing"]:
+        error = ERR_PRESENT_PROGRESSIVE
+    elif word in ["ed", "en", "ne", "n", "ten"]:
+        error = ERR_PAST
+    elif word in ["es"] or word in ["s"] and "says" in utt["tokens"] or prev_word in ["get"]:
         error = ERR_SV_AGREEMENT
     else:
         error = ERR_UNKNOWN
     return [error]
 
+
 RELS_VERB = ["ROOT", "CSUBJ", "COBJ", "CPRED", "CPOBJ", "POBJ", "SRL", "PRED", "XJCT", "CJCT", "CMOD", "XMOD", "COMP"]
+
 
 def get_omission_errors(row):
     errors = []
@@ -149,7 +253,7 @@ def get_omission_errors(row):
                 errors.append(ERR_DETERMINER)
             elif rel in ["JCT", "NJCT"]:
                 errors.append(ERR_PREPOSITION)
-            elif rel in ["INF"]:    # "to" for infintive verbs
+            elif rel in ["INF"]:    # "to" for infinitive verbs
                 errors.append(ERR_VERB)
             elif rel in ["AUX"]:
                 errors.append(ERR_AUXILIARY)
@@ -175,10 +279,10 @@ def prepare(args):
 
     utterances["labels"] = utterances.apply(get_errors, axis=1)
 
-    utterances["is_grammatical"] = utterances.labels.isna()
+    print([(k, v) for k, v in Counter(collect).most_common() if v > 9])
+    print([(k, v) for k, v in Counter(collect_2).most_common() if v > 9])
 
-    print("Adding previous utterances..")
-    utterances = add_prev_utts(utterances)
+    utterances["is_grammatical"] = utterances.labels.isna()
 
     utterances = utterances[~utterances.is_grammatical]
     return utterances
@@ -189,7 +293,7 @@ def parse_args():
     argparser.add_argument(
         "--utterances-file",
         type=str,
-        default=ANNOTATED_UTTERANCES_FILE,
+        default=UTTERANCES_WITH_PREV_UTTS_FILE,
     )
 
     args = argparser.parse_args()
