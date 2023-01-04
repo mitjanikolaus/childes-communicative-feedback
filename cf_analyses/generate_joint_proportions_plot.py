@@ -4,7 +4,7 @@ import numpy as np
 import seaborn as sns
 import os
 
-from analysis_reproduce_warlaumont import AGE_BIN_NUM_MONTHS
+from cf_analyses.analysis_reproduce_warlaumont import AGE_BIN_NUM_MONTHS
 
 
 def make_proportion_plots(conversations, results_dir):

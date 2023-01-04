@@ -91,7 +91,6 @@ COLORS_PLOT_CATEGORICAL = [
 
 
 def plot_corpus_error_stats(error_utterances, drop_unknown=True):
-
     utts = error_utterances.dropna(subset=["is_grammatical", "labels"]).copy()
     utts["label"] = utts.labels.astype(str).apply(lambda x: x.split(", "))
     utts.drop(columns="labels", inplace=True)
@@ -102,7 +101,6 @@ def plot_corpus_error_stats(error_utterances, drop_unknown=True):
 
     utts.corpus.value_counts().plot(kind="barh")
     plt.subplots_adjust(left=0.2, right=0.99)
-
 
     num_errors = error_utterances.corpus.value_counts()
 
@@ -142,6 +140,7 @@ def plot_corpus_error_type_stats(error_utterances, drop_unknown=True):
     err_counts = err_counts.apply(divide_by_num, axis=1)
     sns.set_palette(COLORS_PLOT_CATEGORICAL)
 
+    plt.figure()
     ax = sns.barplot(x="corpus", y="ratio", hue="label", data=err_counts)
     plt.ylim((0, 0.03))
     plt.xlabel("num errors per child utterance")

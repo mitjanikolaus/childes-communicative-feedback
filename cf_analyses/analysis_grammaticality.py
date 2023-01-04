@@ -10,7 +10,7 @@ import numpy as np
 
 from analysis_intelligibility import response_is_clarification_request, melt_variable, \
     DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES, response_is_acknowledgement
-from analysis_reproduce_warlaumont import get_micro_conversations, has_response
+from analysis_reproduce_warlaumont import has_response
 from utils import (
     age_bin,
     str2bool,

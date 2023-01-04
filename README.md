@@ -14,10 +14,10 @@ The main branch contains some addtional tweaks for the preprocessing of utteranc
 
 ### Preprocessing and CF analyses
 
-You can create an environment using the [environment.yml](environment.yml) file (if you're not on Ubuntu, you can also
-use the [environment_os_independent.yml](environment_os_independent.yml) file:
+You can create an environment using the [environment.yml](environments/environment.yml) file (if you're not on Ubuntu, you can also
+use the [environment_os_independent.yml](environments/environment_os_independent.yml) file:
 ```
-conda env create --file environment.yml
+conda env create --file environments/environment.yml
 ```
 Additionally, we need to install [my fork of the pylangacq repo](https://github.com/mitjanikolaus/pylangacq) (The original repo can be found here: [pylangacq](https://github.com/jacksonllee/pylangacq)) using pip:
 ```
@@ -30,10 +30,10 @@ pip install .
 ### Running neural networks
 
 To train and evaluate the neural network models, some additional dependencies are required. You can install the
-`cf_nn` enviroment using the [environment_nn.yml](environment_nn.yml) file:
+`cf_nn` enviroment using the [environment_nn.yml](environments/environment_nn.yml) file:
 
 ```
-conda env create --file environment_nn.yml
+conda env create --file environments/environment_nn.yml
 ```
 
 ## Data

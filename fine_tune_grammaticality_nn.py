@@ -17,8 +17,8 @@ from transformers import (
     get_linear_schedule_with_warmup,
 )
 
-from prepare_hiller_fernandez_data import HILLER_FERNANDEZ_DATA_OUT_PATH
-from childes_error_data_prepare import CHILDES_ERRORS_DATA_FILE
+from grammaticatily_data_preprocessing.prepare_hiller_fernandez_data import HILLER_FERNANDEZ_DATA_OUT_PATH
+from grammaticatily_data_preprocessing.childes_error_data_prepare import CHILDES_ERRORS_DATA_FILE
 
 FILE_GRAMMATICALITY_ANNOTATIONS = "data/manual_annotation/grammaticality_manually_annotated.csv"
 
