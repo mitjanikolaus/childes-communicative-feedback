@@ -102,7 +102,7 @@ def plot_corpus_error_stats(error_utterances, drop_unknown=True):
     utts.corpus.value_counts().plot(kind="barh")
     plt.subplots_adjust(left=0.2, right=0.99)
 
-    num_errors = error_utterances.corpus.value_counts()
+    num_errors = utts.corpus.value_counts()
 
     all_utterances = pd.read_csv(ANNOTATED_UTTERANCES_FILE, index_col=0, dtype={"error": object})
     num_utts = all_utterances[all_utterances.speaker_code == SPEAKER_CODE_CHILD].corpus.value_counts()
@@ -115,7 +115,6 @@ def plot_corpus_error_stats(error_utterances, drop_unknown=True):
     joined.fillna(0, inplace=True)
     joined["ratio"] = joined["num_errors"] / joined["num_utts"]
     joined.plot(y='ratio', kind="bar")
-    plt.savefig("out.png")
 
 
 def plot_corpus_error_type_stats(error_utterances, drop_unknown=True):
@@ -131,10 +130,10 @@ def plot_corpus_error_type_stats(error_utterances, drop_unknown=True):
     num_utts = all_utterances[all_utterances.speaker_code == SPEAKER_CODE_CHILD].corpus.value_counts()
     print(num_utts.to_dict())
 
-    err_counts = utts.groupby(['corpus'])["label"].value_counts().rename("ratio").reset_index()
+    err_counts = utts.groupby(['corpus'])["label"].value_counts().rename("count").reset_index()
 
     def divide_by_num(row):
-        row["ratio"] = row["ratio"] / num_utts[row.corpus]
+        row["ratio"] = row["count"] / num_utts[row.corpus]
         return row
 
     err_counts = err_counts.apply(divide_by_num, axis=1)
