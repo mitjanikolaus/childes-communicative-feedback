@@ -18,6 +18,28 @@ CHILDES_ERRORS_DATA_FILE = os.path.expanduser(
 )
 
 
+def get_errors(row):
+    errors_tier = get_errors_marked_on_tier(row)
+    errors_omission = get_omission_errors(row)
+    errors_colon = get_errors_marked_with_colon(row)
+    errors = set(errors_tier + errors_omission + errors_colon)
+
+    if len(errors) == 0 and "[*" in row["transcript_raw"]:
+        errors_star = get_errors_marked_with_star(row)
+        errors = set(errors_star)
+
+    if len(errors) > 1:
+        if ERR_UNKNOWN in errors:
+            errors.remove(ERR_UNKNOWN)
+
+    if len(errors) == 0:
+        return pd.NA
+    elif len(errors) == 1:
+        return errors.pop()
+    else:
+        return str(", ".join(errors))
+
+
 def get_errors_marked_with_star(row):
     utt = row["transcript_raw"]
     if "[:" in utt:
@@ -51,24 +73,6 @@ def get_errors_marked_with_star(row):
                 errors.append(ERR_UNKNOWN)
 
         return errors
-
-
-def get_errors(row):
-    errors_tier = get_errors_marked_on_tier(row)
-    errors_omission = get_omission_errors(row)
-    errors_colon = get_errors_marked_with_colon(row)
-    errors = set(errors_tier + errors_omission + errors_colon)
-
-    if len(errors) == 0 and "[*" in row["transcript_raw"]:
-        errors_star = get_errors_marked_with_star(row)
-        errors = set(errors_star)
-
-    if len(errors) == 0:
-        return pd.NA
-    elif len(errors) == 1:
-        return errors.pop()
-    else:
-        return str(", ".join(errors))
 
 
 def get_error_from_whole_utt(row):
