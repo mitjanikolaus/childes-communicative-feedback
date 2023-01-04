@@ -8,17 +8,12 @@ import pandas as pd
 from utils import categorize_error, ERR_VERB, ERR_AUXILIARY, ERR_PREPOSITION, \
     ERR_SUBJECT, ERR_OBJECT, ERR_POSSESSIVE, ERR_SV_AGREEMENT, ERR_DETERMINER, ERR_UNKNOWN, \
     remove_superfluous_annotations, UTTERANCES_WITH_PREV_UTTS_FILE, \
-    ERR_PRESENT_PROGRESSIVE, ERR_PAST, ERR_PLURAL
+    ERR_PRESENT_PROGRESSIVE, ERR_PAST, ERR_PLURAL, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE
 from tqdm import tqdm
 tqdm.pandas()
 
 
-CHILDES_ERRORS_DATA_FILE = os.path.expanduser(
-    "data/utterances_errors.csv"
-)
-
-
-def get_errors(row):
+def get_error_labels(row):
     errors_tier = get_errors_marked_on_tier(row)
     errors_omission = get_omission_errors(row)
     errors_colon = get_errors_marked_with_colon(row)
@@ -277,11 +272,9 @@ def get_omission_errors(row):
 def prepare(args):
     utterances = pd.read_csv(args.utterances_file, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval, "gra": literal_eval}, dtype={"error": object})
 
-    utterances["labels"] = utterances.apply(get_errors, axis=1)
-
+    utterances["labels"] = utterances.apply(get_error_labels, axis=1)
     utterances["is_grammatical"] = utterances.labels.isna()
 
-    utterances = utterances[~utterances.is_grammatical]
     return utterances
 
 
@@ -304,5 +297,5 @@ if __name__ == "__main__":
 
     utterances = prepare(args)
 
-    os.makedirs(os.path.dirname(CHILDES_ERRORS_DATA_FILE), exist_ok=True)
-    utterances.to_csv(CHILDES_ERRORS_DATA_FILE)
+    os.makedirs(os.path.dirname(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE), exist_ok=True)
+    utterances.to_csv(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE)

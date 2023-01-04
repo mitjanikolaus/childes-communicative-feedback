@@ -2,16 +2,13 @@ import os
 
 import pandas as pd
 
-from utils import ANNOTATED_UTTERANCES_FILE, ERR_UNKNOWN, SPEAKER_CODE_CHILD
+from utils import ANNOTATED_UTTERANCES_FILE, ERR_UNKNOWN, SPEAKER_CODE_CHILD, FILE_FINE_TUNING_CHILDES_ERRORS
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 from tqdm import tqdm
 tqdm.pandas()
 
-CHILDES_ERRORS_DATA_FILE = os.path.expanduser(
-    "data/utterances_errors.csv"
-)
 
 COLORS_PLOT_CATEGORICAL = [
 "#000000",
@@ -90,14 +87,11 @@ COLORS_PLOT_CATEGORICAL = [
 ]
 
 
-def plot_corpus_error_stats(error_utterances, drop_unknown=True):
+def plot_corpus_error_stats(error_utterances):
     utts = error_utterances.dropna(subset=["is_grammatical", "labels"]).copy()
     utts["label"] = utts.labels.astype(str).apply(lambda x: x.split(", "))
     utts.drop(columns="labels", inplace=True)
     utts = utts.explode("label")
-    if drop_unknown:
-        print(f"removing {len(utts[utts.label == ERR_UNKNOWN])} rows with unknown errors")
-        utts = utts[utts.label != ERR_UNKNOWN]
 
     utts.corpus.value_counts().plot(kind="barh")
     plt.subplots_adjust(left=0.2, right=0.99)
@@ -105,9 +99,9 @@ def plot_corpus_error_stats(error_utterances, drop_unknown=True):
     num_errors = utts.corpus.value_counts()
 
     all_utterances = pd.read_csv(ANNOTATED_UTTERANCES_FILE, index_col=0, dtype={"error": object})
-    num_utts = all_utterances[all_utterances.speaker_code == SPEAKER_CODE_CHILD].corpus.value_counts()
+    num_utts_data = all_utterances[all_utterances.speaker_code == SPEAKER_CODE_CHILD].corpus.value_counts()
 
-    num_utts = num_utts.to_frame()
+    num_utts = num_utts_data.to_frame()
     num_utts = num_utts.rename(columns={"corpus": "num_utts"})
 
     joined = num_utts.join(num_errors)
@@ -116,24 +110,13 @@ def plot_corpus_error_stats(error_utterances, drop_unknown=True):
     joined["ratio"] = joined["num_errors"] / joined["num_utts"]
     joined.plot(y='ratio', kind="bar")
 
-
-def plot_corpus_error_type_stats(error_utterances, drop_unknown=True):
-    utts = error_utterances.dropna(subset=["is_grammatical", "labels"]).copy()
-    utts["label"] = utts.labels.astype(str).apply(lambda x: x.split(", "))
-    utts.drop(columns="labels", inplace=True)
-    utts = utts.explode("label")
-    if drop_unknown:
-        print(f"removing {len(utts[utts.label == ERR_UNKNOWN])} rows with unknown errors")
-        utts = utts[utts.label != ERR_UNKNOWN]
-
-    all_utterances = pd.read_csv(ANNOTATED_UTTERANCES_FILE, index_col=0, dtype={"error": object})
-    num_utts = all_utterances[all_utterances.speaker_code == SPEAKER_CODE_CHILD].corpus.value_counts()
-    print(num_utts.to_dict())
+    print("Total number of utts per corpus:")
+    print(num_utts_data.to_dict())
 
     err_counts = utts.groupby(['corpus'])["label"].value_counts().rename("count").reset_index()
 
     def divide_by_num(row):
-        row["ratio"] = row["count"] / num_utts[row.corpus]
+        row["ratio"] = row["count"] / num_utts_data[row.corpus]
         return row
 
     err_counts = err_counts.apply(divide_by_num, axis=1)
@@ -148,10 +131,13 @@ def plot_corpus_error_type_stats(error_utterances, drop_unknown=True):
 
 
 def analyze():
-    error_utterances = pd.read_csv(CHILDES_ERRORS_DATA_FILE, index_col=0, dtype={"error": object})
+    utterances = pd.read_csv(FILE_FINE_TUNING_CHILDES_ERRORS, index_col=0, dtype={"error": object})
+
+    error_utterances = utterances[~utterances.is_grammatical]
+
+    print(f"Total utts: {len(utterances)} | Errors: {len(error_utterances)}")
 
     plot_corpus_error_stats(error_utterances)
-    plot_corpus_error_type_stats(error_utterances)
     plt.show()
 
 
