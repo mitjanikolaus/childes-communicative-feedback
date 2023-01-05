@@ -205,6 +205,8 @@ class CHILDESGrammarTransformer(LightningModule):
             class_weights,
             model_name_or_path: str,
             num_labels: int,
+            train_datasets: list,
+            val_datasets: list,
             train_batch_size: int,
             eval_batch_size: int,
             learning_rate: float = 1e-5,
@@ -217,7 +219,6 @@ class CHILDESGrammarTransformer(LightningModule):
         super().__init__()
 
         print(f"Model loss class weights: {class_weights}")
-        self.class_weights = class_weights
         self.save_hyperparameters()
 
         self.config = AutoConfig.from_pretrained(model_name_or_path, num_labels=num_labels)
@@ -226,7 +227,8 @@ class CHILDESGrammarTransformer(LightningModule):
         self.metric_acc = evaluate.load("accuracy")
         self.metrics = [self.metric_mcc, self.metric_acc]
 
-        self.loss_fct = CrossEntropyLoss(weight=class_weights)
+        weight = torch.tensor(class_weights)
+        self.loss_fct = CrossEntropyLoss(weight=weight)
 
     def forward(self, **inputs):
         return self.model(**inputs)
@@ -314,8 +316,8 @@ class CHILDESGrammarTransformer(LightningModule):
 
 
 def calc_class_weights(dm):
-    class_weight_pos = dm.dataset["train"]["labels"].sum() / dm.dataset["train"]["labels"].shape[0]
-    class_weights = torch.stack([class_weight_pos, 1 - class_weight_pos])
+    class_weight_pos = dm.dataset["train"]["labels"].sum().item() / dm.dataset["train"]["labels"].shape[0]
+    class_weights = [class_weight_pos, 1 - class_weight_pos]
     return class_weights
 
 
@@ -328,6 +330,8 @@ def main(args):
     dm.setup("fit")
     model = CHILDESGrammarTransformer(
         class_weights=calc_class_weights(dm),
+        train_datasets=args.train_datasets,
+        val_datasets=args.val_datasets,
         eval_batch_size=args.batch_size,
         train_batch_size=args.batch_size,
         model_name_or_path=args.model,
