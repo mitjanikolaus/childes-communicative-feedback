@@ -142,23 +142,22 @@ class CHILDESGrammarDataModule(LightningDataModule):
                 data_zorro = prepare_zorro_data()
                 return data_zorro
 
+        self.dataset = DatasetDict()
+
         data_train = []
         for ds_name in args.train_datasets:
             data_train.append(get_dataset_with_name(ds_name, self.text_fields, val=False))
 
         data_train = pd.concat(data_train, ignore_index=True)
         ds_train = Dataset.from_pandas(data_train)
-
-        data_val = []
-        for ds_name in args.val_datasets:
-            data_val.append(get_dataset_with_name(ds_name, self.text_fields, val=True))
-
-        data_val = pd.concat(data_val, ignore_index=True)
-        ds_val = Dataset.from_pandas(data_val)
-
-        self.dataset = DatasetDict()
         self.dataset['train'] = ds_train
-        self.dataset['validation'] = ds_val
+
+        datasets_val = []
+        for ds_name in args.val_datasets:
+            data = get_dataset_with_name(ds_name, self.text_fields, val=True)
+            ds_val = Dataset.from_pandas(data)
+            datasets_val.append(ds_val)
+            self.dataset[f"validation_{ds_name}"] = ds_val
 
         for split in self.dataset.keys():
             self.dataset[split] = self.dataset[split].map(
