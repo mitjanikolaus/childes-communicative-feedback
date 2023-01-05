@@ -141,6 +141,8 @@ class CHILDESGrammarDataModule(LightningDataModule):
             elif ds_name == "zorro":
                 data_zorro = prepare_zorro_data()
                 return data_zorro
+            else:
+                raise RuntimeError("Unknown dataset: ", ds_name)
 
         self.dataset = DatasetDict()
 
@@ -174,10 +176,7 @@ class CHILDESGrammarDataModule(LightningDataModule):
         return DataLoader(self.dataset["train"], batch_size=self.train_batch_size, shuffle=True)
 
     def val_dataloader(self):
-        if len(self.eval_splits) == 1:
-            return DataLoader(self.dataset["validation"], batch_size=self.eval_batch_size)
-        elif len(self.eval_splits) > 1:
-            return [DataLoader(self.dataset[x], batch_size=self.eval_batch_size) for x in self.eval_splits]
+        return [DataLoader(self.dataset[x], batch_size=self.eval_batch_size) for x in self.eval_splits]
 
     def test_dataloader(self):
         if len(self.eval_splits) == 1:
@@ -269,18 +268,25 @@ class CHILDESGrammarTransformer(LightningModule):
         return {"loss": val_loss, "preds": preds, "labels": labels}
 
     def validation_epoch_end(self, outputs):
-        preds = torch.cat([x["preds"] for x in outputs]).detach().cpu().numpy()
-        labels = torch.cat([x["labels"] for x in outputs]).detach().cpu().numpy()
-        loss = torch.stack([x["loss"] for x in outputs]).mean()
-        self.log("val_loss", loss, prog_bar=True)
+        if len(self.hparams.eval_splits) == 1:
+            outputs = [outputs]
 
-        for metric in self.metrics:
-            self.log_dict(metric.compute(predictions=preds, references=labels), prog_bar=True)
+        for out, split in zip(outputs, self.hparams.eval_splits):
+            split = split.replace("validation_", "")
+            preds = torch.cat([x["preds"] for x in out]).detach().cpu().numpy()
+            labels = torch.cat([x["labels"] for x in out]).detach().cpu().numpy()
+            loss = torch.stack([x["loss"] for x in out]).mean()
+            self.log(f"{split}_val_loss", loss, prog_bar=True)
 
-        acc_pos = self.metric_acc.compute(predictions=preds[labels == 1], references=labels[labels == 1])
-        acc_neg = self.metric_acc.compute(predictions=preds[labels == 0], references=labels[labels == 0])
-        self.log("accuracy_pos", acc_pos["accuracy"])
-        self.log("accuracy_neg", acc_neg["accuracy"])
+            for metric in self.metrics:
+                metric_results = metric.compute(predictions=preds, references=labels)
+                metric_results = {f"{split}_{key}": value for key, value in metric_results.items()}
+                self.log_dict(metric_results, prog_bar=True)
+
+            acc_pos = self.metric_acc.compute(predictions=preds[labels == 1], references=labels[labels == 1])
+            acc_neg = self.metric_acc.compute(predictions=preds[labels == 0], references=labels[labels == 0])
+            self.log(f"{split}_accuracy_pos", acc_pos["accuracy"])
+            self.log(f"{split}_accuracy_neg", acc_neg["accuracy"])
 
     def configure_optimizers(self):
         """Prepare optimizer and schedule (linear warmup and decay)"""
