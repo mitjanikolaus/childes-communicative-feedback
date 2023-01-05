@@ -40,6 +40,57 @@ MODELS = [
 ]
 
 
+def prepare_csv(file_path, text_fields):
+    data = pd.read_csv(file_path, index_col=0)
+    data.dropna(subset=["is_grammatical", "transcript_clean", "prev_transcript_clean"], inplace=True)
+
+    data["is_grammatical"] = data.is_grammatical.astype(int)
+
+    data.rename(columns={"is_grammatical": "label"}, inplace=True)
+    data = data[text_fields + ["label"]]
+    return data
+
+
+def prepare_zorro_data():
+    path = DATA_PATH_ZORRO
+    data_zorro = []
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            if file.endswith(".txt"):
+                file_path = os.path.join(root, file)
+                with open(file_path, "r") as f:
+                    for i, line in enumerate(f.readlines()):
+                        data_zorro.append({
+                            "transcript_clean": line.replace("\n", ""),
+                            "prev_transcript_clean": ".",
+                            "label": 0 if i % 2 == 0 else 1
+                        })
+    data_zorro = pd.DataFrame(data_zorro)
+    return data_zorro
+
+
+def prepare_manual_annotation_data(text_fields):
+    data_manual_annotations = prepare_csv(FILE_GRAMMATICALITY_ANNOTATIONS, text_fields)
+    data_manual_annotations_train = data_manual_annotations.sample(int(len(data_manual_annotations) / 2),
+                                                                   random_state=DATA_SPLIT_RANDOM_STATE)
+    data_manual_annotations_val = data_manual_annotations[
+        ~data_manual_annotations.index.isin(data_manual_annotations_train.index)]
+
+    assert (len(set(data_manual_annotations_train.index) & set(data_manual_annotations_val.index)) == 0)
+
+    return data_manual_annotations_train, data_manual_annotations_val
+
+
+def prepare_blimp_data():
+    mor = load_dataset("metaeval/blimp_classification", "morphology")["train"].to_pandas()
+    syntax = load_dataset("metaeval/blimp_classification", "syntax")["train"].to_pandas()
+    data_blimp = pd.concat([mor, syntax], ignore_index=True)
+    data_blimp.rename(columns={"text": "transcript_clean"}, inplace=True)
+    data_blimp["prev_transcript_clean"] = "."
+    data_blimp.set_index("idx", inplace=True)
+    return data_blimp
+
+
 class CHILDESGrammarDataModule(LightningDataModule):
     loader_columns = [
         "datasets_idx",
@@ -70,54 +121,39 @@ class CHILDESGrammarDataModule(LightningDataModule):
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path, use_fast=True)
 
     def setup(self, stage: str):
-        def prepare_csv(file_path):
-            data = pd.read_csv(file_path, index_col=0)
-            data.dropna(subset=["is_grammatical", "transcript_clean", "prev_transcript_clean"], inplace=True)
+        data_manual_annotations_train, data_manual_annotations_val = prepare_manual_annotation_data(self.text_fields)
 
-            data["is_grammatical"] = data.is_grammatical.astype(int)
-
-            data.rename(columns={"is_grammatical": "label"}, inplace=True)
-            data = data[self.text_fields + ["label"]]
-            return data
-
-        data_childes = prepare_csv(FILE_GRAMMATICALITY_ANNOTATIONS)
-        data_train = data_childes.sample(int(len(data_childes) / 2), random_state=DATA_SPLIT_RANDOM_STATE)
-        data_val = data_childes[~data_childes.index.isin(data_train.index)]
-        assert (len(set(data_train.index) & set(data_val.index)) == 0)
-
-        for ds_name in args.add_train_data:
-            if ds_name == "hiller_fernandez":
-                data_hiller_fernandez = prepare_csv(HILLER_FERNANDEZ_DATA_OUT_PATH)
-                data_train = pd.concat([data_train, data_hiller_fernandez], ignore_index=True)
+        def get_dataset_with_name(ds_name, text_fields, val=False):
+            if ds_name == "manual_annotations":
+                if val:
+                    return data_manual_annotations_val
+                else:
+                    return data_manual_annotations_train
+            elif ds_name == "hiller_fernandez":
+                data_hiller_fernandez = prepare_csv(HILLER_FERNANDEZ_DATA_OUT_PATH, text_fields)
+                return data_hiller_fernandez
             elif ds_name == "blimp":
-                mor = load_dataset("metaeval/blimp_classification", "morphology")["train"].to_pandas()
-                syntax = load_dataset("metaeval/blimp_classification", "syntax")["train"].to_pandas()
-                data_blimp = pd.concat([mor, syntax], ignore_index=True)
-                data_blimp.rename(columns={"text": "transcript_clean"}, inplace=True)
-                data_blimp["prev_transcript_clean"] = "."
-                data_blimp.set_index("idx", inplace=True)
-                data_train = pd.concat([data_train, data_blimp], ignore_index=True)
+                data_blimp = prepare_blimp_data()
+                return data_blimp
             elif ds_name == "childes":
-                data_childes = prepare_csv(FILE_FINE_TUNING_CHILDES_ERRORS)
-                data_train = pd.concat([data_train, data_childes], ignore_index=True)
+                data_childes = prepare_csv(FILE_FINE_TUNING_CHILDES_ERRORS, text_fields)
+                return data_childes
             elif ds_name == "zorro":
-                path = DATA_PATH_ZORRO
-                data_zorro = []
-                for root, dirs, files in os.walk(path):
-                    for file in files:
-                        if file.endswith(".txt"):
-                            file_path = os.path.join(root, file)
-                            with open(file_path, "r") as f:
-                                for i, line in enumerate(f.readlines()):
-                                    data_zorro.append({
-                                        "transcript_clean": line.replace("\n", ""),
-                                        "prev_transcript_clean": ".",
-                                        "label": 0 if i % 2 == 0 else 1
-                                    })
-                data_zorro = pd.DataFrame(data_zorro)
-                data_train = pd.concat([data_train, data_zorro], ignore_index=True)
+                data_zorro = prepare_zorro_data()
+                return data_zorro
 
+        data_train = []
+        for ds_name in args.train_datasets:
+            data_train.append(get_dataset_with_name(ds_name, self.text_fields, val=False))
+
+        data_train = pd.concat(data_train, ignore_index=True)
         ds_train = Dataset.from_pandas(data_train)
+
+        data_val = []
+        for ds_name in args.val_datasets:
+            data_val.append(get_dataset_with_name(ds_name, self.text_fields, val=True))
+
+        data_val = pd.concat(data_val, ignore_index=True)
         ds_val = Dataset.from_pandas(data_val)
 
         self.dataset = DatasetDict()
@@ -318,7 +354,13 @@ def parse_args():
         required=True,
     )
     argparser.add_argument(
-        "--add-train-data",
+        "--train-datasets",
+        type=str,
+        nargs="+",
+        default=[],
+    )
+    argparser.add_argument(
+        "--val-datasets",
         type=str,
         nargs="+",
         default=[],
