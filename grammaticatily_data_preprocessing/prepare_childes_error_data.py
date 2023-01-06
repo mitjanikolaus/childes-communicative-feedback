@@ -21,6 +21,7 @@ def prepare(args):
     utterances = utterances[utterances.labels != ERR_UNKNOWN]
 
     utts_ungrammatical = utterances[~utterances.is_grammatical]
+    # TODO do not sample? // sample in finetuning script!
     utts_grammatical = utterances[utterances.is_grammatical].sample(len(utts_ungrammatical), random_state=1)
     utterances = pd.concat([utts_grammatical, utts_ungrammatical])
 
