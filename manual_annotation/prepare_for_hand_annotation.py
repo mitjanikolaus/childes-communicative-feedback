@@ -18,10 +18,10 @@ TO_ANNOTATE_UTTERANCES_FILE = os.path.expanduser(
 
 
 def prepare(args):
-    utterances = pd.read_csv(args.utterances_file, index_col=0)
+    utterances = pd.read_csv(args.utterances_file, index_col=0, dtype={"error": object})
 
     if args.annotated_utterances_file:
-        annotated_utts = pd.read_csv(args.annotated_utterances_file, index_col=0)
+        annotated_utts = pd.read_csv(args.annotated_utterances_file, index_col=0, dtype={"error": object})
 
         utterances.dropna(subset=["prev_transcript_clean"], inplace=True)
 
@@ -48,10 +48,6 @@ def prepare(args):
         annotated_utts.progress_apply(find_match, axis=1)
 
         utterances.dropna(subset=["is_grammatical"], inplace=True)
-
-        print(f"len before drop: {len(utterances)}")
-        utterances.drop_duplicates(subset=["transcript_clean", "prev_transcript_clean"], inplace=True)
-        print(f"len after drop: {len(utterances)}")
 
     utts_to_annotate = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD]
 
