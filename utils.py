@@ -575,7 +575,10 @@ def remove_superfluous_annotations(utterance):
     utterance = utterance.replace("☺", "")
 
     # Replace pauses
-    utterance = re.sub(r"\(\.*\)", "", utterance)
+    utterance = re.sub(r"\([.\d]*\)", "", utterance)
+
+    # Remove wrongly encoded annotations
+    utterance = re.sub(r"\\x\d*", "", r"%r" % utterance)[1:-1]
 
     words = split_into_words(utterance, split_on_apostrophe=False, remove_commas=False, remove_trailing_punctuation=False)
     cleaned_utterance = []
