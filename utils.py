@@ -688,7 +688,7 @@ def get_num_unique_words(clean_utts, remove_punctuation=True):
 
 
 # Unintelligible words with an unclear phonetic shape should be transcribed as
-CODE_UNINTELLIGIBLE = "xxx"
+IS_UNINTELLIGIBLE = lambda word: "xxx" in word
 
 # Use the symbol yyy when you plan to code all material phonologically on a %pho line.
 # (usually used when utterance cannot be matched to particular words)
@@ -764,7 +764,7 @@ def is_babbling(word, vocab_check=True):
         word.endswith(CODE_BABBLING)
         or word.endswith(CODE_INTERJECTION)
         or word.startswith(CODE_PHONOLOGICAL_FRAGMENT)
-        or word == CODE_UNINTELLIGIBLE
+        or IS_UNINTELLIGIBLE(word)
         or word == CODE_PHONETIC
         or word.lower() in OTHER_BABBLING
         or vocab_check and (

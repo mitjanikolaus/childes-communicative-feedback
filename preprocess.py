@@ -63,12 +63,11 @@ def get_gra_tag(tag):
         return None
 
 
+NAMES = pd.read_csv(NAMES_PATH, index_col=0).sort_values(by="percent", ascending=False)
+
+
 def replace_untranscribed_names(utterances):
     """Use common English names to replace untranscribed names"""
-
-    names = pd.read_csv(NAMES_PATH, index_col=0)
-    names = names.sort_values(by="percent", ascending=False)
-
     words_not_transcribed = []
     for utt in utterances.transcript_raw.values:
         words = utt.split(" ")
@@ -83,7 +82,7 @@ def replace_untranscribed_names(utterances):
         first_letter = name_no_www[-1].upper()
         if len(name_no_www) == 2:
             first_letter = name_no_www[0].upper()
-        candidates = names[names.name.str.startswith(first_letter)].name
+        candidates = NAMES[NAMES.name.str.startswith(first_letter)].name
 
         prefix = ""
         candidate_2 = None
@@ -94,16 +93,16 @@ def replace_untranscribed_names(utterances):
             if first_letter == "_":
                 if prefix in ["Mrs", "Miss", "Aunty", "Auntie", "Missus", "Jeannine", "Gina", "Eleanor",
                               "Granny"]:
-                    candidates = names[names.sex == "girl"].name
+                    candidates = NAMES[NAMES.sex == "girl"].name
                 elif prefix in ["Uncle", "Mr"]:
-                    candidates = names[names.sex == "boy"].name
+                    candidates = NAMES[NAMES.sex == "boy"].name
                 else:
-                    candidates = names.name
+                    candidates = NAMES.name
         if prefix[:-1] in ["Mummypig", "Uncle", "Auntie"]:
             prefix = prefix[:-1]
         if "www" in prefix:
             first_letter_2 = re.sub("(www[w]*)+_[W]*www[w]*|www[w]*", "", prefix)[-1].upper()
-            candidates_2 = names[names.name.str.startswith(first_letter_2)].name
+            candidates_2 = NAMES[NAMES.name.str.startswith(first_letter_2)].name
             candidate_2 = candidates_2.iloc[0]
         i = 0
         candidate = (prefix + " " + candidates.iloc[i]).strip()

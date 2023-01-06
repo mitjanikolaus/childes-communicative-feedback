@@ -17,7 +17,7 @@ from utils import (
 )
 from utils import (
     remove_nonspeech_events,
-    CODE_UNINTELLIGIBLE,
+    IS_UNINTELLIGIBLE,
 )
 
 DEFAULT_LABEL_PARTIALLY_SPEECH_RELATED = True
@@ -53,7 +53,7 @@ def is_speech_related(
     # We exclude completely unintelligible utterances (we don't know whether it's speech-related or not)
     is_completely_unintelligible = True
     for word in split_into_words(utt_without_nonspeech, remove_commas=True, remove_trailing_punctuation=False):
-        if word != CODE_UNINTELLIGIBLE and word != "":
+        if not IS_UNINTELLIGIBLE(word) and word != "":
             is_completely_unintelligible = False
             break
     if is_completely_unintelligible:
