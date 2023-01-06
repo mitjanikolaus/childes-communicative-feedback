@@ -69,9 +69,14 @@ def prepare_zorro_data():
     return data_zorro
 
 
-def prepare_manual_annotation_data(text_fields):
+def prepare_manual_annotation_data(text_fields, val_split_proportion):
     data_manual_annotations = prepare_csv(FILE_GRAMMATICALITY_ANNOTATIONS, text_fields)
-    data_manual_annotations_train = data_manual_annotations.sample(int(len(data_manual_annotations) / 2),
+    # Replace unknown grammaticality values
+    data_manual_annotations = data_manual_annotations[data_manual_annotations.label != 0]
+    data_manual_annotations.label.replace({-1: 0}, inplace=True)
+
+    train_data_size = int(len(data_manual_annotations) * (1 - val_split_proportion))
+    data_manual_annotations_train = data_manual_annotations.sample(train_data_size,
                                                                    random_state=DATA_SPLIT_RANDOM_STATE)
     data_manual_annotations_val = data_manual_annotations[
         ~data_manual_annotations.index.isin(data_manual_annotations_train.index)]
@@ -108,6 +113,7 @@ class CHILDESGrammarDataModule(LightningDataModule):
             train_batch_size: int,
             eval_batch_size: int,
             max_seq_length: int = 128,
+            val_split_proportion: float = 0.5,
             **kwargs,
     ):
         super().__init__()
@@ -115,13 +121,14 @@ class CHILDESGrammarDataModule(LightningDataModule):
         self.max_seq_length = max_seq_length
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
+        self.val_split_proportion = val_split_proportion
 
         self.text_fields = ["transcript_clean", "prev_transcript_clean"]
         self.num_labels = 2
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path, use_fast=True)
 
     def setup(self, stage: str):
-        data_manual_annotations_train, data_manual_annotations_val = prepare_manual_annotation_data(self.text_fields)
+        data_manual_annotations_train, data_manual_annotations_val = prepare_manual_annotation_data(self.text_fields, self.val_split_proportion)
 
         def get_dataset_with_name(ds_name, text_fields, val=False):
             if ds_name == "manual_annotations":
@@ -214,6 +221,7 @@ class CHILDESGrammarTransformer(LightningModule):
             warmup_steps: int = 0,
             weight_decay: float = 0.0,
             eval_splits: Optional[list] = None,
+            val_split_proportion: float = 0.5,
             **kwargs,
     ):
         super().__init__()
@@ -324,7 +332,8 @@ def calc_class_weights(dm):
 def main(args):
     seed_everything(FINE_TUNE_RANDOM_STATE)
 
-    dm = CHILDESGrammarDataModule(model_name_or_path=args.model,
+    dm = CHILDESGrammarDataModule(val_split_proportion=args.val_split_proportion,
+                                  model_name_or_path=args.model,
                                   eval_batch_size=args.batch_size,
                                   train_batch_size=args.batch_size)
     dm.setup("fit")
@@ -337,6 +346,7 @@ def main(args):
         model_name_or_path=args.model,
         num_labels=dm.num_labels,
         eval_splits=dm.eval_splits,
+        val_split_proportion=args.val_split_proportion,
     )
 
     trainer = Trainer(
@@ -378,6 +388,12 @@ def parse_args():
         "--batch-size",
         type=int,
         default=DEFAULT_BATCH_SIZE,
+    )
+    argparser.add_argument(
+        "--val-split-proportion",
+        type=float,
+        default=0.5,
+        help="Val split proportion (only for manually annotated data)"
     )
 
     args = argparser.parse_args()
