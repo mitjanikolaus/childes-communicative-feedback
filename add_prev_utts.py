@@ -34,7 +34,7 @@ if __name__ == "__main__":
     args = parse_args()
     print(args)
 
-    utterances = pd.read_csv(args.utterances_file, index_col=0)
+    utterances = pd.read_csv(args.utterances_file, index_col=0, dtype={"error": object})
 
     print("Adding previous utterances..")
     if args.num_utts:
