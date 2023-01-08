@@ -389,7 +389,7 @@ def main(args):
         val_split_proportion=args.val_split_proportion,
     )
 
-    checkpoint_callback_1 = ModelCheckpoint(monitor="matthews_correlation", mode="max", save_last=True,
+    checkpoint_callback = ModelCheckpoint(monitor="matthews_correlation", mode="max", save_last=True,
                                             filename="{epoch:02d}-{mcc:.2f}")
     early_stop_callback = EarlyStopping(monitor="matthews_correlation", patience=5, verbose=True, mode="max",
                                         min_delta=0.01, stopping_threshold=0.99)
@@ -398,7 +398,7 @@ def main(args):
         max_epochs=MAX_EPOCHS,
         accelerator="auto",
         devices=1 if torch.cuda.is_available() else None,
-        callbacks=[checkpoint_callback_1, early_stop_callback]
+        callbacks=[checkpoint_callback, early_stop_callback]
     )
 
     print("\n\n\nInitial validation:")
@@ -407,9 +407,11 @@ def main(args):
     print("\n\n\nTraining:")
     trainer.fit(model, datamodule=dm)
 
-    print("\n\n\nFinal validation:")
+    print(f"\n\n\nFinal validation (using {checkpoint_callback.best_model_path}:")
+    best_model = CHILDESGrammarTransformer.load_from_checkpoint(checkpoint_callback.best_model_path)
+
     model.val_error_analysis = True
-    trainer.validate(model, dm)
+    trainer.validate(best_model, dm)
 
 
 def parse_args():
