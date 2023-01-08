@@ -40,14 +40,20 @@ MODELS = [
 ]
 
 
-def prepare_csv(file_path, text_fields):
+TEXT_FIELDS = ["transcript_clean", "prev_transcript_clean"]
+
+
+def prepare_csv(file_path, include_extra_columns=False):
     data = pd.read_csv(file_path, index_col=0)
     data.dropna(subset=["is_grammatical", "transcript_clean", "prev_transcript_clean"], inplace=True)
 
     data["is_grammatical"] = data.is_grammatical.astype(int)
 
     data.rename(columns={"is_grammatical": "label"}, inplace=True)
-    data = data[text_fields + ["label"]]
+    if include_extra_columns:
+        data = data[TEXT_FIELDS + ["label", "labels", "note"]]
+    else:
+        data = data[TEXT_FIELDS + ["label"]]
     return data
 
 
@@ -69,8 +75,8 @@ def prepare_zorro_data():
     return data_zorro
 
 
-def prepare_manual_annotation_data(text_fields, val_split_proportion):
-    data_manual_annotations = prepare_csv(FILE_GRAMMATICALITY_ANNOTATIONS, text_fields)
+def prepare_manual_annotation_data(val_split_proportion, include_extra_columns=False):
+    data_manual_annotations = prepare_csv(FILE_GRAMMATICALITY_ANNOTATIONS, include_extra_columns)
     # Replace unknown grammaticality values
     data_manual_annotations = data_manual_annotations[data_manual_annotations.label != 0]
     data_manual_annotations.label.replace({-1: 0}, inplace=True)
@@ -112,6 +118,8 @@ class CHILDESGrammarDataModule(LightningDataModule):
             model_name_or_path: str,
             train_batch_size: int,
             eval_batch_size: int,
+            train_datasets: list,
+            val_datasets: list,
             max_seq_length: int = 128,
             val_split_proportion: float = 0.5,
             **kwargs,
@@ -122,28 +130,29 @@ class CHILDESGrammarDataModule(LightningDataModule):
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
         self.val_split_proportion = val_split_proportion
+        self.train_datasets = train_datasets
+        self.val_datasets = val_datasets
 
-        self.text_fields = ["transcript_clean", "prev_transcript_clean"]
         self.num_labels = 2
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path, use_fast=True)
 
     def setup(self, stage: str):
-        data_manual_annotations_train, data_manual_annotations_val = prepare_manual_annotation_data(self.text_fields, self.val_split_proportion)
+        data_manual_annotations_train, data_manual_annotations_val = prepare_manual_annotation_data(self.val_split_proportion)
 
-        def get_dataset_with_name(ds_name, text_fields, val=False):
+        def get_dataset_with_name(ds_name, val=False):
             if ds_name == "manual_annotations":
                 if val:
                     return data_manual_annotations_val
                 else:
                     return data_manual_annotations_train
             elif ds_name == "hiller_fernandez":
-                data_hiller_fernandez = prepare_csv(HILLER_FERNANDEZ_DATA_OUT_PATH, text_fields)
+                data_hiller_fernandez = prepare_csv(HILLER_FERNANDEZ_DATA_OUT_PATH)
                 return data_hiller_fernandez
             elif ds_name == "blimp":
                 data_blimp = prepare_blimp_data()
                 return data_blimp
             elif ds_name == "childes":
-                data_childes = prepare_csv(FILE_FINE_TUNING_CHILDES_ERRORS, text_fields)
+                data_childes = prepare_csv(FILE_FINE_TUNING_CHILDES_ERRORS)
                 return data_childes
             elif ds_name == "zorro":
                 data_zorro = prepare_zorro_data()
@@ -154,16 +163,16 @@ class CHILDESGrammarDataModule(LightningDataModule):
         self.dataset = DatasetDict()
 
         data_train = []
-        for ds_name in args.train_datasets:
-            data_train.append(get_dataset_with_name(ds_name, self.text_fields, val=False))
+        for ds_name in self.train_datasets:
+            data_train.append(get_dataset_with_name(ds_name, val=False))
 
         data_train = pd.concat(data_train, ignore_index=True)
         ds_train = Dataset.from_pandas(data_train)
         self.dataset['train'] = ds_train
 
         datasets_val = []
-        for ds_name in args.val_datasets:
-            data = get_dataset_with_name(ds_name, self.text_fields, val=True)
+        for ds_name in self.val_datasets:
+            data = get_dataset_with_name(ds_name, val=True)
             ds_val = Dataset.from_pandas(data)
             datasets_val.append(ds_val)
             self.dataset[f"validation_{ds_name}"] = ds_val
@@ -192,10 +201,10 @@ class CHILDESGrammarDataModule(LightningDataModule):
             return [DataLoader(self.dataset[x], batch_size=self.eval_batch_size) for x in self.eval_splits]
 
     def convert_to_features(self, batch):
-        if len(self.text_fields) > 1:
-            texts = list(zip(batch[self.text_fields[0]], batch[self.text_fields[1]]))
+        if len(TEXT_FIELDS) > 1:
+            texts = list(zip(batch[TEXT_FIELDS[0]], batch[TEXT_FIELDS[1]]))
         else:
-            texts = batch[self.text_fields[0]]
+            texts = batch[TEXT_FIELDS[0]]
 
         features = self.tokenizer.batch_encode_plus(
             texts, max_length=self.max_seq_length, padding='max_length', truncation=True
@@ -237,6 +246,8 @@ class CHILDESGrammarTransformer(LightningModule):
 
         weight = torch.tensor(class_weights)
         self.loss_fct = CrossEntropyLoss(weight=weight)
+
+        self.val_error_analysis = False
 
     def forward(self, **inputs):
         return self.model(**inputs)
@@ -298,6 +309,16 @@ class CHILDESGrammarTransformer(LightningModule):
             self.log(f"{split}_accuracy_pos", acc_pos["accuracy"])
             self.log(f"{split}_accuracy_neg", acc_neg["accuracy"])
 
+            if split == "manual_annotations" and self.val_error_analysis:
+                _, data_manual_annotations_val = prepare_manual_annotation_data(self.hparams.val_split_proportion, include_extra_columns=True)
+                data_manual_annotations_val["pred"] = preds
+                errors = data_manual_annotations_val[data_manual_annotations_val.pred != data_manual_annotations_val.label]
+                correct = data_manual_annotations_val[data_manual_annotations_val.pred == data_manual_annotations_val.label]
+
+                errors.to_csv(os.path.join(self.logger.log_dir, "manual_annotations_errors.csv"))
+                correct.to_csv(os.path.join(self.logger.log_dir, "manual_annotations_correct.csv"))
+
+
     def configure_optimizers(self):
         """Prepare optimizer and schedule (linear warmup and decay)"""
         model = self.model
@@ -335,7 +356,9 @@ def main(args):
     dm = CHILDESGrammarDataModule(val_split_proportion=args.val_split_proportion,
                                   model_name_or_path=args.model,
                                   eval_batch_size=args.batch_size,
-                                  train_batch_size=args.batch_size)
+                                  train_batch_size=args.batch_size,
+                                  train_datasets=args.train_datasets,
+                                  val_datasets=args.val_datasets,)
     dm.setup("fit")
     model = CHILDESGrammarTransformer(
         class_weights=calc_class_weights(dm),
@@ -362,6 +385,7 @@ def main(args):
     trainer.fit(model, datamodule=dm)
 
     print("\n\n\nFinal validation:")
+    model.val_error_analysis = True
     trainer.validate(model, dm)
 
 
