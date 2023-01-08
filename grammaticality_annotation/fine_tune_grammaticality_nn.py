@@ -7,6 +7,7 @@ import pandas as pd
 import torch
 from datasets import Dataset, DatasetDict, load_dataset
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer, seed_everything
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 from transformers import (
@@ -119,7 +120,7 @@ class CHILDESGrammarDataModule(LightningDataModule):
             train_batch_size: int,
             eval_batch_size: int,
             train_datasets: list,
-            val_datasets: list,
+            additional_val_datasets: list,
             max_seq_length: int = 128,
             val_split_proportion: float = 0.5,
             **kwargs,
@@ -131,7 +132,7 @@ class CHILDESGrammarDataModule(LightningDataModule):
         self.eval_batch_size = eval_batch_size
         self.val_split_proportion = val_split_proportion
         self.train_datasets = train_datasets
-        self.val_datasets = val_datasets
+        self.additional_val_datasets = additional_val_datasets
 
         self.num_labels = 2
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path, use_fast=True)
@@ -170,11 +171,12 @@ class CHILDESGrammarDataModule(LightningDataModule):
         ds_train = Dataset.from_pandas(data_train)
         self.dataset['train'] = ds_train
 
-        datasets_val = []
-        for ds_name in self.val_datasets:
+        ds_val = Dataset.from_pandas(data_manual_annotations_val)
+        self.dataset[f"validation"] = ds_val
+
+        for ds_name in self.additional_val_datasets:
             data = get_dataset_with_name(ds_name, val=True)
             ds_val = Dataset.from_pandas(data)
-            datasets_val.append(ds_val)
             self.dataset[f"validation_{ds_name}"] = ds_val
 
         for split in self.dataset.keys():
@@ -222,7 +224,7 @@ class CHILDESGrammarTransformer(LightningModule):
             model_name_or_path: str,
             num_labels: int,
             train_datasets: list,
-            val_datasets: list,
+            additional_val_datasets: list,
             train_batch_size: int,
             eval_batch_size: int,
             learning_rate: float = 1e-5,
@@ -293,31 +295,46 @@ class CHILDESGrammarTransformer(LightningModule):
             outputs = [outputs]
 
         for out, split in zip(outputs, self.hparams.eval_splits):
-            split = split.replace("validation_", "")
             preds = torch.cat([x["preds"] for x in out]).detach().cpu().numpy()
             labels = torch.cat([x["labels"] for x in out]).detach().cpu().numpy()
             loss = torch.stack([x["loss"] for x in out]).mean()
-            self.log(f"{split}_val_loss", loss, prog_bar=True)
 
-            for metric in self.metrics:
-                metric_results = metric.compute(predictions=preds, references=labels)
-                metric_results = {f"{split}_{key}": value for key, value in metric_results.items()}
-                self.log_dict(metric_results, prog_bar=True)
+            if split == "validation":
+                self.log(f"val_loss", loss, prog_bar=True)
+                for metric in self.metrics:
+                    metric_results = metric.compute(predictions=preds, references=labels)
+                    self.log_dict(metric_results, prog_bar=True)
 
-            acc_pos = self.metric_acc.compute(predictions=preds[labels == 1], references=labels[labels == 1])
-            acc_neg = self.metric_acc.compute(predictions=preds[labels == 0], references=labels[labels == 0])
-            self.log(f"{split}_accuracy_pos", acc_pos["accuracy"])
-            self.log(f"{split}_accuracy_neg", acc_neg["accuracy"])
+                acc_pos = self.metric_acc.compute(predictions=preds[labels == 1], references=labels[labels == 1])
+                acc_neg = self.metric_acc.compute(predictions=preds[labels == 0], references=labels[labels == 0])
+                self.log(f"accuracy_pos", acc_pos["accuracy"])
+                self.log(f"accuracy_neg", acc_neg["accuracy"])
 
-            if split == "manual_annotations" and self.val_error_analysis:
-                _, data_manual_annotations_val = prepare_manual_annotation_data(self.hparams.val_split_proportion, include_extra_columns=True)
-                data_manual_annotations_val["pred"] = preds
-                errors = data_manual_annotations_val[data_manual_annotations_val.pred != data_manual_annotations_val.label]
-                correct = data_manual_annotations_val[data_manual_annotations_val.pred == data_manual_annotations_val.label]
+                if self.val_error_analysis:
+                    _, data_manual_annotations_val = prepare_manual_annotation_data(self.hparams.val_split_proportion,
+                                                                                    include_extra_columns=True)
+                    data_manual_annotations_val["pred"] = preds
+                    errors = data_manual_annotations_val[
+                        data_manual_annotations_val.pred != data_manual_annotations_val.label]
+                    correct = data_manual_annotations_val[
+                        data_manual_annotations_val.pred == data_manual_annotations_val.label]
 
-                errors.to_csv(os.path.join(self.logger.log_dir, "manual_annotations_errors.csv"))
-                correct.to_csv(os.path.join(self.logger.log_dir, "manual_annotations_correct.csv"))
+                    errors.to_csv(os.path.join(self.logger.log_dir, "manual_annotations_errors.csv"))
+                    correct.to_csv(os.path.join(self.logger.log_dir, "manual_annotations_correct.csv"))
 
+            else:
+                split = split.replace("validation_", "")
+                self.log(f"{split}_val_loss", loss)
+                for metric in self.metrics:
+                    metric_results = metric.compute(predictions=preds, references=labels)
+                    metric_results = {f"{split}_{key}": value for key, value in metric_results.items()}
+                    self.log_dict(metric_results)
+
+                acc_pos = self.metric_acc.compute(predictions=preds[labels == 1], references=labels[labels == 1])
+                acc_neg = self.metric_acc.compute(predictions=preds[labels == 0], references=labels[labels == 0])
+                self.log(f"{split}_accuracy_pos", acc_pos["accuracy"])
+                self.log(f"{split}_accuracy_neg", acc_neg["accuracy"])
+                self.log(f"{split}_val_loss", loss, prog_bar=True)
 
     def configure_optimizers(self):
         """Prepare optimizer and schedule (linear warmup and decay)"""
@@ -358,12 +375,12 @@ def main(args):
                                   eval_batch_size=args.batch_size,
                                   train_batch_size=args.batch_size,
                                   train_datasets=args.train_datasets,
-                                  val_datasets=args.val_datasets,)
+                                  additional_val_datasets=args.additional_val_datasets)
     dm.setup("fit")
     model = CHILDESGrammarTransformer(
         class_weights=calc_class_weights(dm),
         train_datasets=args.train_datasets,
-        val_datasets=args.val_datasets,
+        additional_val_datasets=args.additional_val_datasets,
         eval_batch_size=args.batch_size,
         train_batch_size=args.batch_size,
         model_name_or_path=args.model,
@@ -372,10 +389,16 @@ def main(args):
         val_split_proportion=args.val_split_proportion,
     )
 
+    checkpoint_callback_1 = ModelCheckpoint(monitor="matthews_correlation", mode="max", save_last=True,
+                                            filename="{epoch:02d}-{mcc:.2f}")
+    early_stop_callback = EarlyStopping(monitor="matthews_correlation", patience=5, verbose=True, mode="max",
+                                        min_delta=0.01, stopping_threshold=0.99)
+
     trainer = Trainer(
         max_epochs=MAX_EPOCHS,
         accelerator="auto",
-        devices=1 if torch.cuda.is_available() else None,  # limiting got iPython runs
+        devices=1 if torch.cuda.is_available() else None,
+        callbacks=[checkpoint_callback_1, early_stop_callback]
     )
 
     print("\n\n\nInitial validation:")
@@ -403,7 +426,7 @@ def parse_args():
         default=[],
     )
     argparser.add_argument(
-        "--val-datasets",
+        "--additional-val-datasets",
         type=str,
         nargs="+",
         default=[],
