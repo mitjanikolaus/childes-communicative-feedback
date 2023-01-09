@@ -97,7 +97,6 @@ class LSTM(nn.Module):
             hidden = self.init_hidden(len(input_ids))
         if not seq_lengths:
             seq_lengths = [len(input) for input in input_ids]
-        print(input_ids.device)
         embedding = self.embedding(input_ids)
         packed_input = pack_padded_sequence(embedding, seq_lengths, batch_first=True, enforce_sorted=False)
         packed_output, hidden = self.lstm(packed_input, hidden)
@@ -248,7 +247,7 @@ def train(args):
     trainer = Trainer(
         max_epochs=MAX_EPOCHS,
         devices=1 if torch.cuda.is_available() else None,
-        accelerator="gpu",
+        accelerator="gpu" if torch.cuda.is_available() else None,
         val_check_interval=100,
         auto_lr_find=True,
         callbacks=[checkpoint_callback, early_stop_callback]
