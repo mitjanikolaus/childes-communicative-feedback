@@ -136,6 +136,7 @@ results/
 
 # Jupyter
 lightning_logs/
+logs_pretrain_lstm/
 
 # Data
 data/hiller_fernandez_2016/
