@@ -25,6 +25,8 @@ TOKENIZER_PATH = "data/tokenizer-childes.json"
 
 BATCH_SIZE = 32
 
+TRUNCATION_LENGTH = 40
+
 MAX_EPOCHS = 10
 
 TOKEN_PAD = "[PAD]"
@@ -67,7 +69,7 @@ class CHILDESDataModule(pl.LightningDataModule):
     def tokenize_batch(self, batch):
         text = [t["text"] + TOKEN_EOS for t in batch]
         self.tokenizer.enable_padding()
-        self.tokenizer.enable_truncation(40)
+        self.tokenizer.enable_truncation(TRUNCATION_LENGTH)
         return self.tokenizer.encode_batch(text)
 
     def train_dataloader(self):
