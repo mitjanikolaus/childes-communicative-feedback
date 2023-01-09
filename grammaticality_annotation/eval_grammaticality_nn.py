@@ -3,11 +3,11 @@ import torch
 from pytorch_lightning import Trainer
 
 from grammaticality_annotation.fine_tune_grammaticality_nn import CHILDESGrammarDataModule, \
-    CHILDESGrammarTransformer
+    CHILDESGrammarModel
 
 
 def main(args):
-    model = CHILDESGrammarTransformer.load_from_checkpoint(args.model_checkpoint)
+    model = CHILDESGrammarModel.load_from_checkpoint(args.model_checkpoint)
     hparams = model.hparams
     dm = CHILDESGrammarDataModule(val_split_proportion=hparams.val_split_proportion,
                                   model_name_or_path=hparams.model_name_or_path,

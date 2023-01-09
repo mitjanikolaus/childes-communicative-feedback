@@ -52,7 +52,7 @@ def prepare_data():
     data = data[data.is_speech_related & data.is_intelligible]
     data.dropna(subset=["transcript_clean", "prev_transcript_clean"], inplace=True)
 
-    sentences = data.apply(lambda row: TOKEN_SEP.join([row.prev_transcript_clean, row.transcript_clean]), axis=1).values
+    sentences = data.apply(lambda row: TOKEN_SEP.join([row.prev_transcript_clean, row.transcript_clean + TOKEN_EOS]), axis=1).values
     with open(LM_DATA, 'w') as f:
         f.write("\n".join(sentences))
 
@@ -67,9 +67,14 @@ class CHILDESDataModule(pl.LightningDataModule):
         self.data = data["train"].train_test_split(test_size=0.001)
 
     def tokenize_batch(self, batch):
-        text = [t["text"] + TOKEN_EOS for t in batch]
-        encodings = self.tokenizer.batch_encode_plus(text, padding=True, max_length=TRUNCATION_LENGTH, truncation=True)
-        return encodings.data
+        text = [t["text"] for t in batch]
+        lengths = self.tokenizer.batch_encode_plus(text, max_length=TRUNCATION_LENGTH, truncation=True, return_length=True).data["length"]
+        encodings = self.tokenizer.batch_encode_plus(text, padding=True, max_length=TRUNCATION_LENGTH, truncation=True,
+                                                     return_tensors="pt")
+        encodings.data["length"] = torch.tensor(lengths)
+        encodings.data["labels"] = encodings.data["input_ids"][:, 1:]
+
+        return encodings
 
     def train_dataloader(self):
         return DataLoader(self.data["train"], batch_size=self.batch_size, collate_fn=self.tokenize_batch)
@@ -78,12 +83,83 @@ class CHILDESDataModule(pl.LightningDataModule):
         return DataLoader(self.data["test"], batch_size=self.batch_size, collate_fn=self.tokenize_batch)
 
 
-class CHILDESLSTM(LightningModule):
+class LSTM(nn.Module):
+    def __init__(self, vocab_size, embedding_dim, hidden_dim, num_layers, dropout_rate):
+        super().__init__()
+        self.num_layers = num_layers
+        self.hidden_dim = hidden_dim
+        self.embedding_dim = embedding_dim
+
+        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        if num_layers > 1:
+            self.lstm = nn.LSTM(embedding_dim, hidden_dim, num_layers=num_layers,
+                                dropout=dropout_rate, batch_first=True)
+        else:
+            self.lstm = nn.LSTM(embedding_dim, hidden_dim, num_layers=num_layers, batch_first=True)
+        self.dropout = nn.Dropout(dropout_rate)
+        self.fc = nn.Linear(hidden_dim, vocab_size)
+
+        self.fc_classification = nn.Linear(hidden_dim, 2)
+        self.max_pool = torch.nn.AdaptiveMaxPool1d(output_size=1)
+
+        self.init_weights()
+
+    def forward(self, input_ids, length, hidden=None, token_type_ids=None, attention_mask=None):
+        if not hidden:
+            hidden = self.init_hidden(input_ids.shape[0])
+        embedding = self.embedding(input_ids)
+        packed_input = pack_padded_sequence(embedding, length, batch_first=True, enforce_sorted=False)
+        packed_output, hidden = self.lstm(packed_input, hidden)
+        output, input_sizes = pad_packed_sequence(packed_output, batch_first=True)
+        output = self.dropout(output)
+        logits = self.fc(output)
+
+        return {"logits": logits, "hidden": hidden}
+
+    def forward_classification(self, input_ids, length, hidden=None, token_type_ids=None, attention_mask=None):
+        if not hidden:
+            hidden = self.init_hidden(input_ids.shape[0])
+        embedding = self.embedding(input_ids)
+        packed_input = pack_padded_sequence(embedding, length, batch_first=True, enforce_sorted=False)
+        packed_output, hidden = self.lstm(packed_input, hidden)
+        output, input_sizes = pad_packed_sequence(packed_output, batch_first=True)
+        output = self.dropout(output)
+
+        # Max pool over time dimension
+        output = self.max_pool(output.permute(0, 2, 1)).squeeze()
+
+        logits = self.fc_classification(output)
+
+        return {"logits": logits, "hidden": hidden}
+
+    def init_weights(self):
+        init_range_emb = 0.1
+        init_range_other = 1 / math.sqrt(self.hidden_dim)
+        self.embedding.weight.data.uniform_(-init_range_emb, init_range_emb)
+        self.fc.weight.data.uniform_(-init_range_other, init_range_other)
+        self.fc.bias.data.zero_()
+        self.fc_classification.weight.data.uniform_(-init_range_other, init_range_other)
+        self.fc_classification.bias.data.zero_()
+        for i in range(self.num_layers):
+            self.lstm.all_weights[i][0] = torch.FloatTensor(self.embedding_dim,
+                                                            self.hidden_dim).uniform_(-init_range_other,
+                                                                                      init_range_other).to(device)
+            self.lstm.all_weights[i][1] = torch.FloatTensor(self.hidden_dim,
+                                                            self.hidden_dim).uniform_(-init_range_other,
+                                                                                      init_range_other).to(device)
+
+    def init_hidden(self, batch_size):
+        hidden = torch.zeros(self.num_layers, batch_size, self.hidden_dim).to(device)
+        cell = torch.zeros(self.num_layers, batch_size, self.hidden_dim).to(device)
+        return hidden, cell
+
+
+class CHILDESGrammarLSTM(LightningModule):
     def __init__(
             self,
-            train_batch_size: int,
-            eval_batch_size: int,
-            tokenizer,
+            pad_token_id,
+            vocab_size,
+            tokenizer=None,
             embedding_dim: int = 256,
             hidden_dim: int = 256,
             num_layers: int = 1,
@@ -99,61 +175,24 @@ class CHILDESLSTM(LightningModule):
 
         self.tokenizer = tokenizer
 
-        self.loss_fct = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
+        self.loss_fct = nn.CrossEntropyLoss(ignore_index=pad_token_id)
 
-        self.num_layers = num_layers
-        self.hidden_dim = hidden_dim
-        self.embedding_dim = embedding_dim
+        self.vocab_size = vocab_size
+        self.model = LSTM(self.vocab_size, embedding_dim,  hidden_dim, num_layers, dropout_rate)
 
-        self.vocab_size = self.tokenizer.vocab_size
-        self.embedding = nn.Embedding(self.vocab_size, embedding_dim)
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, num_layers=num_layers,
-                            dropout=dropout_rate, batch_first=True)
-        self.dropout = nn.Dropout(dropout_rate)
-        self.fc = nn.Linear(hidden_dim, self.vocab_size)
-
-        self.init_weights()
-
-    def forward(self, batch):
-        input_ids = torch.tensor(batch["input_ids"]).to(device)
-        seq_lengths = [att.index(0) if 0 in att else len(att) for att in batch["attention_mask"]]
-        hidden = self.init_hidden(len(input_ids))
-        logits, _ = self.forward_step(input_ids, seq_lengths, hidden)
-        logits = logits[:, :-1, :]
-        labels = input_ids[:, 1:]
-        return logits, labels
-
-    def forward_step(self, input_ids, seq_lengths, hidden):
-        embedding = self.embedding(input_ids)
-        packed_input = pack_padded_sequence(embedding, seq_lengths, batch_first=True, enforce_sorted=False)
-        packed_output, hidden = self.lstm(packed_input, hidden)
-        output, input_sizes = pad_packed_sequence(packed_output, batch_first=True)
-        output = self.dropout(output)
-        logits = self.fc(output)
-        return logits, hidden
-
-    def init_weights(self):
-        #TODO check
-        init_range_emb = 0.1
-        init_range_other = 1 / math.sqrt(self.hidden_dim)
-        self.embedding.weight.data.uniform_(-init_range_emb, init_range_emb)
-        self.fc.weight.data.uniform_(-init_range_other, init_range_other)
-        self.fc.bias.data.zero_()
-        for i in range(self.num_layers):
-            self.lstm.all_weights[i][0] = torch.FloatTensor(self.embedding_dim,
-                                                            self.hidden_dim).uniform_(-init_range_other,
-                                                                                      init_range_other).to(device)
-            self.lstm.all_weights[i][1] = torch.FloatTensor(self.hidden_dim,
-                                                            self.hidden_dim).uniform_(-init_range_other,
-                                                                                      init_range_other).to(device)
-
-    def init_hidden(self, batch_size):
-        hidden = torch.zeros(self.num_layers, batch_size, self.hidden_dim).to(device)
-        cell = torch.zeros(self.num_layers, batch_size, self.hidden_dim).to(device)
-        return hidden, cell
+    def forward(self, **inputs):
+        return self.model(**inputs)
 
     def training_step(self, batch, batch_idx):
-        logits, labels = self(batch)
+        output = self(
+            input_ids=batch["input_ids"],
+            token_type_ids=batch["token_type_ids"],
+            attention_mask=batch["attention_mask"],
+            length=batch["length"],
+        )
+        labels = batch["labels"]
+        logits = output["logits"]
+        logits = logits[:, :-1, :]
         loss = self.loss_fct(logits.reshape(-1, self.vocab_size), labels.reshape(-1))
 
         return {"loss": loss}
@@ -164,7 +203,15 @@ class CHILDESLSTM(LightningModule):
         self.log("train_loss", loss.mean().item(), prog_bar=True)
 
     def validation_step(self, batch, batch_idx, dataloader_idx=0):
-        logits, labels = self(batch)
+        output = self(
+            input_ids=batch["input_ids"],
+            token_type_ids=batch["token_type_ids"],
+            attention_mask=batch["attention_mask"],
+            length=batch["length"],
+        )
+        labels = batch["labels"]
+        logits = output["logits"]
+        logits = logits[:, :-1, :]
         val_loss = self.loss_fct(logits.reshape(-1, self.vocab_size), labels.reshape(-1))
 
         preds = torch.argmax(logits, axis=1)
@@ -191,12 +238,14 @@ class CHILDESLSTM(LightningModule):
             torch.manual_seed(seed)
         self.eval()
         input_ids = self.tokenizer.encode(prompt)
-        hidden = self.init_hidden(batch_size=1)
         with torch.no_grad():
+            hidden = None
             for i in range(max_seq_len):
                 src = torch.LongTensor([input_ids]).to(device)
-                prediction, hidden = self.forward_step(src, [src.shape[1]], hidden)
-                probs = torch.softmax(prediction[:, -1] / temperature, dim=-1)
+                output = self.model(src, [src.shape[1]], hidden)
+                logits = output["logits"]
+                hidden = output["hidden"]
+                probs = torch.softmax(logits[:, -1] / temperature, dim=-1)
                 prediction = torch.multinomial(probs, num_samples=1).item()
 
                 if prediction == self.tokenizer.eos_token_id:
@@ -207,6 +256,52 @@ class CHILDESLSTM(LightningModule):
         decoded = self.tokenizer.decode(input_ids)
         self.train()
         return decoded
+
+
+class LSTMSequenceClassification(CHILDESGrammarLSTM):
+    def __init__(
+            self,
+            pad_token_id: int,
+            vocab_size: int,
+            tokenizer = None,
+            embedding_dim: int = 256,
+            hidden_dim: int = 256,
+            num_layers: int = 1,
+            dropout_rate: float = 0.1,
+            learning_rate: float = 0.003,
+            adam_epsilon: float = 1e-8,
+            warmup_steps: int = 0,
+            weight_decay: float = 0.0,
+            num_labels: int = 2,
+            **kwargs,
+    ):
+        super().__init__(
+                         tokenizer=tokenizer,
+                         embedding_dim=embedding_dim,
+                         hidden_dim=hidden_dim,
+                         num_layers=num_layers,
+                         dropout_rate=dropout_rate,
+                         learning_rate=learning_rate,
+                         adam_epsilon=adam_epsilon,
+                         warmup_steps=warmup_steps,
+                         weight_decay=weight_decay,
+                         pad_token_id=pad_token_id,
+                         vocab_size=vocab_size,
+                         )
+
+        self.num_labels = num_labels
+
+        self.freeze_base_weights()
+
+    def freeze_base_weights(self):
+        for param in self.model.parameters():
+            param.requires_grad = False
+
+        self.model.fc_classification.weight.requires_grad = True
+        self.model.fc_classification.bias.requires_grad = True
+
+    def forward(self, **inputs):
+        return self.model.forward_classification(**inputs)
 
 
 def train(args):
@@ -223,7 +318,7 @@ def train(args):
 
     data_module = CHILDESDataModule(BATCH_SIZE, tokenizer)
 
-    model = CHILDESLSTM(BATCH_SIZE, BATCH_SIZE, tokenizer=tokenizer)
+    model = CHILDESGrammarLSTM(BATCH_SIZE, BATCH_SIZE, tokenizer=tokenizer, pad_token_id=tokenizer.pad_token_id, vocab_size=tokenizer.vocab_size)
 
     checkpoint_callback = ModelCheckpoint(monitor="val_loss", mode="min", save_last=True,
                                             filename="{epoch:02d}-{val_loss:.2f}")

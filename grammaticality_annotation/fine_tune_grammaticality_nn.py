@@ -15,10 +15,11 @@ from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
     AutoTokenizer,
-    get_linear_schedule_with_warmup,
+    get_linear_schedule_with_warmup, PreTrainedTokenizerFast,
 )
 
-from grammaticatily_data_preprocessing.prepare_hiller_fernandez_data import HILLER_FERNANDEZ_DATA_OUT_PATH
+from grammaticality_annotation.pretrain_lstm import TOKENIZER_PATH, TOKEN_PAD, TOKEN_EOS, TOKEN_UNK, TOKEN_SEP, LSTMSequenceClassification
+from grammaticality_data_preprocessing.prepare_hiller_fernandez_data import HILLER_FERNANDEZ_DATA_OUT_PATH
 from utils import FILE_FINE_TUNING_CHILDES_ERRORS
 
 FILE_GRAMMATICALITY_ANNOTATIONS = "data/manual_annotation/grammaticality_manually_annotated.csv"
@@ -27,8 +28,6 @@ DATA_PATH_ZORRO = "zorro/sentences/babyberta"
 
 DATA_SPLIT_RANDOM_STATE = 7
 FINE_TUNE_RANDOM_STATE = 1
-
-MAX_EPOCHS = 15
 
 DEFAULT_BATCH_SIZE = 16
 
@@ -112,6 +111,7 @@ class CHILDESGrammarDataModule(LightningDataModule):
         "start_positions",
         "end_positions",
         "labels",
+        "length",
     ]
 
     def __init__(
@@ -121,6 +121,7 @@ class CHILDESGrammarDataModule(LightningDataModule):
             eval_batch_size: int,
             train_datasets: list,
             additional_val_datasets: list,
+            tokenizer,
             max_seq_length: int = 128,
             val_split_proportion: float = 0.5,
             **kwargs,
@@ -135,7 +136,7 @@ class CHILDESGrammarDataModule(LightningDataModule):
         self.additional_val_datasets = additional_val_datasets
 
         self.num_labels = 2
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path, use_fast=True)
+        self.tokenizer = tokenizer
 
     def setup(self, stage: str):
         data_manual_annotations_train, data_manual_annotations_val = prepare_manual_annotation_data(self.val_split_proportion)
@@ -204,20 +205,22 @@ class CHILDESGrammarDataModule(LightningDataModule):
 
     def convert_to_features(self, batch):
         if len(TEXT_FIELDS) > 1:
-            texts = list(zip(batch[TEXT_FIELDS[0]], batch[TEXT_FIELDS[1]]))
+            texts = [TOKEN_SEP.join([p, t+TOKEN_EOS]) for p, t in zip(batch[TEXT_FIELDS[0]], batch[TEXT_FIELDS[1]])]
         else:
-            texts = batch[TEXT_FIELDS[0]]
+            raise NotImplementedError()
 
         features = self.tokenizer.batch_encode_plus(
             texts, max_length=self.max_seq_length, padding='max_length', truncation=True
         )
+        lengths = self.tokenizer.batch_encode_plus(texts, max_length=self.max_seq_length, truncation=True, return_length=True).data["length"]
+        features["length"] = torch.tensor(lengths)
 
         features["labels"] = batch["label"]
 
         return features
 
 
-class CHILDESGrammarTransformer(LightningModule):
+class CHILDESGrammarModel(LightningModule):
     def __init__(
             self,
             class_weights,
@@ -238,10 +241,14 @@ class CHILDESGrammarTransformer(LightningModule):
         super().__init__()
 
         print(f"Model loss class weights: {class_weights}")
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=["tokenizer"])
 
-        self.config = AutoConfig.from_pretrained(model_name_or_path, num_labels=num_labels)
-        self.model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path, config=self.config)
+        if os.path.isfile(args.model):
+            self.model = LSTMSequenceClassification.load_from_checkpoint(args.model, num_labels=num_labels)
+        else:
+            self.config = AutoConfig.from_pretrained(model_name_or_path, num_labels=num_labels)
+            self.model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path, config=self.config)
+
         self.metric_mcc = evaluate.load("matthews_correlation")
         self.metric_acc = evaluate.load("accuracy")
         self.metrics = [self.metric_mcc, self.metric_acc]
@@ -258,7 +265,8 @@ class CHILDESGrammarTransformer(LightningModule):
         output = self(
             input_ids=batch["input_ids"],
             token_type_ids=batch["token_type_ids"],
-            attention_mask=batch["attention_mask"]
+            attention_mask=batch["attention_mask"],
+            length=batch["length"],
         )
         logits = output["logits"]
         labels = batch["labels"]
@@ -280,7 +288,8 @@ class CHILDESGrammarTransformer(LightningModule):
         output = self(
             input_ids=batch["input_ids"],
             token_type_ids=batch["token_type_ids"],
-            attention_mask=batch["attention_mask"]
+            attention_mask=batch["attention_mask"],
+            length=batch["length"],
         )
         logits = output["logits"]
         labels = batch["labels"]
@@ -370,14 +379,22 @@ def calc_class_weights(dm):
 def main(args):
     seed_everything(FINE_TUNE_RANDOM_STATE)
 
+    if os.path.isfile(args.model):
+        tokenizer = PreTrainedTokenizerFast(tokenizer_file=TOKENIZER_PATH)
+        tokenizer.add_special_tokens(
+            {'pad_token': TOKEN_PAD, 'eos_token': TOKEN_EOS, 'unk_token': TOKEN_UNK, 'sep_token': TOKEN_SEP})
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(args.model, use_fast=True)
+
     dm = CHILDESGrammarDataModule(val_split_proportion=args.val_split_proportion,
                                   model_name_or_path=args.model,
                                   eval_batch_size=args.batch_size,
                                   train_batch_size=args.batch_size,
                                   train_datasets=args.train_datasets,
-                                  additional_val_datasets=args.additional_val_datasets)
+                                  additional_val_datasets=args.additional_val_datasets,
+                                  tokenizer=tokenizer)
     dm.setup("fit")
-    model = CHILDESGrammarTransformer(
+    model = CHILDESGrammarModel(
         class_weights=calc_class_weights(dm),
         train_datasets=args.train_datasets,
         additional_val_datasets=args.additional_val_datasets,
@@ -395,11 +412,13 @@ def main(args):
                                         min_delta=0.01, stopping_threshold=0.99)
 
     trainer = Trainer(
-        max_epochs=MAX_EPOCHS,
+        max_epochs=args.max_epochs,
         accelerator="auto",
         devices=1 if torch.cuda.is_available() else None,
-        callbacks=[checkpoint_callback, early_stop_callback]
+        callbacks=[checkpoint_callback, early_stop_callback],
+        auto_lr_find=args.auto_lr_find,
     )
+    trainer.tune(model, datamodule=dm)
 
     print("\n\n\nInitial validation:")
     trainer.validate(model, dm)
@@ -408,7 +427,7 @@ def main(args):
     trainer.fit(model, datamodule=dm)
 
     print(f"\n\n\nFinal validation (using {checkpoint_callback.best_model_path}:")
-    best_model = CHILDESGrammarTransformer.load_from_checkpoint(checkpoint_callback.best_model_path)
+    best_model = CHILDESGrammarModel.load_from_checkpoint(checkpoint_callback.best_model_path, tokenizer=None)
 
     model.val_error_analysis = True
     trainer.validate(best_model, dm)
@@ -416,6 +435,7 @@ def main(args):
 
 def parse_args():
     argparser = argparse.ArgumentParser()
+
     argparser.add_argument(
         "--model",
         type=str,
@@ -444,6 +464,7 @@ def parse_args():
         default=0.5,
         help="Val split proportion (only for manually annotated data)"
     )
+    argparser = Trainer.add_argparse_args(argparser)
 
     args = argparser.parse_args()
 
