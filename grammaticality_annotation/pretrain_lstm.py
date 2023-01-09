@@ -161,7 +161,7 @@ class CHILDESLSTM(LightningModule):
     def training_epoch_end(self, outputs):
         loss = torch.stack([x["loss"] for x in outputs]).mean()
 
-        self.log("loss", loss.mean().item(), prog_bar=True)
+        self.log("train_loss", loss.mean().item(), prog_bar=True)
 
     def validation_step(self, batch, batch_idx, dataloader_idx=0):
         logits, labels = self(batch)
