@@ -259,8 +259,6 @@ def train(args):
     # trainer.tune(model, datamodule=data_module)
     #Learning rate set to 0.003311311214825908
 
-    print(model.generate("Hello, ", max_seq_len=20, temperature=0.3))
-
     print("\n\n\nInitial validation:")
     initial_eval = trainer.validate(model, data_module)
     print(f"Perplexity: {math.exp(initial_eval[0]['val_loss']):.2f}")
