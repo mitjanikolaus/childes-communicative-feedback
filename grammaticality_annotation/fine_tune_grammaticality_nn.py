@@ -49,11 +49,12 @@ def prepare_csv(file_path, include_extra_columns=False):
 
     data["is_grammatical"] = data.is_grammatical.astype(int)
 
-    data.rename(columns={"is_grammatical": "label"}, inplace=True)
+    data.rename(columns={"labels": "categories"}, inplace=True)
+    data.rename(columns={"is_grammatical": "labels"}, inplace=True)
     if include_extra_columns:
-        data = data[TEXT_FIELDS + ["label", "labels", "note"]]
+        data = data[TEXT_FIELDS + ["labels", "categories", "note"]]
     else:
-        data = data[TEXT_FIELDS + ["label"]]
+        data = data[TEXT_FIELDS + ["labels"]]
     return data
 
 
@@ -69,7 +70,7 @@ def prepare_zorro_data():
                         data_zorro.append({
                             "transcript_clean": line.replace("\n", ""),
                             "prev_transcript_clean": ".",
-                            "label": 0 if i % 2 == 0 else 1
+                            "labels": 0 if i % 2 == 0 else 1
                         })
     data_zorro = pd.DataFrame(data_zorro)
     return data_zorro
@@ -78,8 +79,8 @@ def prepare_zorro_data():
 def prepare_manual_annotation_data(val_split_proportion, include_extra_columns=False):
     data_manual_annotations = prepare_csv(FILE_GRAMMATICALITY_ANNOTATIONS, include_extra_columns)
     # Replace unknown grammaticality values
-    data_manual_annotations = data_manual_annotations[data_manual_annotations.label != 0]
-    data_manual_annotations.label.replace({-1: 0}, inplace=True)
+    data_manual_annotations = data_manual_annotations[data_manual_annotations.labels != 0]
+    data_manual_annotations.labels.replace({-1: 0}, inplace=True)
 
     train_data_size = int(len(data_manual_annotations) * (1 - val_split_proportion))
     data_manual_annotations_train = data_manual_annotations.sample(train_data_size,
@@ -181,41 +182,36 @@ class CHILDESGrammarDataModule(LightningDataModule):
             self.dataset[f"validation_{ds_name}"] = ds_val
 
         for split in self.dataset.keys():
-            self.dataset[split] = self.dataset[split].map(
-                self.convert_to_features,
-                batched=True,
-                remove_columns=["label"],
-            )
             self.columns = [c for c in self.dataset[split].column_names if c in self.loader_columns]
-            self.dataset[split].set_format(type="torch", columns=self.columns)
+            self.dataset[split].set_format(type="torch", columns=self.columns+TEXT_FIELDS)
 
         self.eval_splits = [x for x in self.dataset.keys() if "validation" in x]
 
     def train_dataloader(self):
-        return DataLoader(self.dataset["train"], batch_size=self.train_batch_size, shuffle=True)
+        return DataLoader(self.dataset["train"], batch_size=self.train_batch_size, shuffle=True, collate_fn=self.tokenize_batch)
 
     def val_dataloader(self):
-        return [DataLoader(self.dataset[x], batch_size=self.eval_batch_size) for x in self.eval_splits]
+        return [DataLoader(self.dataset[x], batch_size=self.eval_batch_size, collate_fn=self.tokenize_batch) for x in self.eval_splits]
 
     def test_dataloader(self):
         if len(self.eval_splits) == 1:
-            return DataLoader(self.dataset["test"], batch_size=self.eval_batch_size)
+            return DataLoader(self.dataset["test"], batch_size=self.eval_batch_size, collate_fn=self.tokenize_batch)
         elif len(self.eval_splits) > 1:
-            return [DataLoader(self.dataset[x], batch_size=self.eval_batch_size) for x in self.eval_splits]
+            return [DataLoader(self.dataset[x], batch_size=self.eval_batch_size, collate_fn=self.tokenize_batch) for x in self.eval_splits]
 
-    def convert_to_features(self, batch):
+    def tokenize_batch(self, batch):
         if len(TEXT_FIELDS) > 1:
-            texts = [TOKEN_SEP.join([p, t+TOKEN_EOS]) for p, t in zip(batch[TEXT_FIELDS[0]], batch[TEXT_FIELDS[1]])]
+            texts = [TOKEN_SEP.join([b[TEXT_FIELDS[0]], b[TEXT_FIELDS[1]] + TOKEN_EOS]) for b in batch]
         else:
             raise NotImplementedError()
 
-        features = self.tokenizer.batch_encode_plus(
-            texts, max_length=self.max_seq_length, padding='max_length', truncation=True
-        )
         lengths = self.tokenizer.batch_encode_plus(texts, max_length=self.max_seq_length, truncation=True, return_length=True).data["length"]
-        features["length"] = torch.tensor(lengths)
 
-        features["labels"] = batch["label"]
+        features = self.tokenizer.batch_encode_plus(
+            texts, max_length=self.max_seq_length, padding=True, truncation=True, return_tensors="pt"
+        )
+        features.data["length"] = torch.tensor(lengths)
+        features.data["labels"] = torch.tensor([b["labels"] for b in batch])
 
         return features
 
@@ -408,7 +404,7 @@ def main(args):
 
     checkpoint_callback = ModelCheckpoint(monitor="matthews_correlation", mode="max", save_last=True,
                                             filename="{epoch:02d}-{matthews_correlation:.2f}")
-    early_stop_callback = EarlyStopping(monitor="matthews_correlation", patience=5, verbose=True, mode="max",
+    early_stop_callback = EarlyStopping(monitor="matthews_correlation", patience=10, verbose=True, mode="max",
                                         min_delta=0.01, stopping_threshold=0.99)
 
     trainer = Trainer(
