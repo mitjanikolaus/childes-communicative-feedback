@@ -108,6 +108,8 @@ class LSTM(nn.Module):
         if not hidden:
             hidden = self.init_hidden(input_ids.shape[0])
         embedding = self.embedding(input_ids)
+        if isinstance(length, torch.Tensor):
+            length = length.cpu()
         packed_input = pack_padded_sequence(embedding, length, batch_first=True, enforce_sorted=False)
         packed_output, hidden = self.lstm(packed_input, hidden)
         output, input_sizes = pad_packed_sequence(packed_output, batch_first=True)
