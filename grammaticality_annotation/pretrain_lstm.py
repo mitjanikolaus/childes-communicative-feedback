@@ -58,20 +58,18 @@ def prepare_data():
 
 
 class CHILDESDataModule(pl.LightningDataModule):
-    def __init__(self, batch_size: int):
+    def __init__(self, batch_size: int, tokenizer):
         super().__init__()
         self.batch_size = batch_size
+        self.tokenizer = tokenizer
 
         data = load_dataset("text", data_files={"train": LM_DATA})
         self.data = data["train"].train_test_split(test_size=0.001)
 
-        self.tokenizer = Tokenizer.from_file(TOKENIZER_PATH)
-
     def tokenize_batch(self, batch):
         text = [t["text"] + TOKEN_EOS for t in batch]
-        self.tokenizer.enable_padding()
-        self.tokenizer.enable_truncation(TRUNCATION_LENGTH)
-        return self.tokenizer.encode_batch(text)
+        encodings = self.tokenizer.batch_encode_plus(text, padding=True, max_length=TRUNCATION_LENGTH, truncation=True)
+        return encodings.data
 
     def train_dataloader(self):
         return DataLoader(self.data["train"], batch_size=self.batch_size, collate_fn=self.tokenize_batch)
@@ -85,7 +83,6 @@ class CHILDESLSTM(LightningModule):
             self,
             train_batch_size: int,
             eval_batch_size: int,
-            vocab_size: int,
             tokenizer,
             embedding_dim: int = 256,
             hidden_dim: int = 256,
@@ -101,25 +98,25 @@ class CHILDESLSTM(LightningModule):
         self.save_hyperparameters(ignore=["tokenizer"])
 
         self.tokenizer = tokenizer
-        self.vocab_size = tokenizer.get_vocab_size()
 
-        self.loss_fct = nn.CrossEntropyLoss(ignore_index=tokenizer.encode(TOKEN_PAD).ids[0])
+        self.loss_fct = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
 
         self.num_layers = num_layers
         self.hidden_dim = hidden_dim
         self.embedding_dim = embedding_dim
 
-        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        self.vocab_size = self.tokenizer.vocab_size
+        self.embedding = nn.Embedding(self.vocab_size, embedding_dim)
         self.lstm = nn.LSTM(embedding_dim, hidden_dim, num_layers=num_layers,
                             dropout=dropout_rate, batch_first=True)
         self.dropout = nn.Dropout(dropout_rate)
-        self.fc = nn.Linear(hidden_dim, vocab_size)
+        self.fc = nn.Linear(hidden_dim, self.vocab_size)
 
         self.init_weights()
 
     def forward(self, batch):
-        input_ids = torch.tensor([b.ids for b in batch]).to(device)
-        seq_lengths = [b.attention_mask.index(0) if 0 in b.attention_mask else len(b.attention_mask) for b in batch]
+        input_ids = torch.tensor(batch["input_ids"]).to(device)
+        seq_lengths = [att.index(0) if 0 in att else len(att) for att in batch["attention_mask"]]
         hidden = self.init_hidden(len(input_ids))
         logits, _ = self.forward_step(input_ids, seq_lengths, hidden)
         logits = logits[:, :-1, :]
@@ -193,22 +190,21 @@ class CHILDESLSTM(LightningModule):
         if seed is not None:
             torch.manual_seed(seed)
         self.eval()
-        encoding = self.tokenizer.encode(prompt)
-        indices = encoding.ids
+        input_ids = self.tokenizer.encode(prompt)
         hidden = self.init_hidden(batch_size=1)
         with torch.no_grad():
             for i in range(max_seq_len):
-                src = torch.LongTensor([indices]).to(device)
+                src = torch.LongTensor([input_ids]).to(device)
                 prediction, hidden = self.forward_step(src, [src.shape[1]], hidden)
                 probs = torch.softmax(prediction[:, -1] / temperature, dim=-1)
                 prediction = torch.multinomial(probs, num_samples=1).item()
 
-                if [prediction] == self.tokenizer.encode(TOKEN_EOS).ids:
+                if prediction == self.tokenizer.eos_token_id:
                     break
 
-                indices.append(prediction)
+                input_ids.append(prediction)
 
-        decoded = self.tokenizer.decode(indices)
+        decoded = self.tokenizer.decode(input_ids)
         self.train()
         return decoded
 
@@ -221,11 +217,13 @@ def train(args):
         print("Training tokenizer...")
         train_tokenizer()
 
-    data_module = CHILDESDataModule(BATCH_SIZE)
+    tokenizer = PreTrainedTokenizerFast(tokenizer_file=TOKENIZER_PATH)
+    tokenizer.add_special_tokens(
+        {'pad_token': TOKEN_PAD, 'eos_token': TOKEN_EOS, 'unk_token': TOKEN_UNK, 'sep_token': TOKEN_SEP})
 
-    tokenizer = Tokenizer.from_file(TOKENIZER_PATH)
+    data_module = CHILDESDataModule(BATCH_SIZE, tokenizer)
 
-    model = CHILDESLSTM(BATCH_SIZE, BATCH_SIZE, vocab_size=tokenizer.get_vocab_size(), tokenizer=tokenizer)
+    model = CHILDESLSTM(BATCH_SIZE, BATCH_SIZE, tokenizer=tokenizer)
 
     checkpoint_callback = ModelCheckpoint(monitor="val_loss", mode="min", save_last=True,
                                             filename="{epoch:02d}-{val_loss:.2f}")
