@@ -97,6 +97,7 @@ class LSTM(nn.Module):
             hidden = self.init_hidden(len(input_ids))
         if not seq_lengths:
             seq_lengths = [len(input) for input in input_ids]
+        print(input_ids.device)
         embedding = self.embedding(input_ids)
         packed_input = pack_padded_sequence(embedding, seq_lengths, batch_first=True, enforce_sorted=False)
         packed_output, hidden = self.lstm(packed_input, hidden)
@@ -115,10 +116,10 @@ class LSTM(nn.Module):
         for i in range(self.num_layers):
             self.lstm.all_weights[i][0] = torch.FloatTensor(self.embedding_dim,
                                                             self.hidden_dim).uniform_(-init_range_other,
-                                                                                      init_range_other)
+                                                                                      init_range_other).to(device)
             self.lstm.all_weights[i][1] = torch.FloatTensor(self.hidden_dim,
                                                             self.hidden_dim).uniform_(-init_range_other,
-                                                                                      init_range_other)
+                                                                                      init_range_other).to(device)
 
     def init_hidden(self, batch_size):
         hidden = torch.zeros(self.num_layers, batch_size, self.hidden_dim).to(device)
@@ -154,7 +155,7 @@ class CHILDESLSTM(LightningModule):
         self.loss_fct = nn.CrossEntropyLoss(ignore_index=tokenizer.encode(TOKEN_PAD).ids[0])
 
     def forward(self, batch):
-        input_ids = torch.tensor([b.ids for b in batch], device=device)
+        input_ids = torch.tensor([b.ids for b in batch]).to(device)
         seq_lengths = [b.attention_mask.index(0) if 0 in b.attention_mask else len(b.attention_mask) for b in batch]
         logits, _ = self.model(
             input_ids=input_ids,
@@ -247,6 +248,7 @@ def train(args):
     trainer = Trainer(
         max_epochs=MAX_EPOCHS,
         devices=1 if torch.cuda.is_available() else None,
+        accelerator="gpu",
         val_check_interval=100,
         auto_lr_find=True,
         callbacks=[checkpoint_callback, early_stop_callback]
