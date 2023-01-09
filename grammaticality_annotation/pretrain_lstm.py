@@ -5,6 +5,7 @@ import os.path
 import torch
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from pytorch_lightning.loggers import TensorBoardLogger
 from tokenizers.pre_tokenizers import Whitespace
 import pandas as pd
 from datasets import load_dataset
@@ -244,13 +245,15 @@ def train(args):
     early_stop_callback = EarlyStopping(monitor="val_loss", patience=3, verbose=True, mode="min",
                                         min_delta=0.01, stopping_threshold=0.0)
 
+    tb_logger = TensorBoardLogger(name="logs_pretrain_lstm", save_dir=os.path.curdir)
     trainer = Trainer(
         max_epochs=MAX_EPOCHS,
         devices=1 if torch.cuda.is_available() else None,
         accelerator="gpu" if torch.cuda.is_available() else None,
         val_check_interval=100,
         auto_lr_find=True,
-        callbacks=[checkpoint_callback, early_stop_callback]
+        callbacks=[checkpoint_callback, early_stop_callback],
+        logger=tb_logger,
     )
 
     # trainer.tune(model, datamodule=data_module)
