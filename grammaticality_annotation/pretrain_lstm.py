@@ -295,7 +295,7 @@ class LSTMSequenceClassification(CHILDESGrammarLSTM):
 
         self.num_labels = num_labels
 
-        self.freeze_base_weights()
+        # self.freeze_base_weights()
 
     def freeze_base_weights(self):
         for param in self.model.parameters():
