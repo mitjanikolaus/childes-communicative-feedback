@@ -318,7 +318,7 @@ def train(args):
 
     data_module = CHILDESDataModule(BATCH_SIZE, tokenizer)
 
-    model = CHILDESGrammarLSTM(BATCH_SIZE, BATCH_SIZE, tokenizer=tokenizer, pad_token_id=tokenizer.pad_token_id, vocab_size=tokenizer.vocab_size)
+    model = CHILDESGrammarLSTM(tokenizer=tokenizer, pad_token_id=tokenizer.pad_token_id, vocab_size=tokenizer.vocab_size)
 
     checkpoint_callback = ModelCheckpoint(monitor="val_loss", mode="min", save_last=True,
                                             filename="{epoch:02d}-{val_loss:.2f}")
