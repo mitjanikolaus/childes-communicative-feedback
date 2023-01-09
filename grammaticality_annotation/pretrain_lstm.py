@@ -146,7 +146,7 @@ class CHILDESLSTM(LightningModule):
         super().__init__()
         self.save_hyperparameters(ignore=["tokenizer"])
 
-        self.model = LSTM(vocab_size, embedding_dim, hidden_dim, num_layers, dropout_rate)
+        self.model = LSTM(vocab_size, embedding_dim, hidden_dim, num_layers, dropout_rate).to(device)
 
         self.tokenizer = tokenizer
         self.vocab_size = tokenizer.get_vocab_size()
@@ -154,7 +154,7 @@ class CHILDESLSTM(LightningModule):
         self.loss_fct = nn.CrossEntropyLoss(ignore_index=tokenizer.encode(TOKEN_PAD).ids[0])
 
     def forward(self, batch):
-        input_ids = torch.tensor([b.ids for b in batch])
+        input_ids = torch.tensor([b.ids for b in batch], device=device)
         seq_lengths = [b.attention_mask.index(0) if 0 in b.attention_mask else len(b.attention_mask) for b in batch]
         logits, _ = self.model(
             input_ids=input_ids,
