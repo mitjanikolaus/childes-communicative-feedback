@@ -17,6 +17,7 @@ import pytorch_lightning as pl
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from torch.optim import Adam
 from torch.utils.data import DataLoader
+from transformers import PreTrainedTokenizerFast
 
 from utils import UTTERANCES_WITH_PREV_UTTS_FILE
 
@@ -158,9 +159,7 @@ class CHILDESLSTM(LightningModule):
         logits, labels = self(batch)
         loss = self.loss_fct(logits.reshape(-1, self.vocab_size), labels.reshape(-1))
 
-        preds = torch.argmax(logits, axis=1)
-
-        return {"loss": loss, "preds": preds, "labels": labels}
+        return {"loss": loss}
 
     def training_epoch_end(self, outputs):
         loss = torch.stack([x["loss"] for x in outputs]).mean()
@@ -246,8 +245,6 @@ def train(args):
 
     # trainer.tune(model, datamodule=data_module)
     #Learning rate set to 0.003311311214825908
-
-    print(model.generate("Hello, ", max_seq_len=20, temperature=0.3))
 
     print("\n\n\nInitial validation:")
     initial_eval = trainer.validate(model, data_module)
