@@ -938,8 +938,8 @@ def add_following_utts_for_transcript(utterances_transcript, num_utts=1, add_spe
 
     def add_following_utt(utterance):
         if utterance.name in utts_speech_related.index:
-            row_number = np.where(utts_speech_related.index.values == utterance.name)[0][0]
-            if row_number > 0:
+            row_number = np.where(utts_speech_related.index.values == utterance.name)[0][0] + 1
+            if row_number < len(utts_speech_related):
                 following_utts = utts_speech_related.loc[utts_speech_related.index[row_number:][:num_utts]]
                 return " ".join(following_utts.transcript_clean)
 
@@ -947,8 +947,8 @@ def add_following_utts_for_transcript(utterances_transcript, num_utts=1, add_spe
 
     def add_following_utt_speaker_codes(utterance):
         if utterance.name in utts_speech_related.index:
-            row_number = np.where(utts_speech_related.index.values == utterance.name)[0][0]
-            if row_number > 0:
+            row_number = np.where(utts_speech_related.index.values == utterance.name)[0][0] + 1
+            if row_number < len(utts_speech_related):
                 following_utts = utts_speech_related.loc[utts_speech_related.index[row_number:][:num_utts]]
                 return " ".join(following_utts.speaker_code)
 
