@@ -234,6 +234,7 @@ class CHILDESGrammarModel(LightningModule):
             **kwargs,
     ):
         super().__init__()
+        self.learning_rate = learning_rate
 
         print(f"Model loss class weights: {class_weights}")
         self.save_hyperparameters(ignore=["tokenizer"])
@@ -341,7 +342,7 @@ class CHILDESGrammarModel(LightningModule):
     def configure_optimizers(self):
         """Prepare optimizer and schedule (linear warmup and decay)"""
         if isinstance(self.model, LSTMSequenceClassification):
-            optimizer = Adam(self.parameters(), lr=self.hparams.learning_rate, eps=self.hparams.adam_epsilon)
+            optimizer = Adam(self.parameters(), lr=self.learning_rate, eps=self.hparams.adam_epsilon)
             return [optimizer]
         else:
             no_decay = ["bias", "LayerNorm.weight"]
@@ -355,7 +356,7 @@ class CHILDESGrammarModel(LightningModule):
                     "weight_decay": 0.0,
                 },
             ]
-            optimizer = AdamW(optimizer_grouped_parameters, lr=self.hparams.learning_rate, eps=self.hparams.adam_epsilon)
+            optimizer = AdamW(optimizer_grouped_parameters, lr=self.learning_rate, eps=self.hparams.adam_epsilon)
 
             scheduler = get_linear_schedule_with_warmup(
                 optimizer,
