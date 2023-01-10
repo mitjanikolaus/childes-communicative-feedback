@@ -68,10 +68,8 @@ class CHILDESDataModule(pl.LightningDataModule):
 
     def tokenize_batch(self, batch):
         text = [t["text"] for t in batch]
-        lengths = self.tokenizer.batch_encode_plus(text, max_length=TRUNCATION_LENGTH, truncation=True, return_length=True).data["length"]
         encodings = self.tokenizer.batch_encode_plus(text, padding=True, max_length=TRUNCATION_LENGTH, truncation=True,
                                                      return_tensors="pt")
-        encodings.data["length"] = torch.tensor(lengths)
         encodings.data["labels"] = encodings.data["input_ids"][:, 1:]
 
         return encodings
@@ -104,13 +102,12 @@ class LSTM(nn.Module):
 
         self.init_weights()
 
-    def forward(self, input_ids, length, hidden=None, token_type_ids=None, attention_mask=None):
+    def forward(self, input_ids, hidden=None, attention_mask=None, token_type_ids=None):
         if not hidden:
             hidden = self.init_hidden(input_ids.shape[0])
         embedding = self.embedding(input_ids)
-        if isinstance(length, torch.Tensor):
-            length = length.cpu()
-        packed_input = pack_padded_sequence(embedding, length, batch_first=True, enforce_sorted=False)
+        lengths = attention_mask.sum(dim=1).cpu().numpy()
+        packed_input = pack_padded_sequence(embedding, lengths, batch_first=True, enforce_sorted=False)
         packed_output, hidden = self.lstm(packed_input, hidden)
         output, input_sizes = pad_packed_sequence(packed_output, batch_first=True)
         output = self.dropout(output)
@@ -118,13 +115,12 @@ class LSTM(nn.Module):
 
         return {"logits": logits, "hidden": hidden}
 
-    def forward_classification(self, input_ids, length, hidden=None, token_type_ids=None, attention_mask=None):
+    def forward_classification(self, input_ids, hidden=None, attention_mask=None, token_type_ids=None):
         if not hidden:
             hidden = self.init_hidden(input_ids.shape[0])
         embedding = self.embedding(input_ids)
-        if isinstance(length, torch.Tensor):
-            length = length.cpu()
-        packed_input = pack_padded_sequence(embedding, length, batch_first=True, enforce_sorted=False)
+        lengths = attention_mask.sum(dim=1).cpu().numpy()
+        packed_input = pack_padded_sequence(embedding, lengths, batch_first=True, enforce_sorted=False)
         packed_output, hidden = self.lstm(packed_input, hidden)
         output, input_sizes = pad_packed_sequence(packed_output, batch_first=True)
         output = self.dropout(output)
@@ -192,7 +188,6 @@ class CHILDESGrammarLSTM(LightningModule):
             input_ids=batch["input_ids"],
             token_type_ids=batch["token_type_ids"],
             attention_mask=batch["attention_mask"],
-            length=batch["length"],
         )
         labels = batch["labels"]
         logits = output["logits"]
@@ -211,7 +206,6 @@ class CHILDESGrammarLSTM(LightningModule):
             input_ids=batch["input_ids"],
             token_type_ids=batch["token_type_ids"],
             attention_mask=batch["attention_mask"],
-            length=batch["length"],
         )
         labels = batch["labels"]
         logits = output["logits"]

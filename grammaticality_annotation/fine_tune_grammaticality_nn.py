@@ -35,7 +35,7 @@ MODELS = [
     "yevheniimaslov/deberta-v3-large-cola",
     "phueb/BabyBERTa-3",
     "cointegrated/roberta-large-cola-krishna2020",  # Inverted labels!!
-    "textattack/bert-base-uncased",
+    "bert-base-uncased",
     "textattack/bert-base-uncased-CoLA",
 ]
 
@@ -112,7 +112,6 @@ class CHILDESGrammarDataModule(LightningDataModule):
         "start_positions",
         "end_positions",
         "labels",
-        "length",
     ]
 
     def __init__(
@@ -207,12 +206,9 @@ class CHILDESGrammarDataModule(LightningDataModule):
         else:
             raise NotImplementedError()
 
-        lengths = self.tokenizer.batch_encode_plus(texts, max_length=self.max_seq_length, truncation=True, return_length=True).data["length"]
-
         features = self.tokenizer.batch_encode_plus(
             texts, max_length=self.max_seq_length, padding=True, truncation=True, return_tensors="pt"
         )
-        features.data["length"] = torch.tensor(lengths)
         features.data["labels"] = torch.tensor([b["labels"] for b in batch])
 
         return features
@@ -257,7 +253,6 @@ class CHILDESGrammarModel(LightningModule):
         self.val_error_analysis = False
 
     def forward(self, **inputs):
-        del inputs["length"]
         return self.model(**inputs)
 
     def training_step(self, batch, batch_idx):
@@ -265,7 +260,6 @@ class CHILDESGrammarModel(LightningModule):
             input_ids=batch["input_ids"],
             token_type_ids=batch["token_type_ids"],
             attention_mask=batch["attention_mask"],
-            length=batch["length"],
         )
         logits = output["logits"]
         labels = batch["labels"]
@@ -288,7 +282,6 @@ class CHILDESGrammarModel(LightningModule):
             input_ids=batch["input_ids"],
             token_type_ids=batch["token_type_ids"],
             attention_mask=batch["attention_mask"],
-            length=batch["length"],
         )
         logits = output["logits"]
         labels = batch["labels"]
