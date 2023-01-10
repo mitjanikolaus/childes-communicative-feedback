@@ -229,7 +229,6 @@ class CHILDESGrammarLSTM(LightningModule):
         self.log(f"val_loss", loss, prog_bar=True)
 
     def configure_optimizers(self):
-        """Prepare optimizer and schedule (linear warmup and decay)"""
         optimizer = Adam(self.parameters(), lr=self.hparams.learning_rate, eps=self.hparams.adam_epsilon)
         return [optimizer]
 
