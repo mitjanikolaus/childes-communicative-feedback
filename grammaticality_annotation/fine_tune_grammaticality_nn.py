@@ -201,7 +201,9 @@ class CHILDESGrammarDataModule(LightningDataModule):
 
     def tokenize_batch(self, batch):
         if len(TEXT_FIELDS) > 1:
-            texts = [TOKEN_SEP.join([b[TEXT_FIELDS[0]], b[TEXT_FIELDS[1]] + TOKEN_EOS]) for b in batch]
+            texts = [self.tokenizer.sep_token.join([b[TEXT_FIELDS[0]], b[TEXT_FIELDS[1]]]) for b in batch]
+            if TOKEN_EOS in self.tokenizer.all_special_tokens:
+                texts = [t + TOKEN_EOS for t in texts]
         else:
             raise NotImplementedError()
 
@@ -255,6 +257,7 @@ class CHILDESGrammarModel(LightningModule):
         self.val_error_analysis = False
 
     def forward(self, **inputs):
+        del inputs["length"]
         return self.model(**inputs)
 
     def training_step(self, batch, batch_idx):
@@ -423,7 +426,7 @@ def main(args):
     trainer.fit(model, datamodule=dm)
 
     print(f"\n\n\nFinal validation (using {checkpoint_callback.best_model_path}:")
-    best_model = CHILDESGrammarModel.load_from_checkpoint(checkpoint_callback.best_model_path, tokenizer=None)
+    best_model = CHILDESGrammarModel.load_from_checkpoint(checkpoint_callback.best_model_path)
 
     model.val_error_analysis = True
     trainer.validate(best_model, dm)
