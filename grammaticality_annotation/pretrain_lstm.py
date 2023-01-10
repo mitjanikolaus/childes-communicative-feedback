@@ -125,6 +125,8 @@ class LSTM(nn.Module):
         output, input_sizes = pad_packed_sequence(packed_output, batch_first=True)
         output = self.dropout(output)
 
+        # Zero all output that is padded
+        output = output * attention_mask.unsqueeze(2)
         # Max pool over time dimension
         output = self.max_pool(output.permute(0, 2, 1)).squeeze()
 
