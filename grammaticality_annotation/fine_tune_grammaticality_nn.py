@@ -31,6 +31,7 @@ DATA_SPLIT_RANDOM_STATE = 7
 FINE_TUNE_RANDOM_STATE = 1
 
 DEFAULT_BATCH_SIZE = 16
+DEFAULT_LEARNING_RATE = 1e-5
 
 MODELS = [
     "yevheniimaslov/deberta-v3-large-cola",
@@ -225,7 +226,7 @@ class CHILDESGrammarModel(LightningModule):
             additional_val_datasets: list,
             train_batch_size: int,
             eval_batch_size: int,
-            learning_rate: float = 1e-5,
+            learning_rate: float,
             adam_epsilon: float = 1e-8,
             warmup_steps: int = 0,
             weight_decay: float = 0.0,
@@ -402,6 +403,7 @@ def main(args):
         num_labels=dm.num_labels,
         eval_splits=dm.eval_splits,
         val_split_proportion=args.val_split_proportion,
+        learning_rate=args.learning_rate,
     )
 
     checkpoint_callback = ModelCheckpoint(monitor="matthews_correlation", mode="max", save_last=True,
@@ -414,9 +416,7 @@ def main(args):
         accelerator="auto",
         devices=1 if torch.cuda.is_available() else None,
         callbacks=[checkpoint_callback, early_stop_callback],
-        auto_lr_find=args.auto_lr_find,
     )
-    trainer.tune(model, datamodule=dm)
 
     print("\n\n\nInitial validation:")
     trainer.validate(model, dm)
@@ -455,6 +455,11 @@ def parse_args():
         "--batch-size",
         type=int,
         default=DEFAULT_BATCH_SIZE,
+    )
+    argparser.add_argument(
+        "--learning-rate",
+        type=float,
+        default=DEFAULT_LEARNING_RATE,
     )
     argparser.add_argument(
         "--val-split-proportion",
