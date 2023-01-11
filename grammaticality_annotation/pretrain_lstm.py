@@ -252,7 +252,7 @@ class CHILDESGrammarLSTM(LightningModule):
                     break
 
                 input_ids = torch.cat([input_ids, prediction], dim=-1)
-                attention_mask = torch.cat([attention_mask, torch.tensor(1).reshape(1, 1)], dim=1)
+                attention_mask = torch.cat([attention_mask, torch.tensor(1, device=input_ids.device).reshape(1, 1)], dim=1)
 
         decoded = self.tokenizer.decode(input_ids[0].cpu().numpy())
         self.train()
