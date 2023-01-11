@@ -236,23 +236,25 @@ class CHILDESGrammarLSTM(LightningModule):
         if seed is not None:
             torch.manual_seed(seed)
         self.eval()
-        input_ids = self.tokenizer.encode(prompt)
+        encoding = self.tokenizer.encode_plus(prompt, return_tensors="pt").to(device)
+        input_ids = encoding["input_ids"]
+        attention_mask = encoding["attention_mask"]
         with torch.no_grad():
             hidden = None
             for i in range(max_seq_len):
-                src = torch.LongTensor([input_ids]).to(device)
-                output = self.model(src, [src.shape[1]], hidden)
+                output = self.model(input_ids, attention_mask=attention_mask, hidden=hidden)
                 logits = output["logits"]
                 hidden = output["hidden"]
                 probs = torch.softmax(logits[:, -1] / temperature, dim=-1)
-                prediction = torch.multinomial(probs, num_samples=1).item()
+                prediction = torch.multinomial(probs, num_samples=1)
 
-                if prediction == self.tokenizer.eos_token_id:
+                if prediction.item() == self.tokenizer.eos_token_id:
                     break
 
-                input_ids.append(prediction)
+                input_ids = torch.cat([input_ids, prediction], dim=-1)
+                attention_mask = torch.cat([attention_mask, torch.tensor(1).reshape(1, 1)], dim=1)
 
-        decoded = self.tokenizer.decode(input_ids)
+        decoded = self.tokenizer.decode(input_ids[0].cpu().numpy())
         self.train()
         return decoded
 
@@ -267,7 +269,7 @@ class LSTMSequenceClassification(CHILDESGrammarLSTM):
             hidden_dim: int = 256,
             num_layers: int = 1,
             dropout_rate: float = 0.1,
-            learning_rate: float = 0.003,
+            learning_rate: float = 0.001,
             adam_epsilon: float = 1e-8,
             warmup_steps: int = 0,
             weight_decay: float = 0.0,
@@ -329,7 +331,7 @@ def train(args):
         max_epochs=MAX_EPOCHS,
         devices=1 if torch.cuda.is_available() else None,
         accelerator="gpu" if torch.cuda.is_available() else None,
-        val_check_interval=1000,
+        val_check_interval=100,
         auto_lr_find=True,
         callbacks=[checkpoint_callback, early_stop_callback],
         logger=tb_logger,
