@@ -103,6 +103,17 @@ def prepare_blimp_data():
     return data_blimp
 
 
+def prepare_cola_data():
+    dataset = load_dataset("glue", "cola")
+    ds = dataset["train"]
+    ds = ds.rename_column("sentence", "transcript_clean")
+    ds = ds.rename_column("label", "labels")
+    ds = ds.add_column("prev_transcript_clean", ["." for _ in range(len(ds))])
+    ds = ds.to_pandas()
+    ds.set_index("idx", inplace=True)
+    return ds
+
+
 class CHILDESGrammarDataModule(LightningDataModule):
     loader_columns = [
         "datasets_idx",
@@ -148,17 +159,15 @@ class CHILDESGrammarDataModule(LightningDataModule):
                 else:
                     return data_manual_annotations_train
             elif ds_name == "hiller_fernandez":
-                data_hiller_fernandez = prepare_csv(HILLER_FERNANDEZ_DATA_OUT_PATH)
-                return data_hiller_fernandez
+                return prepare_csv(HILLER_FERNANDEZ_DATA_OUT_PATH)
+            elif ds_name == "cola":
+                return prepare_cola_data()
             elif ds_name == "blimp":
-                data_blimp = prepare_blimp_data()
-                return data_blimp
+                return prepare_blimp_data()
             elif ds_name == "childes":
-                data_childes = prepare_csv(FILE_FINE_TUNING_CHILDES_ERRORS)
-                return data_childes
+                return prepare_csv(FILE_FINE_TUNING_CHILDES_ERRORS)
             elif ds_name == "zorro":
-                data_zorro = prepare_zorro_data()
-                return data_zorro
+                return prepare_zorro_data()
             else:
                 raise RuntimeError("Unknown dataset: ", ds_name)
 
