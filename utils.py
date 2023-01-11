@@ -35,6 +35,8 @@ UTTERANCES_WITH_PREV_UTTS_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances_with_prev_utts.csv"
 )
 
+FILE_GRAMMATICALITY_ANNOTATIONS = "data/manual_annotation/grammaticality_manually_annotated.csv"
+
 UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances_with_childes_error_annotations.csv"
 )
