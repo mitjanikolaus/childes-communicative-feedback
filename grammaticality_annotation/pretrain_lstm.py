@@ -100,8 +100,6 @@ class LSTM(nn.Module):
         self.fc_classification = nn.Linear(hidden_dim, 2)
         self.max_pool = torch.nn.AdaptiveMaxPool1d(output_size=1)
 
-        self.init_weights()
-
     def forward(self, input_ids, hidden=None, attention_mask=None, token_type_ids=None):
         if not hidden:
             hidden = self.init_hidden(input_ids.shape[0])
@@ -133,15 +131,6 @@ class LSTM(nn.Module):
         logits = self.fc_classification(output)
 
         return {"logits": logits, "hidden": hidden}
-
-    def init_weights(self):
-        torch.nn.init.xavier_normal_(self.embedding.weight)
-        torch.nn.init.xavier_normal_(self.fc.weight)
-        torch.nn.init.xavier_normal_(self.fc_classification.weight)
-
-        for i in range(self.num_layers):
-            for param in self.lstm.all_weights[i][:2]:
-                torch.nn.init.xavier_normal_(param)
 
     def init_hidden(self, batch_size):
         hidden = torch.zeros(self.num_layers, batch_size, self.hidden_dim).to(device)
