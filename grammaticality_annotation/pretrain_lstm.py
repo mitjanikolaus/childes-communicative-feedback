@@ -135,20 +135,13 @@ class LSTM(nn.Module):
         return {"logits": logits, "hidden": hidden}
 
     def init_weights(self):
-        init_range_emb = 0.1
-        init_range_other = 1 / math.sqrt(self.hidden_dim)
-        self.embedding.weight.data.uniform_(-init_range_emb, init_range_emb)
-        self.fc.weight.data.uniform_(-init_range_other, init_range_other)
-        self.fc.bias.data.zero_()
-        self.fc_classification.weight.data.uniform_(-init_range_other, init_range_other)
-        self.fc_classification.bias.data.zero_()
+        torch.nn.init.xavier_normal_(self.embedding.weight)
+        torch.nn.init.xavier_normal_(self.fc.weight)
+        torch.nn.init.xavier_normal_(self.fc_classification.weight)
+
         for i in range(self.num_layers):
-            self.lstm.all_weights[i][0] = torch.FloatTensor(self.embedding_dim,
-                                                            self.hidden_dim).uniform_(-init_range_other,
-                                                                                      init_range_other).to(device)
-            self.lstm.all_weights[i][1] = torch.FloatTensor(self.hidden_dim,
-                                                            self.hidden_dim).uniform_(-init_range_other,
-                                                                                      init_range_other).to(device)
+            for param in self.lstm.all_weights[i][:2]:
+                torch.nn.init.xavier_normal_(param)
 
     def init_hidden(self, batch_size):
         hidden = torch.zeros(self.num_layers, batch_size, self.hidden_dim).to(device)
