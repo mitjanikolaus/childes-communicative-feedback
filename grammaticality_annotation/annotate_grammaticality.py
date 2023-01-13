@@ -55,11 +55,10 @@ def annotate_grammaticality(utterances, model_name, label_empty_utterance=pd.NA,
             tokenizer = PreTrainedTokenizerFast(tokenizer_file=TOKENIZER_PATH)
             tokenizer.add_special_tokens(
                 {'pad_token': TOKEN_PAD, 'eos_token': TOKEN_EOS, 'unk_token': TOKEN_UNK, 'sep_token': TOKEN_SEP})
-            model = LSTMSequenceClassification.load_from_checkpoint(model_name, num_labels=NUM_LABELS)
+            model = LSTMSequenceClassification.load_from_checkpoint(model_name, num_labels=NUM_LABELS).to(device)
         else:
-            tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-            config = AutoConfig.from_pretrained(model_name, num_labels=NUM_LABELS)
-            model = AutoModelForSequenceClassification.from_pretrained(model_name, config=config)
+            model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
+            tokenizer = AutoTokenizer.from_pretrained(model.hparams.model_name_or_path, use_fast=True)
     else:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
