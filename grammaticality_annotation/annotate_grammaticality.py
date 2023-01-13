@@ -13,6 +13,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, PreT
 import matplotlib
 
 from grammaticality_annotation.data import tokenize
+from grammaticality_annotation.fine_tune_grammaticality_nn import CHILDESGrammarModel
 from grammaticality_annotation.pretrain_lstm import TOKENIZER_PATH, TOKEN_PAD, TOKEN_EOS, TOKEN_UNK, TOKEN_SEP, \
     LSTMSequenceClassification
 from utils import get_num_unique_words, ERR_UNKNOWN
@@ -51,13 +52,12 @@ MAX_SEQ_LENGTH = 40
 def annotate_grammaticality(utterances, model_name, label_empty_utterance=pd.NA,
                             label_one_word_utterance=pd.NA, label_empty_prev_utterance=pd.NA):
     if os.path.isfile(model_name):
+        model = CHILDESGrammarModel.load_from_checkpoint(model_name).to(device)
         if "pretrain_lstm" in model_name:
             tokenizer = PreTrainedTokenizerFast(tokenizer_file=TOKENIZER_PATH)
             tokenizer.add_special_tokens(
                 {'pad_token': TOKEN_PAD, 'eos_token': TOKEN_EOS, 'unk_token': TOKEN_UNK, 'sep_token': TOKEN_SEP})
-            model = LSTMSequenceClassification.load_from_checkpoint(model_name, num_labels=NUM_LABELS).to(device)
         else:
-            model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
             tokenizer = AutoTokenizer.from_pretrained(model.hparams.model_name_or_path, use_fast=True)
     else:
         tokenizer = AutoTokenizer.from_pretrained(model_name)

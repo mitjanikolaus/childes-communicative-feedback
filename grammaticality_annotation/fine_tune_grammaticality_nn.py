@@ -57,8 +57,8 @@ class CHILDESGrammarModel(LightningModule):
         print(f"Model loss class weights: {class_weights}")
         self.save_hyperparameters(ignore=["tokenizer"])
 
-        if os.path.isfile(args.model):
-            self.model = LSTMSequenceClassification.load_from_checkpoint(args.model, num_labels=num_labels)
+        if os.path.isfile(model_name_or_path):
+            self.model = LSTMSequenceClassification.load_from_checkpoint(model_name_or_path, num_labels=num_labels)
         else:
             self.config = AutoConfig.from_pretrained(model_name_or_path, num_labels=num_labels)
             self.model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path, config=self.config)
