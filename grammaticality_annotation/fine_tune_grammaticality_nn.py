@@ -16,7 +16,7 @@ from transformers import (
     get_linear_schedule_with_warmup, PreTrainedTokenizerFast,
 )
 
-from grammaticality_annotation.data import prepare_manual_annotation_data, CHILDESGrammarDataModule
+from grammaticality_annotation.data import prepare_manual_annotation_data, CHILDESGrammarDataModule, calc_class_weights
 from grammaticality_annotation.pretrain_lstm import TOKENIZER_PATH, TOKEN_PAD, TOKEN_EOS, TOKEN_UNK, TOKEN_SEP, LSTMSequenceClassification
 
 FINE_TUNE_RANDOM_STATE = 1
@@ -186,12 +186,6 @@ class CHILDESGrammarModel(LightningModule):
             return [optimizer], [scheduler]
 
 
-def calc_class_weights(dm):
-    class_weight_pos = dm.dataset["train"]["labels"].sum().item() / dm.dataset["train"]["labels"].shape[0]
-    class_weights = [class_weight_pos, 1 - class_weight_pos]
-    return class_weights
-
-
 def main(args):
     seed_everything(FINE_TUNE_RANDOM_STATE)
 
@@ -210,8 +204,10 @@ def main(args):
                                   additional_val_datasets=args.additional_val_datasets,
                                   tokenizer=tokenizer)
     dm.setup("fit")
+    class_weights = calc_class_weights(dm.dataset["train"]["labels"].numpy())
+
     model = CHILDESGrammarModel(
-        class_weights=calc_class_weights(dm),
+        class_weights=class_weights,
         train_datasets=args.train_datasets,
         additional_val_datasets=args.additional_val_datasets,
         eval_batch_size=args.batch_size,

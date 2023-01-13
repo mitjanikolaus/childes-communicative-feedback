@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 import torch
 from datasets import Dataset, DatasetDict, load_dataset
 from pytorch_lightning import LightningDataModule
@@ -87,8 +88,7 @@ def prepare_cola_data():
     return ds
 
 
-class CHILDESGrammarDataModule(LightningDataModule):
-    loader_columns = [
+LOADER_COLUMNS = [
         "datasets_idx",
         "input_ids",
         "token_type_ids",
@@ -98,6 +98,51 @@ class CHILDESGrammarDataModule(LightningDataModule):
         "labels",
     ]
 
+
+def create_dataset_dict(train_datasets, additional_val_datasets, val_split_proportion):
+    data_manual_annotations_train, data_manual_annotations_val = prepare_manual_annotation_data(val_split_proportion)
+
+    def get_dataset_with_name(ds_name, val=False):
+        if ds_name == "manual_annotations":
+            if val:
+                return data_manual_annotations_val
+            else:
+                return data_manual_annotations_train
+        elif ds_name == "hiller_fernandez":
+            return prepare_csv(HILLER_FERNANDEZ_DATA_OUT_PATH)
+        elif ds_name == "cola":
+            return prepare_cola_data()
+        elif ds_name == "blimp":
+            return prepare_blimp_data()
+        elif ds_name == "childes":
+            return prepare_csv(FILE_FINE_TUNING_CHILDES_ERRORS)
+        elif ds_name == "zorro":
+            return prepare_zorro_data()
+        else:
+            raise RuntimeError("Unknown dataset: ", ds_name)
+
+    dataset_dict = DatasetDict()
+
+    data_train = []
+    for ds_name in train_datasets:
+        data_train.append(get_dataset_with_name(ds_name, val=False))
+
+    data_train = pd.concat(data_train, ignore_index=True)
+    ds_train = Dataset.from_pandas(data_train)
+    dataset_dict['train'] = ds_train
+
+    ds_val = Dataset.from_pandas(data_manual_annotations_val)
+    dataset_dict["validation"] = ds_val
+
+    for ds_name in additional_val_datasets:
+        data = get_dataset_with_name(ds_name, val=True)
+        ds_val = Dataset.from_pandas(data)
+        dataset_dict[f"validation_{ds_name}"] = ds_val
+
+    return dataset_dict
+
+
+class CHILDESGrammarDataModule(LightningDataModule):
     def __init__(
             self,
             model_name_or_path: str,
@@ -123,49 +168,10 @@ class CHILDESGrammarDataModule(LightningDataModule):
         self.tokenizer = tokenizer
 
     def setup(self, stage: str):
-        data_manual_annotations_train, data_manual_annotations_val = prepare_manual_annotation_data(self.val_split_proportion)
-
-        def get_dataset_with_name(ds_name, val=False):
-            if ds_name == "manual_annotations":
-                if val:
-                    return data_manual_annotations_val
-                else:
-                    return data_manual_annotations_train
-            elif ds_name == "hiller_fernandez":
-                return prepare_csv(HILLER_FERNANDEZ_DATA_OUT_PATH)
-            elif ds_name == "cola":
-                return prepare_cola_data()
-            elif ds_name == "blimp":
-                return prepare_blimp_data()
-            elif ds_name == "childes":
-                return prepare_csv(FILE_FINE_TUNING_CHILDES_ERRORS)
-            elif ds_name == "zorro":
-                return prepare_zorro_data()
-            else:
-                raise RuntimeError("Unknown dataset: ", ds_name)
-
-        self.dataset = DatasetDict()
-
-        data_train = []
-        for ds_name in self.train_datasets:
-            data_train.append(get_dataset_with_name(ds_name, val=False))
-
-        data_train = pd.concat(data_train, ignore_index=True)
-        ds_train = Dataset.from_pandas(data_train)
-        self.dataset['train'] = ds_train
-
-        ds_val = Dataset.from_pandas(data_manual_annotations_val)
-        self.dataset[f"validation"] = ds_val
-
-        for ds_name in self.additional_val_datasets:
-            data = get_dataset_with_name(ds_name, val=True)
-            ds_val = Dataset.from_pandas(data)
-            self.dataset[f"validation_{ds_name}"] = ds_val
-
+        self.dataset = create_dataset_dict(self.train_datasets, self.additional_val_datasets, self.val_split_proportion)
         for split in self.dataset.keys():
-            self.columns = [c for c in self.dataset[split].column_names if c in self.loader_columns]
-            self.dataset[split].set_format(type="torch", columns=self.columns+TEXT_FIELDS)
-
+            columns = [c for c in self.dataset[split].column_names if c in LOADER_COLUMNS]
+            self.dataset[split].set_format(type="torch", columns=columns + TEXT_FIELDS)
         self.eval_splits = [x for x in self.dataset.keys() if "validation" in x]
 
     def train_dataloader(self):
@@ -194,3 +200,9 @@ class CHILDESGrammarDataModule(LightningDataModule):
         features.data["labels"] = torch.tensor([b["labels"] for b in batch])
 
         return features
+
+
+def calc_class_weights(labels):
+    class_weight_pos = np.sum(labels).item() / len(labels)
+    class_weights = [class_weight_pos, 1 - class_weight_pos]
+    return class_weights
