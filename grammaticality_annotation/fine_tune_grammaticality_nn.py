@@ -155,7 +155,6 @@ class CHILDESGrammarModel(LightningModule):
                 acc_neg = self.metric_acc.compute(predictions=preds[labels == 0], references=labels[labels == 0])
                 self.log(f"{split}_accuracy_pos", acc_pos["accuracy"])
                 self.log(f"{split}_accuracy_neg", acc_neg["accuracy"])
-                self.log(f"{split}_val_loss", loss, prog_bar=True)
 
     def configure_optimizers(self):
         """Prepare optimizer and schedule (linear warmup and decay)"""
@@ -232,7 +231,7 @@ def main(args):
     )
 
     print("\n\n\nInitial validation:")
-    trainer.validate(model, dm)
+    trainer.validate(model, datamodule=dm)
 
     print("\n\n\nTraining:")
     trainer.fit(model, datamodule=dm)
@@ -241,7 +240,7 @@ def main(args):
     best_model = CHILDESGrammarModel.load_from_checkpoint(checkpoint_callback.best_model_path)
 
     model.val_error_analysis = True
-    trainer.validate(best_model, dm)
+    trainer.validate(best_model, datamodule=dm)
 
 
 def parse_args():

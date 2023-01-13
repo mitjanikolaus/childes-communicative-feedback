@@ -12,12 +12,12 @@ from utils import FILE_FINE_TUNING_CHILDES_ERRORS, FILE_GRAMMATICALITY_ANNOTATIO
 
 DATA_PATH_ZORRO = "zorro/sentences/babyberta"
 
-DATA_SPLIT_RANDOM_STATE = 7
+DATA_SPLIT_RANDOM_STATE = 8
 
 TEXT_FIELDS = ["transcript_clean", "prev_transcript_clean"]
 
 
-def prepare_csv(file_path, include_extra_columns=False):
+def prepare_csv(file_path, include_extra_columns=False, val_split_proportion=None):
     data = pd.read_csv(file_path, index_col=0)
     data.dropna(subset=["is_grammatical", "transcript_clean", "prev_transcript_clean"], inplace=True)
 
@@ -29,7 +29,17 @@ def prepare_csv(file_path, include_extra_columns=False):
         data = data[TEXT_FIELDS + ["labels", "categories", "note"]]
     else:
         data = data[TEXT_FIELDS + ["labels"]]
-    return data
+
+    if val_split_proportion:
+        train_data_size = int(len(data) * (1 - val_split_proportion))
+        data_train = data.sample(train_data_size, random_state=DATA_SPLIT_RANDOM_STATE).copy()
+        data_val = data[~data.index.isin(data_train.index)].copy()
+
+        assert (len(set(data_train.index) & set(data_val.index)) == 0)
+
+        return data_train, data_val
+    else:
+        return data
 
 
 def prepare_zorro_data():
@@ -51,18 +61,13 @@ def prepare_zorro_data():
 
 
 def prepare_manual_annotation_data(val_split_proportion, include_extra_columns=False):
-    data_manual_annotations = prepare_csv(FILE_GRAMMATICALITY_ANNOTATIONS, include_extra_columns)
+    data_manual_annotations_train, data_manual_annotations_val = prepare_csv(FILE_GRAMMATICALITY_ANNOTATIONS, include_extra_columns, val_split_proportion)
     # Replace unknown grammaticality values
-    data_manual_annotations = data_manual_annotations[data_manual_annotations.labels != 0]
-    data_manual_annotations.labels.replace({-1: 0}, inplace=True)
+    data_manual_annotations_train = data_manual_annotations_train[data_manual_annotations_train.labels != 0]
+    data_manual_annotations_train.labels.replace({-1: 0}, inplace=True)
 
-    train_data_size = int(len(data_manual_annotations) * (1 - val_split_proportion))
-    data_manual_annotations_train = data_manual_annotations.sample(train_data_size,
-                                                                   random_state=DATA_SPLIT_RANDOM_STATE)
-    data_manual_annotations_val = data_manual_annotations[
-        ~data_manual_annotations.index.isin(data_manual_annotations_train.index)]
-
-    assert (len(set(data_manual_annotations_train.index) & set(data_manual_annotations_val.index)) == 0)
+    data_manual_annotations_val = data_manual_annotations_val[data_manual_annotations_val.labels != 0]
+    data_manual_annotations_val.labels.replace({-1: 0}, inplace=True)
 
     return data_manual_annotations_train, data_manual_annotations_val
 
@@ -101,6 +106,8 @@ LOADER_COLUMNS = [
 
 def create_dataset_dict(train_datasets, additional_val_datasets, val_split_proportion):
     data_manual_annotations_train, data_manual_annotations_val = prepare_manual_annotation_data(val_split_proportion)
+    if "childes" in train_datasets + additional_val_datasets:
+        data_childes_train, data_childes_val = prepare_csv(FILE_FINE_TUNING_CHILDES_ERRORS, val_split_proportion=val_split_proportion)
 
     def get_dataset_with_name(ds_name, val=False):
         if ds_name == "manual_annotations":
@@ -115,7 +122,10 @@ def create_dataset_dict(train_datasets, additional_val_datasets, val_split_propo
         elif ds_name == "blimp":
             return prepare_blimp_data()
         elif ds_name == "childes":
-            return prepare_csv(FILE_FINE_TUNING_CHILDES_ERRORS)
+            if val:
+                return data_childes_val
+            else:
+                return data_childes_train
         elif ds_name == "zorro":
             return prepare_zorro_data()
         else:
