@@ -5,11 +5,14 @@ import pandas as pd
 import torch
 import matplotlib.pyplot as plt
 import seaborn as sns
+from datasets import Dataset
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, PreTrainedTokenizerFast, AutoConfig
 
 import matplotlib
 
+from grammaticality_annotation.data import tokenize
 from grammaticality_annotation.pretrain_lstm import TOKENIZER_PATH, TOKEN_PAD, TOKEN_EOS, TOKEN_UNK, TOKEN_SEP, \
     LSTMSequenceClassification
 from utils import get_num_unique_words, ERR_UNKNOWN
@@ -42,10 +45,11 @@ BATCH_SIZE = 10
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 NUM_LABELS = 2
+MAX_SEQ_LENGTH = 40
 
 
-def annotate_grammaticality(clean_utterances, model_name, label_empty_utterance=pd.NA,
-                            label_one_word_utterance=pd.NA):
+def annotate_grammaticality(utterances, model_name, label_empty_utterance=pd.NA,
+                            label_one_word_utterance=pd.NA, label_empty_prev_utterance=pd.NA):
     if os.path.isfile(model_name):
         if "pretrain_lstm" in model_name:
             tokenizer = PreTrainedTokenizerFast(tokenizer_file=TOKENIZER_PATH)
@@ -60,19 +64,24 @@ def annotate_grammaticality(clean_utterances, model_name, label_empty_utterance=
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
 
-    grammaticalities = np.zeros_like(clean_utterances, dtype=bool).astype(object)  # cast to object to allow for NA
-    num_unique_words = get_num_unique_words(clean_utterances)
+    grammaticalities = np.zeros_like(utterances.transcript_clean, dtype=bool).astype(object)  # cast to object to allow for NA
+    num_unique_words = get_num_unique_words(utterances.transcript_clean)
     grammaticalities[(num_unique_words == 0)] = label_empty_utterance
     grammaticalities[(num_unique_words == 1)] = label_one_word_utterance
+    grammaticalities[utterances.prev_transcript_clean.isna()] = label_empty_prev_utterance
 
-    utts_to_annotate = clean_utterances[(num_unique_words > 1)]
+    utts_to_annotate = utterances[num_unique_words > 1]
+    utts_to_annotate = utts_to_annotate[~utts_to_annotate.prev_transcript_clean.isna()]
 
-    batches = [utts_to_annotate[x:x + BATCH_SIZE] for x in range(0, len(utts_to_annotate), BATCH_SIZE)]
+    dataset = Dataset.from_pandas(utts_to_annotate)
+
+    def tokenize_batch(batch):
+        return tokenize(batch, tokenizer, MAX_SEQ_LENGTH)
+
+    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=tokenize_batch)
 
     annotated_grammaticalities = []
-    for batch in tqdm(batches):
-        tokenized = tokenizer(list(batch), padding=True, return_tensors="pt").to(device)
-
+    for tokenized in tqdm(dataloader):
         predicted_class_ids = model(input_ids=tokenized.input_ids, attention_mask=tokenized.attention_mask).logits.argmax(dim=-1)
         batch_grammaticalities = predicted_class_ids.bool()
         if model_name in MODELS_ACCEPTABILITY_JUDGMENTS_INVERTED:
@@ -81,7 +90,7 @@ def annotate_grammaticality(clean_utterances, model_name, label_empty_utterance=
 
         annotated_grammaticalities.extend(batch_grammaticalities.tolist())
 
-    grammaticalities[(num_unique_words > 1)] = annotated_grammaticalities
+    grammaticalities[(num_unique_words > 1) & (~utts_to_annotate.prev_transcript_clean.isna())] = annotated_grammaticalities
 
     return grammaticalities
 
@@ -131,7 +140,7 @@ def annotate(utterances):
             print(f"Annotation for {model_name} already done. Skipping.")
             continue
         print(f"Annotating grammaticality with {model_name}..")
-        utterances[column_name] = annotate_grammaticality(utterances.transcript_clean, model_name)
+        utterances[column_name] = annotate_grammaticality(utterances, model_name)
 
     if "is_grammatical" in utterances.columns:
         utterances.dropna(subset=["is_grammatical"], inplace=True)

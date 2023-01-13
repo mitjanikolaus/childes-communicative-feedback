@@ -14,7 +14,7 @@ DATA_PATH_ZORRO = "zorro/sentences/babyberta"
 
 DATA_SPLIT_RANDOM_STATE = 8
 
-TEXT_FIELDS = ["transcript_clean", "prev_transcript_clean"]
+TEXT_FIELDS = ["prev_transcript_clean", "transcript_clean"]
 
 
 def prepare_csv(file_path, include_extra_columns=False, val_split_proportion=None):
@@ -197,19 +197,24 @@ class CHILDESGrammarDataModule(LightningDataModule):
             return [DataLoader(self.dataset[x], batch_size=self.eval_batch_size, collate_fn=self.tokenize_batch) for x in self.eval_splits]
 
     def tokenize_batch(self, batch):
-        if len(TEXT_FIELDS) > 1:
-            texts = [self.tokenizer.sep_token.join([b[TEXT_FIELDS[0]], b[TEXT_FIELDS[1]]]) for b in batch]
-            if TOKEN_EOS in self.tokenizer.all_special_tokens:
-                texts = [t + TOKEN_EOS for t in texts]
-        else:
-            raise NotImplementedError()
+        return tokenize(batch, self.tokenizer, self.max_seq_length, add_labels=True)
 
-        features = self.tokenizer.batch_encode_plus(
-            texts, max_length=self.max_seq_length, padding=True, truncation=True, return_tensors="pt"
-        )
+
+def tokenize(batch, tokenizer, max_seq_length, add_labels=False):
+    if len(TEXT_FIELDS) > 1:
+        texts = [tokenizer.sep_token.join([b[TEXT_FIELDS[0]], b[TEXT_FIELDS[1]]]) for b in batch]
+        if TOKEN_EOS in tokenizer.all_special_tokens:
+            texts = [t + TOKEN_EOS for t in texts]
+    else:
+        raise NotImplementedError()
+
+    features = tokenizer.batch_encode_plus(
+        texts, max_length=max_seq_length, padding=True, truncation=True, return_tensors="pt"
+    )
+    if add_labels:
         features.data["labels"] = torch.tensor([b["labels"] for b in batch])
 
-        return features
+    return features
 
 
 def calc_class_weights(labels):
