@@ -6,10 +6,12 @@ import torch
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, PreTrainedTokenizerFast, AutoConfig
 
 import matplotlib
 
+from grammaticality_annotation.pretrain_lstm import TOKENIZER_PATH, TOKEN_PAD, TOKEN_EOS, TOKEN_UNK, TOKEN_SEP, \
+    LSTMSequenceClassification
 from utils import get_num_unique_words, ERR_UNKNOWN
 
 if os.environ["DISPLAY"] != ":0":
@@ -39,11 +41,24 @@ BATCH_SIZE = 10
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
+NUM_LABELS = 2
+
 
 def annotate_grammaticality(clean_utterances, model_name, label_empty_utterance=pd.NA,
                             label_one_word_utterance=pd.NA):
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
+    if os.path.isfile(model_name):
+        if "pretrain_lstm" in model_name:
+            tokenizer = PreTrainedTokenizerFast(tokenizer_file=TOKENIZER_PATH)
+            tokenizer.add_special_tokens(
+                {'pad_token': TOKEN_PAD, 'eos_token': TOKEN_EOS, 'unk_token': TOKEN_UNK, 'sep_token': TOKEN_SEP})
+            model = LSTMSequenceClassification.load_from_checkpoint(args.model, num_labels=NUM_LABELS)
+        else:
+            tokenizer = AutoTokenizer.from_pretrained(args.model, use_fast=True)
+            config = AutoConfig.from_pretrained(model_name, num_labels=NUM_LABELS)
+            model = AutoModelForSequenceClassification.from_pretrained(model_name, config=config)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
 
     grammaticalities = np.zeros_like(clean_utterances, dtype=bool).astype(object)  # cast to object to allow for NA
     num_unique_words = get_num_unique_words(clean_utterances)
