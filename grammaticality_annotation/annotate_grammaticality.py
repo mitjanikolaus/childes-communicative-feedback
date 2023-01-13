@@ -75,7 +75,7 @@ def annotate_grammaticality(utterances, model_name, label_empty_utterance=pd.NA,
     dataset = Dataset.from_pandas(utts_to_annotate)
 
     def tokenize_batch(batch):
-        return tokenize(batch, tokenizer, MAX_SEQ_LENGTH)
+        return tokenize(batch, tokenizer, MAX_SEQ_LENGTH).to(device)
 
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=tokenize_batch)
 
