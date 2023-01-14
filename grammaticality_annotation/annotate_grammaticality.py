@@ -94,15 +94,19 @@ def annotate_grammaticality(utterances, model_name, label_empty_utterance=pd.NA,
     return grammaticalities
 
 
-def plot_error_type_stats(utterances, drop_unknown=True):
+def plot_error_type_stats(utterances, drop_unknown=True, drop_zeros=True):
     if "is_grammatical" in utterances.columns:
         utts = utterances.dropna(subset=["is_grammatical", "labels"]).copy()
+        utts = utts[utts.is_grammatical != 1]
+
         utts["label"] = utts.labels.astype(str).apply(lambda x: x.split(", "))
         utts.drop(columns="labels", inplace=True)
         utts = utts.explode("label")
         if drop_unknown:
             print(f"removing {len(utts[utts.label == ERR_UNKNOWN])} rows with unknown errors")
             utts = utts[utts.label != ERR_UNKNOWN]
+        if drop_zeros:
+            utts = utts[utts.is_grammatical != 0]
         utts.label.value_counts().plot(kind="barh")
         plt.subplots_adjust(left=0.2, right=0.99)
 
@@ -203,9 +207,9 @@ if __name__ == "__main__":
     utterances = pd.read_csv(args.utterances_file, index_col=0)
     plot_error_type_stats(utterances)
 
-    annotated_utts = annotate(utterances)
-    plot_errors(annotated_utts)
-
-    annotated_utts.to_csv(args.out)
+    # annotated_utts = annotate(utterances)
+    # plot_errors(annotated_utts)
+    #
+    # annotated_utts.to_csv(args.out)
 
     plt.show()
