@@ -127,9 +127,8 @@ def get_micro_conversations_for_transcript(utterances_transcript, response_laten
     return micro_convs
 
 
-def get_micro_conversations(utterances, response_latency, max_response_latency_follow_up, max_neg_response_latency,
-                            use_is_grammatical=False):
-    if use_is_grammatical:
+def get_micro_conversations(utterances, response_latency, max_response_latency_follow_up, max_neg_response_latency):
+    if "is_grammatical" in utterances.columns:
         KEEP_KEYS.append("is_grammatical")
         DUMMY_RESPONSE["is_grammatical"] = False
 
@@ -183,7 +182,7 @@ def extract(args):
     conversations = get_micro_conversations(utterances, DEFAULT_RESPONSE_THRESHOLD,
                                             DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP,
                                             DEFAULT_MAX_NEG_RESPONSE_LATENCY,
-                                            use_is_grammatical=False)
+                                            )
 
     return conversations
 
