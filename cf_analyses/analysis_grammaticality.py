@@ -40,8 +40,8 @@ DEFAULT_EXCLUDED_CORPORA = ["Providence", "Forrester"]
 # We are unfortunately only studying mainstream US English
 EXCLUDED_CHILDREN = ["Brent_Jaylen", "Brent_Tyrese", "Brent_Vas", "Brent_Vas_Coleman", "Brent_Xavier"]
 
-# GRAMMATICALITY_COLUMN = "is_grammatical_cointegrated_roberta-large-cola-krishna2020"
-GRAMMATICALITY_COLUMN = "is_grammatical"
+GRAMMATICALITY_COLUMN = "is_grammatical_lightning_logs_version_1178162_checkpoints_last.ckpt"
+# GRAMMATICALITY_COLUMN = "is_grammatical"
 
 RESULTS_DIR = "results/grammaticality/"
 
@@ -484,4 +484,6 @@ if __name__ == "__main__":
         (args.min_age <= utterances.age) & (utterances.age <= args.max_age)
     ]
 
-    conversations = perform_analysis_grammaticality(utterances, args)
+    plot_grammaticality_development(utterances)
+
+    # conversations = perform_analysis_grammaticality(utterances, args)
