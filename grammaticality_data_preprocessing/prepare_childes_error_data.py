@@ -3,7 +3,7 @@ import os
 
 import pandas as pd
 
-from utils import UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, ERR_UNKNOWN, FILE_FINE_TUNING_CHILDES_ERRORS
+from utils import UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, ERR_UNKNOWN, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE
 from tqdm import tqdm
 tqdm.pandas()
 
@@ -11,19 +11,16 @@ tqdm.pandas()
 CORPORA_INCLUDED = ["Bernstein", "Braunwald", "MPI-EVA-Manchester", "Providence", "Thomas"]
 
 
-def prepare(args):
+def prepare(args, sample_equal_pos_neg=False):
     utterances = pd.read_csv(args.utterances_file, index_col=0, dtype={"error": object})
 
-    # Take all utterances from target corpora and only ungrammatical ones from other corpora
-    utterances = utterances[utterances.corpus.isin(CORPORA_INCLUDED) | ~utterances.is_grammatical]
+    # Take all utterances from target corpora
+    utterances = utterances[utterances.corpus.isin(CORPORA_INCLUDED)]
 
-    print(f"removing {len(utterances[utterances.labels == ERR_UNKNOWN])} rows with unknown labels")
-    utterances = utterances[utterances.labels != ERR_UNKNOWN]
-
-    utts_ungrammatical = utterances[~utterances.is_grammatical]
-    # TODO do not sample? // sample in finetuning script!
-    utts_grammatical = utterances[utterances.is_grammatical].sample(len(utts_ungrammatical), random_state=1)
-    utterances = pd.concat([utts_grammatical, utts_ungrammatical])
+    if sample_equal_pos_neg:
+        utts_ungrammatical = utterances[~utterances.is_grammatical]
+        utts_grammatical = utterances[utterances.is_grammatical].sample(len(utts_ungrammatical), random_state=1)
+        utterances = pd.concat([utts_grammatical, utts_ungrammatical])
 
     return utterances
 
@@ -47,5 +44,5 @@ if __name__ == "__main__":
 
     utterances = prepare(args)
 
-    os.makedirs(os.path.dirname(FILE_FINE_TUNING_CHILDES_ERRORS), exist_ok=True)
-    utterances.to_csv(FILE_FINE_TUNING_CHILDES_ERRORS)
+    os.makedirs(os.path.dirname(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE), exist_ok=True)
+    utterances.to_csv(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE)

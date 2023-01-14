@@ -8,7 +8,7 @@ import pandas as pd
 from utils import categorize_error, ERR_VERB, ERR_AUXILIARY, ERR_PREPOSITION, \
     ERR_SUBJECT, ERR_OBJECT, ERR_POSSESSIVE, ERR_SV_AGREEMENT, ERR_DETERMINER, ERR_UNKNOWN, \
     remove_superfluous_annotations, UTTERANCES_WITH_PREV_UTTS_FILE, \
-    ERR_PRESENT_PROGRESSIVE, ERR_PAST, ERR_PLURAL, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE
+    ERR_PRESENT_PROGRESSIVE, ERR_PAST, ERR_PLURAL, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, is_nan
 from tqdm import tqdm
 tqdm.pandas()
 
@@ -273,7 +273,16 @@ def prepare(args):
     utterances = pd.read_csv(args.utterances_file, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval, "gra": literal_eval}, dtype={"error": object})
 
     utterances["labels"] = utterances.apply(get_error_labels, axis=1)
-    utterances["is_grammatical"] = utterances.labels.isna()
+
+    def is_grammatical(label):
+        if pd.isna(label):
+            return True
+        if label == ERR_UNKNOWN:
+            return pd.NA
+        else:
+            return False
+
+    utterances["is_grammatical"] = utterances.labels.apply(is_grammatical).astype(object)
 
     return utterances
 
