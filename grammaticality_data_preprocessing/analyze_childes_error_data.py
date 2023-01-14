@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 
-from utils import ANNOTATED_UTTERANCES_FILE, ERR_UNKNOWN, SPEAKER_CODE_CHILD, FILE_FINE_TUNING_CHILDES_ERRORS
+from utils import ANNOTATED_UTTERANCES_FILE, ERR_UNKNOWN, SPEAKER_CODE_CHILD, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -131,7 +131,7 @@ def plot_corpus_error_stats(error_utterances):
 
 
 def analyze():
-    utterances = pd.read_csv(FILE_FINE_TUNING_CHILDES_ERRORS, index_col=0, dtype={"error": object})
+    utterances = pd.read_csv(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE, index_col=0, dtype={"error": object})
 
     error_utterances = utterances[~utterances.is_grammatical]
 

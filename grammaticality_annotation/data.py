@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 from grammaticality_annotation.pretrain_lstm import TOKEN_EOS
 from grammaticality_data_preprocessing.prepare_hiller_fernandez_data import HILLER_FERNANDEZ_DATA_OUT_PATH
-from utils import FILE_FINE_TUNING_CHILDES_ERRORS, FILE_GRAMMATICALITY_ANNOTATIONS
+from utils import UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE, FILE_GRAMMATICALITY_ANNOTATIONS
 
 DATA_PATH_ZORRO = "zorro/sentences/babyberta"
 
@@ -107,7 +107,7 @@ LOADER_COLUMNS = [
 def create_dataset_dict(train_datasets, additional_val_datasets, val_split_proportion):
     data_manual_annotations_train, data_manual_annotations_val = prepare_manual_annotation_data(val_split_proportion)
     if "childes" in train_datasets + additional_val_datasets:
-        data_childes_train, data_childes_val = prepare_csv(FILE_FINE_TUNING_CHILDES_ERRORS, val_split_proportion=val_split_proportion)
+        data_childes_train, data_childes_val = prepare_csv(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE, val_split_proportion=val_split_proportion)
 
     def get_dataset_with_name(ds_name, val=False):
         if ds_name == "manual_annotations":

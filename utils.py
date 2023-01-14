@@ -41,8 +41,8 @@ UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances_with_childes_error_annotations.csv"
 )
 
-FILE_FINE_TUNING_CHILDES_ERRORS = os.path.expanduser(
-    "~/data/communicative_feedback/fine_tuning_childes_errors.csv"
+UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE = os.path.expanduser(
+    "~/data/communicative_feedback/utterances_with_childes_error_annotations_clean.csv"
 )
 
 ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
