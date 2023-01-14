@@ -11,10 +11,12 @@ import numpy as np
 from analysis_intelligibility import response_is_clarification_request, melt_variable, \
     DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES, response_is_acknowledgement
 from analysis_reproduce_warlaumont import has_response
+from cf_analyses.extract_micro_conversations import DEFAULT_RESPONSE_THRESHOLD
 from utils import (
     age_bin,
     str2bool,
     filter_transcripts_based_on_num_child_utts, SPEAKER_CODE_CHILD, get_num_words, UTTERANCES_WITH_SPEECH_ACTS_FILE,
+    MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE,
 )
 
 DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
@@ -40,9 +42,6 @@ DEFAULT_EXCLUDED_CORPORA = ["Providence", "Forrester"]
 # We are unfortunately only studying mainstream US English
 EXCLUDED_CHILDREN = ["Brent_Jaylen", "Brent_Tyrese", "Brent_Vas", "Brent_Vas_Coleman", "Brent_Xavier"]
 
-GRAMMATICALITY_COLUMN = "is_grammatical_lightning_logs_version_1178162_checkpoints_last.ckpt"
-# GRAMMATICALITY_COLUMN = "is_grammatical"
-
 RESULTS_DIR = "results/grammaticality/"
 
 
@@ -51,7 +50,7 @@ def parse_args():
     argparser.add_argument(
         "--utterances-file",
         type=str,
-        default=UTTERANCES_WITH_SPEECH_ACTS_FILE,
+        default=MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE,
     )
     argparser.add_argument(
         "--corpora",
@@ -118,56 +117,7 @@ def plot_num_words_vs_grammaticality(utterances):
     plt.show()
 
 
-def plot_grammaticality_development(utterances):
-    # TODO: testing: later we should only drop from micro-conversations!
-    utterances.dropna(subset=["is_grammatical"], inplace=True)
-    utterances["is_grammatical"] = utterances.is_grammatical.astype(bool)
-    utterances = utterances[utterances.is_intelligible & utterances.is_speech_related]
-
-    # TODO: filter?
-    utterances = filter_transcripts_based_on_num_child_utts(
-        utterances, 10
-    )
-
-    proportion_grammatical_per_transcript_chi = utterances[utterances.speaker_code==SPEAKER_CODE_CHILD].groupby(
-        "transcript_file"
-    ).agg({"is_grammatical": "mean", "age": "mean"})
-    sns.regplot(
-        data=proportion_grammatical_per_transcript_chi,
-        x="age",
-        y="is_grammatical",
-        marker=".",
-        logistic=True,
-        line_kws={"color": sns.color_palette("tab10")[0]},
-        scatter_kws={"alpha": 0.2, "s": 20, "color": sns.color_palette("tab10")[0]},
-    )
-    plt.tight_layout()
-    plt.savefig(os.path.join(RESULTS_DIR, "proportion_grammatical_children.png"), dpi=300)
-
-    proportion_grammatical_per_transcript_adu = utterances[utterances.speaker_code != SPEAKER_CODE_CHILD].groupby(
-        "transcript_file"
-    ).agg({"is_grammatical": "mean", "age": "mean"})
-    sns.regplot(
-        data=proportion_grammatical_per_transcript_adu,
-        x="age",
-        y="is_grammatical",
-        marker=".",
-        logistic=True,
-        line_kws={"color": sns.color_palette("tab10")[1]},
-        scatter_kws={"alpha": 0.2, "s": 20, "color": sns.color_palette("tab10")[1]},
-    )
-    plt.tight_layout()
-    plt.legend(labels=["children", "adults"])
-    plt.savefig(os.path.join(RESULTS_DIR, "proportion_grammatical_children_adults.png"), dpi=300)
-    plt.show()
-
-
-def perform_analysis_grammaticality(utterances, args):
-    # Discard non-speech, but keep uncertain (xxx, labelled as NA)
-    utterances = utterances[utterances.is_speech_related != False]
-
-    conversations = get_micro_conversations(utterances, args, use_is_grammatical=True)
-
+def perform_analysis_grammaticality(conversations, args):
     conversations.dropna(
         subset=(
             "response_latency",
@@ -188,7 +138,7 @@ def perform_analysis_grammaticality(utterances, args):
         has_response=conversations.apply(
             has_response,
             axis=1,
-            response_latency=args.response_latency,
+            response_latency=DEFAULT_RESPONSE_THRESHOLD,
             count_only_intelligible_responses=args.count_only_intelligible_responses,
         )
     )
@@ -465,25 +415,21 @@ if __name__ == "__main__":
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    utterances = pd.read_csv(args.utterances_file, index_col=0)
-
-    utterances["is_grammatical"] = utterances[GRAMMATICALITY_COLUMN]
+    conversations = pd.read_csv(args.utterances_file, index_col=0, dtype={"error": object})
 
     print("Excluding corpora: ", args.excluded_corpora)
-    utterances = utterances[~utterances.corpus.isin(args.excluded_corpora)]
+    conversations = conversations[~conversations.corpus.isin(args.excluded_corpora)]
 
     if args.corpora:
         print("Including only corpora: ", args.corpora)
-        utterances = utterances[utterances.corpus.isin(args.corpora)]
-
-    print("Excluding children: ", EXCLUDED_CHILDREN)
-    utterances = utterances[~utterances.child_name.isin(EXCLUDED_CHILDREN)]
+        conversations = conversations[conversations.corpus.isin(args.corpora)]
 
     # Filter by age
-    utterances = utterances[
-        (args.min_age <= utterances.age) & (utterances.age <= args.max_age)
+    conversations = conversations[
+        (args.min_age <= conversations.age) & (conversations.age <= args.max_age)
     ]
 
-    plot_grammaticality_development(utterances)
+    print("Excluding children: ", EXCLUDED_CHILDREN)
+    conversations = conversations[~conversations.child_name.isin(EXCLUDED_CHILDREN)]
 
-    # conversations = perform_analysis_grammaticality(utterances, args)
+    perform_analysis_grammaticality(conversations, args)
