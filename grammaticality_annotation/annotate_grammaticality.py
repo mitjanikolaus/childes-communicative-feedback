@@ -207,9 +207,9 @@ if __name__ == "__main__":
     utterances = pd.read_csv(args.utterances_file, index_col=0)
     plot_error_type_stats(utterances)
 
-    # annotated_utts = annotate(utterances)
-    # plot_errors(annotated_utts)
-    #
-    # annotated_utts.to_csv(args.out)
+    annotated_utts = annotate(utterances)
+    plot_errors(annotated_utts)
+
+    annotated_utts.to_csv(args.out)
 
     plt.show()
