@@ -94,7 +94,7 @@ def annotate_grammaticality(utterances, model_name, label_empty_utterance=pd.NA,
     return grammaticalities
 
 
-def plot_error_type_stats(utterances, drop_unknown=True, drop_zeros=True):
+def plot_error_type_stats(utterances, drop_unknown=True, drop_zeros=False):
     if "is_grammatical" in utterances.columns:
         utts = utterances.dropna(subset=["is_grammatical", "labels"]).copy()
         utts = utts[utts.is_grammatical != 1]
