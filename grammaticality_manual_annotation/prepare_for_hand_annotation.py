@@ -1,11 +1,12 @@
 import argparse
 import os
 
+import numpy as np
 import pandas as pd
 
 from utils import (
     SPEAKER_CODE_CHILD, get_num_unique_words,
-    FILE_GRAMMATICALITY_ANNOTATIONS, SPEAKER_CODES_CAREGIVER
+    SPEAKER_CODES_CAREGIVER, ANNOTATED_UTTERANCES_FILE
 )
 
 from tqdm import tqdm
@@ -35,25 +36,31 @@ def prepare(args):
 
     utterances = utterances.iloc[args.num_utts_ignore:]
 
-    # utterances.dropna(subset=["is_grammatical"], inplace=True)
+    utterances = utterances[utterances.corpus == "Providence"].copy()
+    transcripts = utterances.transcript_file.unique()
+    np.random.seed(1)
+    transcript = np.random.choice(transcripts)
+    utts_transcript = utterances[utterances.transcript_file == transcript].copy()
+    utts_transcript_child = utts_transcript[utts_transcript.speaker_code == SPEAKER_CODE_CHILD]
+    while (utts_transcript.age.min() < 36) or (utts_transcript.age.min() > 40) or len(utts_transcript_child) < 10:
+        transcript = np.random.choice(transcripts)
+        utts_transcript = utterances[utterances.transcript_file == transcript].copy()
+        utts_transcript_child = utts_transcript[utts_transcript.speaker_code == SPEAKER_CODE_CHILD]
 
-    utterances = utterances[utterances.prev_speaker_code.isin(SPEAKER_CODES_CAREGIVER + [SPEAKER_CODE_CHILD])]
+    print("Transcript: ", transcript)
+    print("Num child utts: ", len(utts_transcript_child))
 
-    utterances["utterance"] = utterances["speaker_code"].apply(speaker_code_to_special_token) + " " + utterances["transcript_clean"]
-    utterances["previous_utterance"] = utterances["prev_speaker_code"].apply(speaker_code_to_special_token) + " " + utterances["prev_transcript_clean"]
+    utts_transcript["utterance"] = utts_transcript["speaker_code"].apply(speaker_code_to_special_token) + " " + utts_transcript["transcript_clean"]
 
-    # utterances["is_grammatical"] = ""
-    # utterances["labels"] = ""
-    # utterances["note"] = ""
+    utts_transcript["is_grammatical"] = ""
+    utts_transcript["labels"] = ""
+    utts_transcript["note"] = ""
 
-    utterances = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD]
-
-    num_unique_words = get_num_unique_words(utterances.transcript_clean)
-    utterances = utterances[(num_unique_words > 1)]
-    utterances = utterances[utterances.is_speech_related & utterances.is_intelligible]
-
-    utterances = utterances[["previous_utterance", "utterance", "is_grammatical", "labels", "note"]]
-    return utterances
+    utts_transcript["num_unique_words"] = get_num_unique_words(utts_transcript.transcript_clean)
+    utts_transcript.loc[(utts_transcript.speaker_code == SPEAKER_CODE_CHILD) & (utts_transcript.num_unique_words > 1) & (utts_transcript.is_speech_related == True) & (
+                    utts_transcript.is_intelligible == True), "is_grammatical"] = "TODO"
+    utts_transcript = utts_transcript[["utterance", "is_grammatical", "labels", "note"]]
+    return utts_transcript
 
 
 def parse_args():
@@ -61,18 +68,18 @@ def parse_args():
     argparser.add_argument(
         "--utterances-file",
         type=str,
-        default=FILE_GRAMMATICALITY_ANNOTATIONS,
+        default=ANNOTATED_UTTERANCES_FILE,
     )
     argparser.add_argument(
         "--num-utts-ignore",
         type=int,
-        default=400,
+        default=0,
         help="First x utts to ignore (already annotated)"
     )
     argparser.add_argument(
         "--num-utts",
         type=int,
-        default=200,
+        default=500,
         help="Number of utts to annotate"
     )
 
