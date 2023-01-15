@@ -1,8 +1,7 @@
-import os
-
 import pandas as pd
 
-from utils import ANNOTATED_UTTERANCES_FILE, ERR_UNKNOWN, SPEAKER_CODE_CHILD, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE
+from utils import ANNOTATED_UTTERANCES_FILE, SPEAKER_CODE_CHILD, \
+    UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -87,7 +86,10 @@ COLORS_PLOT_CATEGORICAL = [
 ]
 
 
-def plot_corpus_error_stats(error_utterances):
+def plot_corpus_error_stats(utterances):
+    error_utterances = utterances[utterances.is_grammatical == False]
+    print(f"Total utts: {len(utterances)} | Errors: {len(error_utterances)}")
+
     utts = error_utterances.dropna(subset=["is_grammatical", "labels"]).copy()
     utts["label"] = utts.labels.astype(str).apply(lambda x: x.split(", "))
     utts.drop(columns="labels", inplace=True)
@@ -98,8 +100,8 @@ def plot_corpus_error_stats(error_utterances):
 
     num_errors = utts.corpus.value_counts()
 
-    all_utterances = pd.read_csv(ANNOTATED_UTTERANCES_FILE, index_col=0, dtype={"error": object})
-    num_utts_data = all_utterances[all_utterances.speaker_code == SPEAKER_CODE_CHILD].corpus.value_counts()
+    # all_utterances = pd.read_csv(ANNOTATED_UTTERANCES_FILE, index_col=0, dtype={"error": object})
+    num_utts_data = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD].corpus.value_counts()
 
     num_utts = num_utts_data.to_frame()
     num_utts = num_utts.rename(columns={"corpus": "num_utts"})
@@ -131,13 +133,9 @@ def plot_corpus_error_stats(error_utterances):
 
 
 def analyze():
-    utterances = pd.read_csv(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE, index_col=0, dtype={"error": object})
+    utterances = pd.read_csv(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, index_col=0, dtype={"error": object})
 
-    error_utterances = utterances[~utterances.is_grammatical]
-
-    print(f"Total utts: {len(utterances)} | Errors: {len(error_utterances)}")
-
-    plot_corpus_error_stats(error_utterances)
+    plot_corpus_error_stats(utterances)
     plt.show()
 
 

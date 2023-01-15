@@ -3,12 +3,12 @@ import os
 
 import pandas as pd
 
-from utils import UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, ERR_UNKNOWN, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE
+from utils import UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE
 from tqdm import tqdm
 tqdm.pandas()
 
 
-CORPORA_INCLUDED = ["Bernstein", "Braunwald", "MPI-EVA-Manchester", "Providence", "Thomas"]
+CORPORA_INCLUDED = ["Braunwald", "EllisWeismer", "Hall", "Lara", "MPI-EVA-Manchester", "Providence Thomas"]
 
 
 def prepare(args, sample_equal_pos_neg=False):
