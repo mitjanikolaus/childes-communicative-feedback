@@ -254,6 +254,9 @@ def preprocess_utterances(corpus, transcripts, start_index, args):
 
         all_utts.append(utts_transcript)
 
+    if not all_utts:
+        return start_index
+
     utterances = pd.concat(all_utts, ignore_index=True)
 
     utterances = replace_untranscribed_names(utterances)
