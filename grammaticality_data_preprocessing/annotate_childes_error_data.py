@@ -2,7 +2,6 @@ import argparse
 import os
 import re
 from ast import literal_eval
-from collections import Counter
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,8 +10,8 @@ from grammaticality_data_preprocessing.analyze_childes_error_data import plot_co
 from utils import categorize_error, ERR_VERB, ERR_AUXILIARY, ERR_PREPOSITION, \
     ERR_SUBJECT, ERR_OBJECT, ERR_POSSESSIVE, ERR_SV_AGREEMENT, ERR_DETERMINER, ERR_UNKNOWN, \
     remove_superfluous_annotations, \
-    ERR_PRESENT_PROGRESSIVE, ERR_PAST, ERR_PLURAL, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, is_nan, \
-    PREPROCESSED_UTTERANCES_FILE, ERR_OTHER
+    ERR_PRESENT_PROGRESSIVE, ERR_PAST, ERR_PLURAL, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, \
+    ERR_OTHER, UTTERANCES_WITH_PREV_UTTS_FILE
 from tqdm import tqdm
 tqdm.pandas()
 
@@ -317,7 +316,7 @@ def parse_args():
     argparser.add_argument(
         "--utterances-file",
         type=str,
-        default=PREPROCESSED_UTTERANCES_FILE,
+        default=UTTERANCES_WITH_PREV_UTTS_FILE,
     )
 
     args = argparser.parse_args()
