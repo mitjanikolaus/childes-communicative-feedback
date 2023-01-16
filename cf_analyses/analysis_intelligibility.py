@@ -116,57 +116,94 @@ RESPONSES_ACKNOWLEDGEMENT_IF_ALONE = {"right", "sure", "okay", "alright", "all r
 RESPONSES_ACKNOWLEDGEMENT_CERTAIN = {"uhhuh", "uhuh", "uhhum", "mhm", "mm", "huh", "ummhm"}
 
 
+def contains_acknowledgement_keyword(micro_conv):
+    response = micro_conv["response_transcript_clean"].lower()
+
+    words = [word.lower() for word in split_into_words(response, split_on_apostrophe=True, remove_commas=True,
+                                                       remove_trailing_punctuation=True)]
+    if len(words) > 0:
+        if len(set(words) & (RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_IF_ALONE)) == len(
+                set(words)):
+            # Consider sentences ending with full stop, but not exclamation marks or question marks, as they are changing
+            # the function of the word (i.e. "okay?" or "huh?" are not acknowledgements)
+            if len(response) > 0 and response[-1] == ".":
+                return True
+            else:
+                return False
+        elif words[0] in RESPONSES_ACKNOWLEDGEMENT_CERTAIN:
+            return True
+    return False
+
+
+def is_repetition_acknowledgement(micro_conv):
+    if micro_conv["response_transcript_clean"][-1] == ".":
+        if micro_conv["utt_repetition_ratio"] == 1 and micro_conv["resp_repetition_ratio"] >= 0.5:
+            return True
+    return False
+
+
 def response_is_acknowledgement(micro_conv):
     if micro_conv["has_response"]:
-        response = micro_conv["response_transcript_clean"].lower()
-        words = [word.lower() for word in split_into_words(response, split_on_apostrophe=True, remove_commas=True,
-                                                           remove_trailing_punctuation=True)]
-        if len(words) > 0:
-            if len(set(words) & (RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_IF_ALONE)) == len(set(words)):
-                # Consider sentences ending with full stop, but not exclamation marks or question marks, as they are changing
-                # the function of the word (i.e. "okay?" or "huh?" are not acknowledgements)
-                if len(response) > 0 and response[-1] == ".":
-                    return True
-                else:
-                    return False
-            elif words[0] in RESPONSES_ACKNOWLEDGEMENT_CERTAIN:
-                return True
+        ack_keyword = contains_acknowledgement_keyword(micro_conv)
+        ack_repetition = is_repetition_acknowledgement(micro_conv)
 
+        return ack_keyword or ack_repetition
+
+    return False
+
+
+def is_repetition_clarification_request(micro_conv):
+    if micro_conv["response_transcript_clean"][-1] == "?":
+        if micro_conv["resp_repetition_ratio"] >= 0.5:
+            return True
+    return False
+
+
+def is_clarification_request_speech_act(micro_conv):
+    if micro_conv["response_speech_act"] in SPEECH_ACTS_CLARIFICATION_REQUEST:
+        utt = micro_conv["utt_transcript_clean"]
+        unique_words = set(
+            split_into_words(utt, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True))
+        if len(unique_words) == 1 and unique_words.pop().lower() in CAREGIVER_NAMES:
+            # If the initial utterance is just a call for attention, the response is not a clarification request.
+            return False
+        else:
+            return True
     return False
 
 
 def response_is_clarification_request(micro_conv):
     if micro_conv["has_response"]:
-        if micro_conv["response_speech_act"] in SPEECH_ACTS_CLARIFICATION_REQUEST:
-            utt = micro_conv["utt_transcript_clean"]
-            unique_words = set(split_into_words(utt, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True))
-            if len(unique_words) == 1 and unique_words.pop().lower() in CAREGIVER_NAMES:
-                # If the initial utterance is just a call for attention, the response is not a clarification request.
-                return False
-            else:
-                return True
+        cf_speech_act = is_clarification_request_speech_act(micro_conv)
+        cf_repetition = is_repetition_clarification_request(micro_conv)
+        return cf_speech_act or cf_repetition
     return False
 
 
 # List of stopwords to be ignored for repetition calculation
-STOPWORDS = {'s', 'the', 'a', 'to', 't', 'and', 'no', 'yeah', 'oh', 'is', 'in', 'on', 'yes', 'not',  'of', 'okay', 'right', 'with', 'for', 'up', 'some', 'just', 'at', 'because', 'so', 'but', 'out', 'if', 'mhm',  'off', 'about', 'too', 'over', 'ah', 'again', 'or', 'mm', 'as', 'huh', 'from', 'else', 'an', 'alright', 'ooh'}
+STOPWORDS = {'my', 'doing', 'than', 'doesn', 'do', 'him', 's', 'her', 'won', 'myself', 'his', 'were', 'during', 'few', 'yourself', 'mightn', 'into', 'we', 'above', 'below', 'you', 'what', 'has', 'under', 'each', 'before', 'am', 'after', 'me', 'once', 'out', 'y', 'have', 'ain', 'of', 'will', 'weren', 'with', 'no', 'm', 'whom', 'only', 'ours', 'nor', 'mustn', 'himself', 're', 'was', 'o', 'having', 'for', 'ourselves', 'theirs', 'ma', 'off', 'too', 'i', 'further', 'hadn', 'wasn', 'their', 'more', 'or', 'them', 'again', 't', 'against', 'own', 'those', 'hers', 'does', 've', 'its', 'herself', 'over', 'not', 'should', 'aren', 'that', 'our', 'as', 'been', 'who', 'while', 'to', 'hasn', 'through', 'about', 'haven', 'how', 'can', 'and', 'they', 'in', 'until', 'had', 'an', 'between', 'then', 'both', 'shouldn', 'this', 'down', 'don', 'now', 'yourselves', 'he', 'couldn', 'a', 'where', 'themselves', 'other', 'these', 'wouldn', 'the', 'because', 'but', 'your', 'why', 'up', 'by', 'if', 'most', 'she', 'be', 'is', 'just', 'any', 'such', 'very', 'all', 'are', 'on', 'didn', 'itself', 'll', 'so', 'yours', 'same', 'needn', 'd', 'which', 'isn', 'some', 'here', 'it', 'when', 'at', 'from', 'did', 'being', 'there', 'oh', 'huh', 'ah', 'mhm', 'ooh', 'mm', 'shan'}
 
 
 def get_repetition_ratios(micro_conv):
     utt = micro_conv["utt_transcript_clean"].lower()
-    words_utt = split_into_words(utt, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True)
-    words_utt = {word for word in words_utt if word not in STOPWORDS}
+    words_utt = set(split_into_words(utt, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True))
+    words_utt_no_stopwords = {word for word in words_utt if word not in STOPWORDS}
 
     response = micro_conv["response_transcript_clean"].lower()
-    words_response = split_into_words(response, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True)
-    words_response = {word for word in words_response if word not in STOPWORDS}
+    words_response = set(split_into_words(response, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True))
+    words_response_no_stopwords = {word for word in words_response if word not in STOPWORDS}
 
-    overlap = words_utt & words_response
+    overlap = words_utt_no_stopwords & words_response_no_stopwords
 
-    if len(words_utt) == 0:
+    len_utt = len(words_utt_no_stopwords)
+    if len_utt == 0 or len(words_response_no_stopwords) == 0:
+        overlap = words_utt & words_response
+        len_utt = len(words_utt)
+
+    if len_utt == 0:
         utt_rep_ratio = 0
     else:
-        utt_rep_ratio = len(overlap) / len(words_utt)
+        utt_rep_ratio = len(overlap) / len_utt
 
     if len(words_response) == 0:
         resp_rep_ratio = 0
@@ -229,6 +266,9 @@ def perform_analysis(conversations, args):
 
     conversations["response_is_clarification_request"] = conversations.apply(response_is_clarification_request, axis=1)
     conversations["response_is_acknowledgement"] = conversations.apply(response_is_acknowledgement, axis=1)
+
+    print("Number of CRs: ", len(conversations[conversations.response_is_clarification_request]))
+    print("Number of Acks: ", len(conversations[conversations.response_is_acknowledgement]))
 
     conversations = filter_transcripts_based_on_num_child_utts(
         conversations, args.min_child_utts_per_transcript

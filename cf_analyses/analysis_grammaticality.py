@@ -1,7 +1,6 @@
 import argparse
 import math
 import os
-from ast import literal_eval
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -9,7 +8,7 @@ import seaborn as sns
 import numpy as np
 
 from analysis_intelligibility import response_is_clarification_request, melt_variable, \
-    DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES, response_is_acknowledgement
+    DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES, response_is_acknowledgement, get_repetition_ratios
 from analysis_reproduce_warlaumont import has_response
 from cf_analyses.extract_micro_conversations import DEFAULT_RESPONSE_THRESHOLD
 from utils import (
@@ -36,7 +35,8 @@ AGE_BIN_NUM_MONTHS = 6
 # should be excluded when annotating intelligibility based on rules.
 # Providence: Some non-speech vocalizations such as laughter are incorrectly transcribed as 'yyy', and the timing
 # information is of very poor quality
-DEFAULT_EXCLUDED_CORPORA = ["Providence", "Forrester"]
+# DEFAULT_EXCLUDED_CORPORA = ["Providence", "Forrester"]
+DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
 
 # The caregivers of these children are using slang (e.g., "you was" or "she don't") and are therefore excluded
 # We are unfortunately only studying mainstream US English
@@ -147,17 +147,15 @@ def perform_analysis_grammaticality(conversations, args):
         inplace=True,
     )
 
-    conversations = conversations.assign(
-        response_is_clarification_request=conversations.apply(
-            response_is_clarification_request, axis=1
-        )
-    )
+    repetition_ratios = conversations.apply(get_repetition_ratios, axis=1)
+    conversations["utt_repetition_ratio"] = repetition_ratios.apply(lambda ratios: ratios[0])
+    conversations["resp_repetition_ratio"] = repetition_ratios.apply(lambda ratios: ratios[1])
 
-    conversations = conversations.assign(
-        response_is_acknowledgement=conversations.apply(
-            response_is_acknowledgement, axis=1
-        )
-    )
+    conversations["response_is_clarification_request"] = conversations.apply(response_is_clarification_request, axis=1)
+    conversations["response_is_acknowledgement"] = conversations.apply(response_is_acknowledgement, axis=1)
+
+    print("Number of CRs: ", len(conversations[conversations.response_is_clarification_request]))
+    print("Number of Acks: ", len(conversations[conversations.response_is_acknowledgement]))
 
     conversations = filter_transcripts_based_on_num_child_utts(
         conversations, args.min_child_utts_per_transcript
@@ -224,7 +222,7 @@ def make_plots(conversations, conversations_melted):
     # Duplicate all entries and set age to infinity to get summary bars over all age groups
     conversations_duplicated = conversations.copy()
     conversations_duplicated["age"] = math.inf
-    conversations_with_avg_age = conversations.append(conversations_duplicated, ignore_index=True)
+    conversations_with_avg_age = pd.concat([conversations, conversations_duplicated], ignore_index=True)
 
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
@@ -356,7 +354,7 @@ def make_plots(conversations, conversations_melted):
     # Duplicate all entries and set age to infinity to get summary bars over all age groups
     conversations_melted_duplicated = conversations_melted.copy()
     conversations_melted_duplicated["age"] = math.inf
-    conversations_melted_with_avg_age = conversations_melted.append(conversations_melted_duplicated, ignore_index=True)
+    conversations_melted_with_avg_age = pd.concat([conversations_melted, conversations_melted_duplicated], ignore_index=True)
 
     conversations_melted_cr_with_avg_age = conversations_melted_with_avg_age[
         conversations_melted_with_avg_age.response_is_clarification_request
