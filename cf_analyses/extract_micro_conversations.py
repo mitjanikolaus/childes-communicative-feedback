@@ -129,8 +129,11 @@ def get_micro_conversations_for_transcript(utterances_transcript, response_laten
 
 def get_micro_conversations(utterances, response_latency, max_response_latency_follow_up, max_neg_response_latency):
     if "is_grammatical" in utterances.columns:
+        print("Found is_grammatical column, integrating in the micro convs")
         KEEP_KEYS.append("is_grammatical")
         DUMMY_RESPONSE["is_grammatical"] = False
+    else:
+        print("Did not find is_grammatical column.")
 
     print("Creating micro conversations from transcripts..")
     utterances_grouped = [group for _, group in utterances.groupby("transcript_file")]
