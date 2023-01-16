@@ -120,8 +120,6 @@ def plot_num_words_vs_grammaticality(utterances):
 def perform_analysis_grammaticality(conversations, args):
     conversations.dropna(
         subset=(
-            "response_latency",
-            "response_latency_follow_up",
             "utt_is_grammatical",
             "follow_up_is_grammatical",
             "response_is_speech_related",
@@ -132,8 +130,10 @@ def perform_analysis_grammaticality(conversations, args):
                                   conversations.response_is_speech_related &
                                   conversations.follow_up_is_speech_related &
                                   conversations.utt_is_intelligible &
-                                  conversations.follow_up_is_intelligible]
+                                  conversations.follow_up_is_intelligible].copy()
 
+    # TODO: ignore timing?
+    conversations["response_latency"] = 0
     conversations = conversations.assign(
         has_response=conversations.apply(
             has_response,

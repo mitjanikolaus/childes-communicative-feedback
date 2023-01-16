@@ -54,9 +54,10 @@ def get_dict_with_prefix(series, prefix, keep_keys=KEEP_KEYS):
     return {prefix + key: series[key] for key in keep_keys}
 
 
-def get_micro_conversations_for_transcript(utterances_transcript, response_latency):
+def get_micro_conversations_for_transcript(utterances_transcript, response_latency, require_timing_information):
+    if require_timing_information:
+        utterances_transcript["start_time_next"] = utterances_transcript.start_time.shift(-1, fill_value=pd.NA)
     utterances_transcript["speaker_code_next"] = utterances_transcript["speaker_code"].shift(-1)
-    utterances_transcript["start_time_next"] = utterances_transcript.start_time.shift(-1, fill_value=pd.NA)
 
     micro_convs = []
     utterances_child = utterances_transcript[
@@ -89,13 +90,16 @@ def get_micro_conversations_for_transcript(utterances_transcript, response_laten
 
             micro_convs.append(conversation)
 
-    utts_child_no_response = utterances_child[
-        (utterances_child.speaker_code_next == SPEAKER_CODE_CHILD)
-        & (
-            utterances_child.start_time_next - utterances_child.end_time
-            >= response_latency
-        )
-    ]
+    if require_timing_information:
+        utts_child_no_response = utterances_child[
+            (utterances_child.speaker_code_next == SPEAKER_CODE_CHILD)
+            & (
+                utterances_child.start_time_next - utterances_child.end_time
+                >= response_latency
+            )
+        ]
+    else:
+        utts_child_no_response = utterances_child[utterances_child.speaker_code_next == SPEAKER_CODE_CHILD]
     for candidate_id in utts_child_no_response.index.values:
         following_utts = utterances_transcript.loc[candidate_id + 1:]
         following_utts_non_child = following_utts[
@@ -123,11 +127,15 @@ def get_micro_conversations_for_transcript(utterances_transcript, response_laten
 
             micro_convs.append(conversation)
 
-    utterances_transcript.drop(["speaker_code_next", "start_time_next"], axis=1, inplace=True)
+    utterances_transcript.drop(["speaker_code_next"], axis=1, inplace=True)
+    if require_timing_information:
+        utterances_transcript.drop(["start_time_next"], axis=1, inplace=True)
+
     return micro_convs
 
 
-def get_micro_conversations(utterances, response_latency, max_response_latency_follow_up, max_neg_response_latency):
+def get_micro_conversations(utterances, response_latency, max_response_latency_follow_up, max_neg_response_latency,
+                            require_timing_information=True):
     if "is_grammatical" in utterances.columns:
         print("Found is_grammatical column, integrating in the micro convs")
         KEEP_KEYS.append("is_grammatical")
@@ -137,10 +145,10 @@ def get_micro_conversations(utterances, response_latency, max_response_latency_f
 
     print("Creating micro conversations from transcripts..")
     utterances_grouped = [group for _, group in utterances.groupby("transcript_file")]
-    process_args = [(utts_transcript, response_latency) for utts_transcript in utterances_grouped]
+    process_args = [(utts_transcript, response_latency, require_timing_information) for utts_transcript in utterances_grouped]
 
     # Single-process version for debugging:
-    # results = [get_micro_conversations_for_transcript(utts_transcript, response_latency)
+    # results = [get_micro_conversations_for_transcript(utts_transcript, response_latency, require_timing_information)
     #     for utts_transcript in tqdm(utterances_grouped)]
     with Pool(processes=8) as pool:
         results = pool.starmap(
@@ -150,25 +158,26 @@ def get_micro_conversations(utterances, response_latency, max_response_latency_f
 
     conversations = pd.DataFrame(list(itertools.chain(*results))).set_index("index")
 
-    conversations["response_latency"] = (
-        conversations["response_start_time"] - conversations["utt_end_time"]
-    )
-    conversations["response_latency_follow_up"] = (
-        conversations["follow_up_start_time"] - conversations["utt_end_time"]
-    )
-
-    # disregard conversations with follow up too far in the future
-    conversations = conversations[
-        (
-            conversations.response_latency_follow_up
-            <= max_response_latency_follow_up
+    if require_timing_information:
+        conversations["response_latency"] = (
+            conversations["response_start_time"] - conversations["utt_end_time"]
         )
-    ]
+        conversations["response_latency_follow_up"] = (
+            conversations["follow_up_start_time"] - conversations["utt_end_time"]
+        )
 
-    # Disregard conversations with too long negative pauses
-    conversations = conversations[
-        (conversations.response_latency > max_neg_response_latency)
-    ]
+        # disregard conversations with follow up too far in the future
+        conversations = conversations[
+            (
+                conversations.response_latency_follow_up
+                <= max_response_latency_follow_up
+            )
+        ]
+
+        # Disregard conversations with too long negative pauses
+        conversations = conversations[
+            (conversations.response_latency > max_neg_response_latency)
+        ]
 
     return conversations
 
@@ -185,6 +194,7 @@ def extract(args):
     conversations = get_micro_conversations(utterances, DEFAULT_RESPONSE_THRESHOLD,
                                             DEFAULT_MAX_RESPONSE_LATENCY_FOLLOW_UP,
                                             DEFAULT_MAX_NEG_RESPONSE_LATENCY,
+                                            args.require_timing_information
                                             )
 
     return conversations
@@ -199,6 +209,11 @@ def parse_args():
     )
     argparser.add_argument(
         "--discard-non-speech-related-utterances",
+        default=False,
+        action="store_true",
+    )
+    argparser.add_argument(
+        "--require-timing-information",
         default=False,
         action="store_true",
     )
