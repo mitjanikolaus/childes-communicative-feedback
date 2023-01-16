@@ -44,7 +44,7 @@ def main(args):
     tokenizer.add_special_tokens(
         {'pad_token': TOKEN_PAD, 'eos_token': TOKEN_EOS, 'unk_token': TOKEN_UNK, 'sep_token': TOKEN_SEP})
 
-    datasets = create_dataset_dict(args.train_datasets, args.additional_val_datasets, args.val_split_proportion)
+    datasets = create_dataset_dict(args.train_datasets, args.val_datasets, args.val_split_proportion)
 
     datasets = datasets.map(tokenize, fn_kwargs={"tokenizer": tokenizer})
 
@@ -93,7 +93,7 @@ def parse_args():
         default=["manual_annotations"],
     )
     argparser.add_argument(
-        "--additional-val-datasets",
+        "--val-datasets",
         type=str,
         nargs="+",
         default=[],

@@ -40,7 +40,7 @@ class CHILDESGrammarModel(LightningModule):
             model_name_or_path: str,
             num_labels: int,
             train_datasets: list,
-            additional_val_datasets: list,
+            val_datasets: list,
             train_batch_size: int,
             eval_batch_size: int,
             learning_rate: float,
@@ -71,6 +71,8 @@ class CHILDESGrammarModel(LightningModule):
         self.loss_fct = CrossEntropyLoss(weight=weight)
 
         self.val_error_analysis = False
+
+        self.reference_val = self.hparams.eval_splits[0]
 
     def forward(self, **inputs):
         return self.model(**inputs)
@@ -120,7 +122,7 @@ class CHILDESGrammarModel(LightningModule):
             labels = torch.cat([x["labels"] for x in out]).detach().cpu().numpy()
             loss = torch.stack([x["loss"] for x in out]).mean()
 
-            if split == "validation":
+            if split == self.reference_val:
                 self.log(f"val_loss", loss, prog_bar=True)
                 for metric in self.metrics:
                     metric_results = metric.compute(predictions=preds, references=labels)
@@ -200,7 +202,7 @@ def main(args):
                                   eval_batch_size=args.batch_size,
                                   train_batch_size=args.batch_size,
                                   train_datasets=args.train_datasets,
-                                  additional_val_datasets=args.additional_val_datasets,
+                                  val_datasets=args.val_datasets,
                                   tokenizer=tokenizer)
     dm.setup("fit")
     class_weights = calc_class_weights(dm.dataset["train"]["labels"].numpy())
@@ -208,7 +210,7 @@ def main(args):
     model = CHILDESGrammarModel(
         class_weights=class_weights,
         train_datasets=args.train_datasets,
-        additional_val_datasets=args.additional_val_datasets,
+        val_datasets=args.val_datasets,
         eval_batch_size=args.batch_size,
         train_batch_size=args.batch_size,
         model_name_or_path=args.model,
@@ -258,7 +260,7 @@ def parse_args():
         default=[],
     )
     argparser.add_argument(
-        "--additional-val-datasets",
+        "--val-datasets",
         type=str,
         nargs="+",
         default=[],

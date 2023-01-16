@@ -104,9 +104,9 @@ LOADER_COLUMNS = [
     ]
 
 
-def create_dataset_dict(train_datasets, additional_val_datasets, val_split_proportion):
+def create_dataset_dict(train_datasets, val_datasets, val_split_proportion):
     data_manual_annotations_train, data_manual_annotations_val = prepare_manual_annotation_data(val_split_proportion)
-    if "childes" in train_datasets + additional_val_datasets:
+    if "childes" in train_datasets + val_datasets:
         data_childes_train, data_childes_val = prepare_csv(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE, val_split_proportion=val_split_proportion)
 
     def get_dataset_with_name(ds_name, val=False):
@@ -141,10 +141,7 @@ def create_dataset_dict(train_datasets, additional_val_datasets, val_split_propo
     ds_train = Dataset.from_pandas(data_train)
     dataset_dict['train'] = ds_train
 
-    ds_val = Dataset.from_pandas(data_manual_annotations_val)
-    dataset_dict["validation"] = ds_val
-
-    for ds_name in additional_val_datasets:
+    for ds_name in val_datasets:
         data = get_dataset_with_name(ds_name, val=True)
         ds_val = Dataset.from_pandas(data)
         dataset_dict[f"validation_{ds_name}"] = ds_val
@@ -159,7 +156,7 @@ class CHILDESGrammarDataModule(LightningDataModule):
             train_batch_size: int,
             eval_batch_size: int,
             train_datasets: list,
-            additional_val_datasets: list,
+            val_datasets: list,
             tokenizer,
             max_seq_length: int = 128,
             val_split_proportion: float = 0.5,
@@ -172,13 +169,13 @@ class CHILDESGrammarDataModule(LightningDataModule):
         self.eval_batch_size = eval_batch_size
         self.val_split_proportion = val_split_proportion
         self.train_datasets = train_datasets
-        self.additional_val_datasets = additional_val_datasets
+        self.val_datasets = val_datasets
 
         self.num_labels = 2
         self.tokenizer = tokenizer
 
     def setup(self, stage: str):
-        self.dataset = create_dataset_dict(self.train_datasets, self.additional_val_datasets, self.val_split_proportion)
+        self.dataset = create_dataset_dict(self.train_datasets, self.val_datasets, self.val_split_proportion)
         for split in self.dataset.keys():
             columns = [c for c in self.dataset[split].column_names if c in LOADER_COLUMNS]
             self.dataset[split].set_format(type="torch", columns=columns + TEXT_FIELDS)
