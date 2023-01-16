@@ -13,10 +13,6 @@ from tqdm import tqdm
 tqdm.pandas()
 
 
-TO_ANNOTATE_UTTERANCES_FILE = os.path.expanduser(
-    "~/data/communicative_feedback/utterances_for_annotation.csv"
-)
-
 TOKEN_CHILD = "[CHI]"
 TOKEN_CAREGIVER = "[CAR]"
 TOKEN_OTHER = "[OTH]"
@@ -38,7 +34,7 @@ def prepare(args):
 
     utterances = utterances[utterances.corpus == "Providence"].copy()
     transcripts = utterances.transcript_file.unique()
-    np.random.seed(1)
+    np.random.seed(4)
     transcript = np.random.choice(transcripts)
     utts_transcript = utterances[utterances.transcript_file == transcript].copy()
     utts_transcript_child = utts_transcript[utts_transcript.speaker_code == SPEAKER_CODE_CHILD]
@@ -57,10 +53,12 @@ def prepare(args):
     utts_transcript["note"] = ""
 
     utts_transcript["num_unique_words"] = get_num_unique_words(utts_transcript.transcript_clean)
-    utts_transcript.loc[(utts_transcript.speaker_code == SPEAKER_CODE_CHILD) & (utts_transcript.num_unique_words > 1) & (utts_transcript.is_speech_related == True) & (
-                    utts_transcript.is_intelligible == True), "is_grammatical"] = "TODO"
+    utts_transcript.loc[(utts_transcript.speaker_code == SPEAKER_CODE_CHILD) & (utts_transcript.num_unique_words > 1) & (utts_transcript.is_speech_related == True), "is_grammatical"] = "TODO"
+    print("Num utts to annotate: ", len(utts_transcript[(utts_transcript.speaker_code == SPEAKER_CODE_CHILD) & (utts_transcript.num_unique_words > 1) & (utts_transcript.is_speech_related == True)]))
     utts_transcript = utts_transcript[["utterance", "is_grammatical", "labels", "note"]]
-    return utts_transcript
+
+    transcript_name = transcript.replace("/", "_")
+    return utts_transcript, transcript_name
 
 
 def parse_args():
@@ -79,7 +77,7 @@ def parse_args():
     argparser.add_argument(
         "--num-utts",
         type=int,
-        default=500,
+        default=None,
         help="Number of utts to annotate"
     )
 
@@ -92,7 +90,8 @@ if __name__ == "__main__":
     args = parse_args()
     print(args)
 
-    utterances = prepare(args)
+    utterances, transcript_name = prepare(args)
 
-    os.makedirs(os.path.dirname(TO_ANNOTATE_UTTERANCES_FILE), exist_ok=True)
-    utterances.to_csv(TO_ANNOTATE_UTTERANCES_FILE)
+    base_path = os.path.expanduser("~/data/communicative_feedback/annotations_")
+    file_name = base_path + transcript_name.replace(".cha", ".csv")
+    utterances.to_csv(file_name)
