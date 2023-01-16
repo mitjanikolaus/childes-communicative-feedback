@@ -8,21 +8,24 @@ from tqdm import tqdm
 tqdm.pandas()
 
 
-CORPORA_INCLUDED = ["Braunwald", "EllisWeismer", "Hall", "Lara", "MPI-EVA-Manchester", "Providence Thomas"]
+CORPORA_INCLUDED = ["Braunwald", "EllisWeismer", "Hall", "Lara", "MPI-EVA-Manchester", "Providence", "Thomas"]
 
 
-def prepare(args, sample_equal_pos_neg=True):
+def prepare(args, sample_equal_pos_neg=False):
     utterances = pd.read_csv(args.utterances_file, index_col=0, dtype={"error": object})
 
-    # Take only grammatical utterances from target corpora, ungrammatical ones from all corpora
-    utterances = utterances[utterances.corpus.isin(CORPORA_INCLUDED) | (utterances.is_grammatical == False)]
-
     if sample_equal_pos_neg:
+        utterances = utterances[utterances.corpus.isin(CORPORA_INCLUDED) | (utterances.is_grammatical == False)]
+
         utterances.dropna(subset=["is_grammatical"], inplace=True)
         utterances.is_grammatical = utterances.is_grammatical.astype(bool)
         utts_ungrammatical = utterances[~utterances.is_grammatical]
         utts_grammatical = utterances[utterances.is_grammatical].sample(len(utts_ungrammatical), random_state=1)
         utterances = pd.concat([utts_grammatical, utts_ungrammatical])
+
+    else:
+        # Take only grammatical utterances from target corpora
+        utterances = utterances[utterances.corpus.isin(CORPORA_INCLUDED)]
 
     return utterances
 
