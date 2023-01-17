@@ -30,7 +30,7 @@ def parse_args():
         "--corpora",
         nargs="+",
         type=str,
-        required=True,
+        default=None,
         help="Corpora to analyze.",
     )
     argparser.add_argument(
@@ -79,7 +79,8 @@ def replace_untranscribed_names(utterances):
     for name in name_templates:
         name_no_www = re.sub("(www[w]*)+_[W]*www[w]*|www[w]*", "", name)
         name_no_www = name_no_www.replace("(.)", "")
-        first_letter = name_no_www[-1].upper()
+        if name == "wwww":
+            continue
         if len(name_no_www) == 2:
             first_letter = name_no_www[0].upper()
         candidates = NAMES[NAMES.name.str.startswith(first_letter)].name
@@ -119,7 +120,7 @@ def replace_untranscribed_names(utterances):
         matches = re.findall("[_().A-Za-z]+www", utt)
         matches = sorted(matches, key=len, reverse=True)
         for match in matches:
-            if match not in ["eeeowww", "miaoowww"]:
+            if match not in ["eeeowww", "miaoowww", "wwww"]:
                 new_name = name_dict[match]
                 if "_" in match and not "www" in match.split("_")[0]:
                     new_name = match.split("_")[0] + " " + new_name
@@ -172,6 +173,9 @@ def preprocess_utterances(corpus, transcripts, start_index, args):
         if "Interview" in file:
             # Interview transcripts do not contain child-caregiver interactions
             continue
+        if child_name is None:
+            # Child is not present in transcript, ignore
+            continue
         if age is None or age == 0:
             # Child age can sometimes be read from the file name
             if corpus in ["MPI-EVA-Manchester", "Bernstein", "Brent", "Braunwald", "Weist", "MacWhinney"]:
@@ -187,9 +191,6 @@ def preprocess_utterances(corpus, transcripts, start_index, args):
             else:
                 print("Missing age information: ", file)
                 continue
-        if child_name is None:
-            # Child is not present in transcript, ignore
-            continue
 
         file_path = file.replace(CHILDES_DATA_BASE_PATH, "")
 
@@ -291,6 +292,10 @@ def is_external_event(utterance):
 def preprocess_transcripts(args):
     all_utterances = []
     start_index = 0
+    if not args.corpora:
+        args.corpora = os.listdir(CHILDES_DATA_BASE_PATH)
+        print("Preprocessing all available corpora: ", args.corpora)
+
     for corpus in args.corpora:
         print(f"Reading transcripts of {corpus} corpus.. ", end="")
         transcripts = pylangacq.read_chat(
