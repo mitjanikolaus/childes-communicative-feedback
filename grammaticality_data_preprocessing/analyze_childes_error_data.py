@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 
 from utils import ANNOTATED_UTTERANCES_FILE, SPEAKER_CODE_CHILD, \
@@ -85,23 +87,26 @@ COLORS_PLOT_CATEGORICAL = [
 "#575329",
 ]
 
+RESULTS_DIR = "results/grammaticality_annotations_childes"
+
 
 def plot_corpus_error_stats(utterances):
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+
     error_utterances = utterances[utterances.is_grammatical == False]
     print(f"Total utts: {len(utterances)} | Errors: {len(error_utterances)}")
-
     utts = error_utterances.dropna(subset=["is_grammatical", "labels"]).copy()
-    utts["label"] = utts.labels.astype(str).apply(lambda x: x.split(", "))
-    utts.drop(columns="labels", inplace=True)
-    utts = utts.explode("label")
-
-    utts.corpus.value_counts().plot(kind="barh")
-    plt.subplots_adjust(left=0.2, right=0.99)
+    utts.corpus.value_counts().plot(kind="bar")
+    plt.subplots_adjust(bottom=0.3)
+    plt.savefig(
+        os.path.join(RESULTS_DIR, "error_counts_absolute.png"), dpi=300
+    )
 
     num_errors = utts.corpus.value_counts()
 
-    # all_utterances = pd.read_csv(ANNOTATED_UTTERANCES_FILE, index_col=0, dtype={"error": object})
     num_utts_data = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD].corpus.value_counts()
+    print("Total number of utts per corpus:")
+    print(num_utts_data.to_dict())
 
     num_utts = num_utts_data.to_frame()
     num_utts = num_utts.rename(columns={"corpus": "num_utts"})
@@ -110,26 +115,32 @@ def plot_corpus_error_stats(utterances):
     joined = joined.rename(columns={"corpus": "num_errors"})
     joined.fillna(0, inplace=True)
     joined["ratio"] = joined["num_errors"] / joined["num_utts"]
+    joined.sort_values(by="ratio", inplace=True)
     joined.plot(y='ratio', kind="bar")
+    plt.axhline(y=0.01, linestyle='--', color='r')
+    plt.tight_layout()
+    plt.subplots_adjust(bottom=0.3)
+    plt.savefig(
+        os.path.join(RESULTS_DIR, "error_proportions.png"), dpi=300
+    )
 
-    print("Total number of utts per corpus:")
-    print(num_utts_data.to_dict())
+    utts["label"] = utts.labels.astype(str).apply(lambda x: x.split(", "))
+    utts.drop(columns="labels", inplace=True)
+    utts_exploded = utts.explode("label")
 
-    err_counts = utts.groupby(['corpus'])["label"].value_counts().rename("count").reset_index()
+    err_counts = utts_exploded.groupby(['corpus'])["label"].value_counts().rename("count").reset_index()
 
-    def divide_by_num(row):
-        row["ratio"] = row["count"] / num_utts_data[row.corpus]
-        return row
-
-    err_counts = err_counts.apply(divide_by_num, axis=1)
+    err_counts["ratio"] = err_counts.apply(lambda row: row["count"] / num_utts_data[row.corpus], axis=1)
     sns.set_palette(COLORS_PLOT_CATEGORICAL)
-
-    plt.figure()
-    ax = sns.barplot(x="corpus", y="ratio", hue="label", data=err_counts)
+    plt.figure(figsize=(20, 10))
+    ax = sns.barplot(x="corpus", y="ratio", hue="label", data=err_counts, order=joined.index)
     plt.ylim((0, 0.03))
     plt.xlabel("num errors per child utterance")
     plt.legend(loc='upper right')
     plt.setp(ax.get_xticklabels(), rotation=90)
+    plt.savefig(
+        os.path.join(RESULTS_DIR, "error_proportions_by_label.png"), dpi=300
+    )
 
 
 def analyze():
