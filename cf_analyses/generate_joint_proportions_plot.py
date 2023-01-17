@@ -44,6 +44,8 @@ def make_proportion_plots(conversations, results_dir):
         label="proportion_intelligible",
     )
 
+    conversations["utt_is_grammatical"] = conversations.utt_is_grammatical.replace({pd.NA: False})
+    conversations.loc[~conversations.utt_is_intelligible, "utt_is_grammatical"] = False
     proportion_grammatical_per_transcript = conversations.groupby(
         "transcript_file"
     ).agg({"utt_is_grammatical": "mean", "age": "mean"})
