@@ -110,10 +110,9 @@ CAREGIVER_NAMES = [
 ]
 
 
-# TODO: add "okay let's do it"? | take care: might be question!
-RESPONSES_ACKNOWLEDGEMENT_IF_ALONE = {"right", "sure", "okay", "alright", "all right", "yep", "yeah"}
+RESPONSES_ACKNOWLEDGEMENT_IF_ALONE = {"right"}
 
-RESPONSES_ACKNOWLEDGEMENT_CERTAIN = {"uhhuh", "uhuh", "uhhum", "mhm", "mm", "huh", "ummhm"}
+RESPONSES_ACKNOWLEDGEMENT_CERTAIN = {"uhhuh", "uhuh", "uhhum", "mhm", "mm", "huh", "ummhm", "sure", "okay", "alright", "yep", "yeah"}
 
 
 def contains_acknowledgement_keyword(micro_conv):
@@ -136,14 +135,14 @@ def contains_acknowledgement_keyword(micro_conv):
 
 
 def is_repetition_acknowledgement(micro_conv):
-    if micro_conv["response_transcript_clean"][-1] == ".":
+    if micro_conv["response_transcript_clean"][-1] != "?":
         if micro_conv["utt_repetition_ratio"] == 1 and micro_conv["resp_repetition_ratio"] >= 0.5:
             return True
     return False
 
 
 def response_is_acknowledgement(micro_conv):
-    if micro_conv["has_response"]:
+    if micro_conv["has_response"] and not micro_conv["utt_transcript_clean"][-1] == "?":
         ack_keyword = contains_acknowledgement_keyword(micro_conv)
         ack_repetition = is_repetition_acknowledgement(micro_conv)
 
@@ -154,7 +153,7 @@ def response_is_acknowledgement(micro_conv):
 
 def is_repetition_clarification_request(micro_conv):
     if micro_conv["response_transcript_clean"][-1] == "?":
-        if micro_conv["resp_repetition_ratio"] >= 0.5:
+        if (micro_conv["resp_repetition_ratio"] >= 0.5) and (micro_conv["utt_repetition_ratio"] >= 0.0):
             return True
     return False
 
@@ -181,7 +180,7 @@ def response_is_clarification_request(micro_conv):
 
 
 # List of stopwords to be ignored for repetition calculation
-STOPWORDS = {'my', 'doing', 'than', 'doesn', 'do', 'him', 's', 'her', 'won', 'myself', 'his', 'were', 'during', 'few', 'yourself', 'mightn', 'into', 'we', 'above', 'below', 'you', 'what', 'has', 'under', 'each', 'before', 'am', 'after', 'me', 'once', 'out', 'y', 'have', 'ain', 'of', 'will', 'weren', 'with', 'no', 'm', 'whom', 'only', 'ours', 'nor', 'mustn', 'himself', 're', 'was', 'o', 'having', 'for', 'ourselves', 'theirs', 'ma', 'off', 'too', 'i', 'further', 'hadn', 'wasn', 'their', 'more', 'or', 'them', 'again', 't', 'against', 'own', 'those', 'hers', 'does', 've', 'its', 'herself', 'over', 'not', 'should', 'aren', 'that', 'our', 'as', 'been', 'who', 'while', 'to', 'hasn', 'through', 'about', 'haven', 'how', 'can', 'and', 'they', 'in', 'until', 'had', 'an', 'between', 'then', 'both', 'shouldn', 'this', 'down', 'don', 'now', 'yourselves', 'he', 'couldn', 'a', 'where', 'themselves', 'other', 'these', 'wouldn', 'the', 'because', 'but', 'your', 'why', 'up', 'by', 'if', 'most', 'she', 'be', 'is', 'just', 'any', 'such', 'very', 'all', 'are', 'on', 'didn', 'itself', 'll', 'so', 'yours', 'same', 'needn', 'd', 'which', 'isn', 'some', 'here', 'it', 'when', 'at', 'from', 'did', 'being', 'there', 'oh', 'huh', 'ah', 'mhm', 'ooh', 'mm', 'shan'}
+STOPWORDS = {'my', 'doing', 'than', 'doesn', 'do', 'him', 's', 'her', 'won', 'myself', 'his', 'were', 'during', 'few', 'yourself', 'mightn', 'into', 'we', 'above', 'below', 'you', 'what', 'has', 'under', 'each', 'before', 'am', 'after', 'me', 'once', 'out', 'y', 'have', 'ain', 'of', 'will', 'weren', 'with', 'no', 'm', 'whom', 'only', 'ours', 'nor', 'mustn', 'himself', 're', 'was', 'o', 'having', 'for', 'ourselves', 'theirs', 'ma', 'off', 'too', 'i', 'further', 'hadn', 'wasn', 'their', 'more', 'or', 'them', 'again', 't', 'against', 'own', 'those', 'hers', 'does', 've', 'its', 'herself', 'over', 'not', 'should', 'aren', 'that', 'our', 'as', 'been', 'who', 'while', 'to', 'hasn', 'through', 'about', 'haven', 'how', 'can', 'and', 'they', 'in', 'until', 'had', 'an', 'between', 'then', 'both', 'shouldn', 'this', 'down', 'don', 'now', 'yourselves', 'he', 'couldn', 'a', 'where', 'themselves', 'other', 'these', 'wouldn', 'the', 'because', 'but', 'your', 'why', 'up', 'by', 'if', 'most', 'she', 'be', 'is', 'just', 'any', 'such', 'very', 'all', 'are', 'on', 'didn', 'itself', 'll', 'so', 'yours', 'same', 'needn', 'd', 'which', 'isn', 'some', 'here', 'it', 'when', 'at', 'from', 'did', 'being', 'there', 'oh', 'ooh', 'huh', 'ah', 'mhm', 'ooh', 'mm', 'shan'}
 
 
 def get_repetition_ratios(micro_conv):
@@ -196,19 +195,21 @@ def get_repetition_ratios(micro_conv):
     overlap = words_utt_no_stopwords & words_response_no_stopwords
 
     len_utt = len(words_utt_no_stopwords)
-    if len_utt == 0 or len(words_response_no_stopwords) == 0:
+    len_response = len(words_response_no_stopwords)
+    if len_utt == 0 or len_response == 0:
         overlap = words_utt & words_response
         len_utt = len(words_utt)
+        len_response = len(words_response)
 
     if len_utt == 0:
         utt_rep_ratio = 0
     else:
         utt_rep_ratio = len(overlap) / len_utt
 
-    if len(words_response) == 0:
+    if len_response == 0:
         resp_rep_ratio = 0
     else:
-        resp_rep_ratio = len(overlap) / len(words_response)
+        resp_rep_ratio = len(overlap) / len_response
 
     return [utt_rep_ratio, resp_rep_ratio]
 
