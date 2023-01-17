@@ -199,14 +199,15 @@ def perform_analysis_grammaticality(conversations, args):
 def make_plots(conversations, conversations_melted):
     proportion_grammatical_per_transcript = conversations.groupby(
         "transcript_file"
-    ).agg({"utt_is_grammatical": "mean", "age": "min"})
-    plt.figure(figsize=(6, 3))
+    ).agg({"utt_is_grammatical": "mean", "age": "mean"})
+    plt.figure(figsize=(6, 4))
     axis = sns.regplot(
         data=proportion_grammatical_per_transcript,
         x="age",
         y="utt_is_grammatical",
         logistic=True,
         marker=".",
+        scatter_kws={"alpha": 0.2, "s": 20},
     )
     plt.tight_layout()
     axis.set(xlabel="age (months)", ylabel="prop_grammatical")
@@ -284,27 +285,27 @@ def make_plots(conversations, conversations_melted):
         os.path.join(RESULTS_DIR, "cf_quality_acknowledgements.png"), dpi=300
     )
 
-    plt.figure(figsize=(6, 3))
-    axis = sns.barplot(
-        data=conversations_with_avg_age[conversations_with_avg_age.utt_is_grammatical],
-        x="age",
-        y="follow_up_is_grammatical",
-        hue="has_response",
-        linewidth=1,
-        edgecolor="w",
-        palette=sns.color_palette(),
-    )
-    legend = axis.legend()
-    legend.texts[0].set_text("no response")
-    legend.texts[1].set_text("response")
-    sns.move_legend(axis, "lower right")
-    axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_grammatical")
-    axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
-    plt.tight_layout()
-    plt.savefig(
-        os.path.join(RESULTS_DIR, "cf_effect_pos_feedback_on_grammatical_timing.png"),
-        dpi=300,
-    )
+    # plt.figure(figsize=(6, 3))
+    # axis = sns.barplot(
+    #     data=conversations_with_avg_age[conversations_with_avg_age.utt_is_grammatical],
+    #     x="age",
+    #     y="follow_up_is_grammatical",
+    #     hue="has_response",
+    #     linewidth=1,
+    #     edgecolor="w",
+    #     palette=sns.color_palette(),
+    # )
+    # legend = axis.legend()
+    # legend.texts[0].set_text("no response")
+    # legend.texts[1].set_text("response")
+    # sns.move_legend(axis, "lower right")
+    # axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_grammatical")
+    # axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
+    # plt.tight_layout()
+    # plt.savefig(
+    #     os.path.join(RESULTS_DIR, "cf_effect_pos_feedback_on_grammatical_timing.png"),
+    #     dpi=300,
+    # )
 
     conversations_melted_with_response = conversations_melted[
         conversations_melted.has_response
