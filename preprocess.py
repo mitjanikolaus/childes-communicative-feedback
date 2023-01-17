@@ -81,6 +81,7 @@ def replace_untranscribed_names(utterances):
         name_no_www = name_no_www.replace("(.)", "")
         if name == "wwww":
             continue
+        first_letter = name_no_www[-1].upper()
         if len(name_no_www) == 2:
             first_letter = name_no_www[0].upper()
         candidates = NAMES[NAMES.name.str.startswith(first_letter)].name
@@ -178,7 +179,7 @@ def preprocess_utterances(corpus, transcripts, start_index, args):
             continue
         if age is None or age == 0:
             # Child age can sometimes be read from the file name
-            if corpus in ["MPI-EVA-Manchester", "Bernstein", "Brent", "Braunwald", "Weist", "MacWhinney"]:
+            if corpus in ["MPI-EVA-Manchester", "Bernstein", "Brent", "Braunwald", "Weist", "MacWhinney", "Belfast", "Sekali"]:
                 age_info = os.path.basename(file).split(".cha")[0]
                 age = int(age_info[0:2])*12 + int(age_info[2:4])
             elif corpus == "Rollins":
