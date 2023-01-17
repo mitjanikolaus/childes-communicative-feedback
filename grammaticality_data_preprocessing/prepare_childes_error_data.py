@@ -7,8 +7,10 @@ from utils import UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, UTTERANCES_WIT
 from tqdm import tqdm
 tqdm.pandas()
 
-
-CORPORA_INCLUDED = ["Braunwald", "EllisWeismer", "Hall", "Lara", "MPI-EVA-Manchester", "Providence", "Thomas"]
+# corpora that include more than 1% errors:
+CORPORA_INCLUDED = ["Bernstein", "Braunwald", "MPI-EVA-Manchester", "Providence", "Thomas", "Hall", "Gelman", "Kuczaj", "EllisWeismer", "Clark", "Post", "Bates", "Lara"]
+# corpora that include all error types:
+# CORPORA_INCLUDED = ["Braunwald", "EllisWeismer", "Hall", "Lara", "MPI-EVA-Manchester", "Providence", "Thomas"]
 
 
 def prepare(args, sample_equal_pos_neg=False):
