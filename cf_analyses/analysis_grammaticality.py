@@ -5,7 +5,6 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import numpy as np
 
 from analysis_intelligibility import response_is_clarification_request, melt_variable, \
     DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES, response_is_acknowledgement, get_repetition_ratios
@@ -14,8 +13,8 @@ from cf_analyses.extract_micro_conversations import DEFAULT_RESPONSE_THRESHOLD
 from utils import (
     age_bin,
     str2bool,
-    filter_transcripts_based_on_num_child_utts, SPEAKER_CODE_CHILD, get_num_words, UTTERANCES_WITH_SPEECH_ACTS_FILE,
-    MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE,
+    filter_transcripts_based_on_num_child_utts, SPEAKER_CODE_CHILD, get_num_words,
+    MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE, PROJECT_ROOT_DIR,
 )
 
 DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
@@ -26,25 +25,20 @@ DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 1
 
 # Ages aligned to study of Warlaumont et al. or to our study (minimum 10 months)
 DEFAULT_MIN_AGE = 10
+# TODO: 60?
 DEFAULT_MAX_AGE = 48
 
 AGE_BIN_NUM_MONTHS = 6
 
-# Forrester: Does not annotate non-word sounds starting with & (phonological fragment), these are treated as words and
-# should be excluded when annotating intelligibility based on rules.
-# Providence: Some non-speech vocalizations such as laughter are incorrectly transcribed as 'yyy', and the timing
-# information is of very poor quality
-# DEFAULT_EXCLUDED_CORPORA = ["Providence", "Forrester"]
-DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
-
-CORPORA_INCLUDED = ["Bernstein", "Braunwald", "MPI-EVA-Manchester", "Providence", "Thomas", "EllisWeismer", "Lara"]
+CORPORA_EXCLUDED = []
+CORPORA_INCLUDED = ['Thomas', 'MPI-EVA-Manchester', 'Providence', 'Braunwald', 'Lara', 'EllisWeismer']
 
 
 # The caregivers of these children are using slang (e.g., "you was" or "she don't") and are therefore excluded
 # We are unfortunately only studying mainstream US English
 EXCLUDED_CHILDREN = ["Brent_Jaylen", "Brent_Tyrese", "Brent_Vas", "Brent_Vas_Coleman", "Brent_Xavier"]
 
-RESULTS_DIR = "results/grammaticality/"
+RESULTS_DIR = PROJECT_ROOT_DIR+"/results/grammaticality/"
 
 
 def parse_args():
@@ -53,20 +47,6 @@ def parse_args():
         "--utterances-file",
         type=str,
         default=MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE,
-    )
-    argparser.add_argument(
-        "--corpora",
-        nargs="+",
-        type=str,
-        default=CORPORA_INCLUDED,
-        help="Corpora to analyze.",
-    )
-    argparser.add_argument(
-        "--excluded-corpora",
-        nargs="+",
-        type=str,
-        default=DEFAULT_EXCLUDED_CORPORA,
-        help="Corpora to exclude from analysis",
     )
     argparser.add_argument(
         "--min-age",
@@ -206,23 +186,23 @@ def make_plots(conversations, conversations_melted):
     conversations_duplicated["age"] = math.inf
     conversations_with_avg_age = pd.concat([conversations, conversations_duplicated], ignore_index=True)
 
-    plt.figure(figsize=(6, 3))
-    axis = sns.barplot(
-        data=conversations_with_avg_age,
-        x="age",
-        y="has_response",
-        hue="utt_is_grammatical",
-        linewidth=1,
-        edgecolor="w",
-    )
-    legend = axis.legend()
-    legend.texts[0].set_text("ungrammatical")
-    legend.texts[1].set_text("grammatical")
-    sns.move_legend(axis, "lower right")
-    axis.set(xlabel="age (months)", ylabel="prop_has_response")
-    axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
-    plt.tight_layout()
-    plt.savefig(os.path.join(RESULTS_DIR, "cf_quality_timing.png"), dpi=300)
+    # plt.figure(figsize=(6, 3))
+    # axis = sns.barplot(
+    #     data=conversations_with_avg_age,
+    #     x="age",
+    #     y="has_response",
+    #     hue="utt_is_grammatical",
+    #     linewidth=1,
+    #     edgecolor="w",
+    # )
+    # legend = axis.legend()
+    # legend.texts[0].set_text("ungrammatical")
+    # legend.texts[1].set_text("grammatical")
+    # sns.move_legend(axis, "lower right")
+    # axis.set(xlabel="age (months)", ylabel="prop_has_response")
+    # axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
+    # plt.tight_layout()
+    # plt.savefig(os.path.join(RESULTS_DIR, "cf_quality_timing.png"), dpi=300)
 
     conversations_with_response = conversations_with_avg_age[conversations_with_avg_age.has_response]
     plt.figure(figsize=(6, 3))
@@ -389,6 +369,15 @@ def make_plots(conversations, conversations_melted):
     )
 
 
+def filter_corpora(conversations):
+    print("Including corpora: ", CORPORA_INCLUDED)
+    conversations = conversations[conversations.corpus.isin(CORPORA_INCLUDED)]
+
+    print("Excluding corpora: ", CORPORA_EXCLUDED)
+    conversations = conversations[~conversations.corpus.isin(CORPORA_EXCLUDED)]
+    return conversations
+
+
 if __name__ == "__main__":
     args = parse_args()
     print(args)
@@ -397,13 +386,6 @@ if __name__ == "__main__":
 
     conversations = pd.read_csv(args.utterances_file, index_col=0, dtype={"error": object})
 
-    print("Excluding corpora: ", args.excluded_corpora)
-    conversations = conversations[~conversations.corpus.isin(args.excluded_corpora)]
-
-    if args.corpora:
-        print("Including only corpora: ", args.corpora)
-        conversations = conversations[conversations.corpus.isin(args.corpora)]
-
     # Filter by age
     conversations = conversations[
         (args.min_age <= conversations.age) & (conversations.age <= args.max_age)
@@ -411,5 +393,7 @@ if __name__ == "__main__":
 
     print("Excluding children: ", EXCLUDED_CHILDREN)
     conversations = conversations[~conversations.child_name.isin(EXCLUDED_CHILDREN)]
+
+    corpora = filter_corpora(conversations)
 
     perform_analysis_grammaticality(conversations, args)
