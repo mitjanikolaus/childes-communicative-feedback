@@ -11,7 +11,7 @@ from utils import categorize_error, ERR_VERB, ERR_AUXILIARY, ERR_PREPOSITION, \
     ERR_SUBJECT, ERR_OBJECT, ERR_POSSESSIVE, ERR_SV_AGREEMENT, ERR_DETERMINER, ERR_UNKNOWN, \
     remove_superfluous_annotations, \
     ERR_PRESENT_PROGRESSIVE, ERR_PAST, ERR_PLURAL, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, \
-    ERR_OTHER, UTTERANCES_WITH_PREV_UTTS_FILE
+    ERR_OTHER, ANNOTATED_UTTERANCES_FILE
 from tqdm import tqdm
 tqdm.pandas()
 
@@ -260,35 +260,39 @@ def get_omission_errors(row):
     errors = []
     for token, gra in zip(row["tokens"], row["gra"]):
         if token.startswith("0"):
-            rel = gra["rel"]
             word = token[1:]
-            if rel in ['SUBJ']:
-                errors.append(ERR_SUBJECT)
-            elif rel in ["OBJ", "OBJ2"]:
-                errors.append(ERR_OBJECT)
-            elif rel in RELS_VERB:
-                errors.append(ERR_VERB)
-            elif rel in ["DET"]:
-                errors.append(ERR_DETERMINER)
-            elif rel in ["JCT", "NJCT"]:
-                errors.append(ERR_PREPOSITION)
-            elif rel in ["INF"]:    # "to" for infinitive verbs
-                errors.append(ERR_VERB)
-            elif rel in ["AUX"]:
-                errors.append(ERR_AUXILIARY)
-            else:
-                # Fallback: check whether we can guess the category by looking at the actual omitted word
+            if not gra or "rel" not in gra.keys():
                 errs = guess_omission_error_types(word, row)
-                if errs == [ERR_UNKNOWN]:
-                    errs = []
-                    all_rels = set([gra["rel"] for gra in row["gra"]])
-                    if "SUBJ" not in all_rels:
-                        errs.append(ERR_SUBJECT)
-                    if len(set(RELS_VERB) & all_rels) == 0:
-                        errs.append(ERR_VERB)
-                    if len(errs) == 0:
-                        errs = [ERR_UNKNOWN]
                 errors.extend(errs)
+            else:
+                rel = gra["rel"]
+                if rel in ['SUBJ']:
+                    errors.append(ERR_SUBJECT)
+                elif rel in ["OBJ", "OBJ2"]:
+                    errors.append(ERR_OBJECT)
+                elif rel in RELS_VERB:
+                    errors.append(ERR_VERB)
+                elif rel in ["DET"]:
+                    errors.append(ERR_DETERMINER)
+                elif rel in ["JCT", "NJCT"]:
+                    errors.append(ERR_PREPOSITION)
+                elif rel in ["INF"]:    # "to" for infinitive verbs
+                    errors.append(ERR_VERB)
+                elif rel in ["AUX"]:
+                    errors.append(ERR_AUXILIARY)
+                else:
+                    # Fallback: check whether we can guess the category by looking at the actual omitted word
+                    errs = guess_omission_error_types(word, row)
+                    if errs == [ERR_UNKNOWN]:
+                        errs = []
+                        all_rels = set([gra["rel"] for gra in row["gra"]])
+                        if "SUBJ" not in all_rels:
+                            errs.append(ERR_SUBJECT)
+                        if len(set(RELS_VERB) & all_rels) == 0:
+                            errs.append(ERR_VERB)
+                        if len(errs) == 0:
+                            errs = [ERR_UNKNOWN]
+                    errors.extend(errs)
 
     return errors
 
@@ -296,7 +300,7 @@ def get_omission_errors(row):
 def prepare(args):
     utterances = pd.read_csv(args.utterances_file, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval, "gra": literal_eval}, dtype={"error": object})
 
-    utterances["labels"] = utterances.apply(get_error_labels, axis=1)
+    utterances["labels"] = utterances.progress_apply(get_error_labels, axis=1)
 
     def is_grammatical(label):
         if pd.isna(label):
@@ -316,7 +320,7 @@ def parse_args():
     argparser.add_argument(
         "--utterances-file",
         type=str,
-        default=UTTERANCES_WITH_PREV_UTTS_FILE,
+        default=ANNOTATED_UTTERANCES_FILE,
     )
 
     args = argparser.parse_args()
