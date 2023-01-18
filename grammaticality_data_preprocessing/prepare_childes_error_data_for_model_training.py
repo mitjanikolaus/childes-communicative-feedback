@@ -3,7 +3,7 @@ import os
 
 import pandas as pd
 
-from utils import UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE
+from utils import UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FOR_TRAINING_FILE
 from tqdm import tqdm
 tqdm.pandas()
 
@@ -51,5 +51,5 @@ if __name__ == "__main__":
 
     utterances = prepare(args)
 
-    os.makedirs(os.path.dirname(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE), exist_ok=True)
-    utterances.to_csv(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE)
+    os.makedirs(os.path.dirname(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FOR_TRAINING_FILE), exist_ok=True)
+    utterances.to_csv(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FOR_TRAINING_FILE)

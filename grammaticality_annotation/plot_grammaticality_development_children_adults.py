@@ -5,7 +5,7 @@ import pandas as pd
 import seaborn as sns
 
 from utils import (
-    filter_transcripts_based_on_num_child_utts, SPEAKER_CODE_CHILD, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE
+    filter_transcripts_based_on_num_child_utts, SPEAKER_CODE_CHILD, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE
 )
 
 DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
@@ -42,7 +42,7 @@ def parse_args():
     argparser.add_argument(
         "--utterances-file",
         type=str,
-        default=UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_CLEAN_FILE,
+        default=UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE,
     )
     argparser.add_argument(
         "--min-age",
