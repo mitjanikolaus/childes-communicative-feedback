@@ -13,7 +13,7 @@ CORPORA_INCLUDED = ["Bernstein", "Braunwald", "MPI-EVA-Manchester", "Providence"
 # CORPORA_INCLUDED = ["Braunwald", "EllisWeismer", "Hall", "Lara", "MPI-EVA-Manchester", "Providence", "Thomas"]
 
 
-def prepare(args, sample_equal_pos_neg=False):
+def prepare(args, sample_equal_pos_neg=True):
     utterances = pd.read_csv(args.utterances_file, index_col=0, dtype={"error": object})
 
     if sample_equal_pos_neg:
