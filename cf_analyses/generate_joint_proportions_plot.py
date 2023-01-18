@@ -4,19 +4,23 @@ import numpy as np
 import seaborn as sns
 import os
 
+from cf_analyses.analysis_intelligibility import DEFAULT_EXCLUDED_CORPORA as DEFAULT_EXCLUDED_CORPORA_INTELLIGIBILITY
+from cf_analyses.analysis_reproduce_warlaumont import DEFAULT_EXCLUDED_CORPORA as DEFAULT_EXCLUDED_CORPORA_SPEECH_RELATEDNESS
+from cf_analyses.analysis_grammaticality import filter_corpora as filter_corpora_grammaticality
 from cf_analyses.analysis_reproduce_warlaumont import AGE_BIN_NUM_MONTHS
 from utils import MICRO_CONVERSATIONS_FILE, filter_transcripts_based_on_num_child_utts
 
-MIN_AGE = 10
+MIN_AGE = 12
 MAX_AGE = 60
 
 DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 10
 
 
 def make_proportion_plots(conversations, results_dir):
-    plt.figure(figsize=(6, 4))
+    plt.figure(figsize=(15, 7))
 
-    proportion_speech_like_per_transcript = conversations.groupby(
+    conversations_filtered_speech_relatedness = conversations[~conversations.corpus.isin(DEFAULT_EXCLUDED_CORPORA_SPEECH_RELATEDNESS)]
+    proportion_speech_like_per_transcript = conversations_filtered_speech_relatedness.groupby(
         "transcript_file"
     ).agg({"utt_is_speech_related": "mean", "age": "mean"})
     axis = sns.regplot(
@@ -30,7 +34,9 @@ def make_proportion_plots(conversations, results_dir):
         label="proportion_speech_like",
     )
 
-    proportion_intelligible_per_transcript = conversations.groupby(
+    conversations.loc[conversations.utt_is_speech_related == False, "utt_is_intelligible"] = False
+    conversations_filtered_intelligibility = conversations[~conversations.corpus.isin(DEFAULT_EXCLUDED_CORPORA_INTELLIGIBILITY)]
+    proportion_intelligible_per_transcript = conversations_filtered_intelligibility.groupby(
         "transcript_file"
     ).agg({"utt_is_intelligible": "mean", "age": "mean"})
     sns.regplot(
@@ -44,9 +50,9 @@ def make_proportion_plots(conversations, results_dir):
         label="proportion_intelligible",
     )
 
-    conversations["utt_is_grammatical"] = conversations.utt_is_grammatical.replace({pd.NA: False})
     conversations.loc[~conversations.utt_is_intelligible, "utt_is_grammatical"] = False
-    proportion_grammatical_per_transcript = conversations.groupby(
+    conversations_filtered_grammaticality = filter_corpora_grammaticality(conversations)
+    proportion_grammatical_per_transcript = conversations_filtered_grammaticality.groupby(
         "transcript_file"
     ).agg({"utt_is_grammatical": "mean", "age": "mean"})
     sns.regplot(
@@ -63,14 +69,13 @@ def make_proportion_plots(conversations, results_dir):
 
     axis.legend(loc="lower right")
 
-    axis.set_xticks(np.arange(12, conversations.age.max() + 1, step=AGE_BIN_NUM_MONTHS))
+    axis.set_xticks(np.arange(MIN_AGE, MAX_AGE + 1, step=AGE_BIN_NUM_MONTHS))
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "proportions.png"), dpi=300)
     plt.show()
 
 
 if __name__ == "__main__":
-    # TODO: run with data from all corpora
     conversations = pd.read_csv(MICRO_CONVERSATIONS_FILE)
 
     conversations = conversations[
