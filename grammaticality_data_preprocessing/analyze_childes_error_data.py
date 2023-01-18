@@ -2,8 +2,7 @@ import os
 
 import pandas as pd
 
-from utils import ANNOTATED_UTTERANCES_FILE, SPEAKER_CODE_CHILD, \
-    UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE
+from utils import SPEAKER_CODE_CHILD, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -13,9 +12,9 @@ tqdm.pandas()
 
 COLORS_PLOT_CATEGORICAL = [
 "#000000",
+"#FF34FF",
 "#FFFF00",
 "#1CE6FF",
-"#FF34FF",
 "#FF4A46",
 "#008941",
 "#006FA6",
@@ -89,24 +88,38 @@ COLORS_PLOT_CATEGORICAL = [
 
 RESULTS_DIR = "results/grammaticality_annotations_childes"
 
+MIN_NUM_ERRORS = 10
+ERROR_RATIO_THRESHOLD = 0.01
+
 
 def plot_corpus_error_stats(utterances):
     os.makedirs(RESULTS_DIR, exist_ok=True)
+    utterances = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD].copy()
+    utterances.dropna(subset=["is_grammatical"], inplace=True)
 
-    error_utterances = utterances[utterances.is_grammatical == False]
-    print(f"Total utts: {len(utterances)} | Errors: {len(error_utterances)}")
-    utts = error_utterances.dropna(subset=["is_grammatical", "labels"]).copy()
-    num_errors = utts.corpus.value_counts()
+    error_utts = utterances[utterances.is_grammatical == False].copy()
 
+    print(f"Total utts: {len(utterances)} | Errors: {len(error_utts)}")
+    num_errors = error_utts.corpus.value_counts()
+
+    # Filter for min utts
+    corpora_to_plot = num_errors[num_errors > MIN_NUM_ERRORS].index
+    error_utts = error_utts[error_utts.corpus.isin(corpora_to_plot)].copy()
+    utterances = utterances[utterances.corpus.isin(corpora_to_plot)].copy()
+
+    num_errors = error_utts.corpus.value_counts()
     num_errors.plot(kind="bar")
     plt.subplots_adjust(bottom=0.3)
     plt.savefig(
         os.path.join(RESULTS_DIR, "error_counts_absolute.png"), dpi=300
     )
 
-    num_utts_data = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD].corpus.value_counts()
+    num_utts_data = utterances.corpus.value_counts()
     print("Total number of utts per corpus:")
     print(num_utts_data.to_dict())
+
+    print("Mean age for corpora:")
+    print(utterances.groupby("corpus").agg({"age": "mean"}).to_dict()["age"])
 
     num_utts = num_utts_data.to_frame()
     num_utts = num_utts.rename(columns={"corpus": "num_utts"})
@@ -117,16 +130,17 @@ def plot_corpus_error_stats(utterances):
     joined["ratio"] = joined["num_errors"] / joined["num_utts"]
     joined.sort_values(by="ratio", inplace=True)
     joined.plot(y='ratio', kind="bar")
-    plt.axhline(y=0.01, linestyle='--', color='r')
+    plt.axhline(y=ERROR_RATIO_THRESHOLD, linestyle='--', color='r')
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.3)
     plt.savefig(
         os.path.join(RESULTS_DIR, "error_proportions.png"), dpi=300
     )
+    print(f"Corpora with more than {ERROR_RATIO_THRESHOLD}% errors: {joined[joined.ratio > ERROR_RATIO_THRESHOLD].index.to_list()}")
 
-    utts["label"] = utts.labels.astype(str).apply(lambda x: x.split(", "))
-    utts.drop(columns="labels", inplace=True)
-    utts_exploded = utts.explode("label")
+    error_utts["label"] = error_utts.labels.astype(str).apply(lambda x: x.split(", "))
+    error_utts.drop(columns="labels", inplace=True)
+    utts_exploded = error_utts.explode("label")
 
     err_counts = utts_exploded.groupby(['corpus'])["label"].value_counts().rename("count").reset_index()
 
