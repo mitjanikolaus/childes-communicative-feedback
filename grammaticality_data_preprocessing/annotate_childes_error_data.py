@@ -11,7 +11,7 @@ from utils import categorize_error, ERR_VERB, ERR_AUXILIARY, ERR_PREPOSITION, \
     ERR_SUBJECT, ERR_OBJECT, ERR_POSSESSIVE, ERR_SV_AGREEMENT, ERR_DETERMINER, ERR_UNKNOWN, \
     remove_superfluous_annotations, \
     ERR_PRESENT_PROGRESSIVE, ERR_PAST, ERR_PLURAL, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, \
-    ERR_OTHER, ANNOTATED_UTTERANCES_FILE, get_num_unique_words
+    ERR_OTHER, UTTERANCES_WITH_SPEECH_ACTS_FILE
 from tqdm import tqdm
 tqdm.pandas()
 
@@ -301,16 +301,14 @@ def annotate(utterances):
     utterances["labels"] = utterances.progress_apply(get_error_labels, axis=1)
 
     def is_grammatical(row):
-        if pd.isna(row["labels"]) and row["num_unique_words"] > 1:
+        if pd.isna(row["labels"]):
             return True
-        elif row["num_unique_words"] <= 1 or row["labels"] == ERR_UNKNOWN:
+        elif row["labels"] == ERR_UNKNOWN:
             return pd.NA
         else:
             return False
 
-    utterances["num_unique_words"] = get_num_unique_words(utterances.transcript_clean)
     utterances["is_grammatical"] = utterances.apply(is_grammatical, axis=1).astype(object)
-    utterances.drop(columns=["num_unique_words"], inplace=True)
 
     return utterances
 
@@ -320,7 +318,7 @@ def parse_args():
     argparser.add_argument(
         "--utterances-file",
         type=str,
-        default=ANNOTATED_UTTERANCES_FILE,
+        default=UTTERANCES_WITH_SPEECH_ACTS_FILE,
     )
 
     args = argparser.parse_args()
