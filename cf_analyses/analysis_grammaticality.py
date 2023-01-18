@@ -201,29 +201,6 @@ def perform_analysis_grammaticality(conversations, args):
 
 
 def make_plots(conversations, conversations_melted):
-    proportion_grammatical_per_transcript = conversations.groupby(
-        "transcript_file"
-    ).agg({"utt_is_grammatical": "mean", "age": "mean"})
-    plt.figure(figsize=(6, 4))
-    axis = sns.regplot(
-        data=proportion_grammatical_per_transcript,
-        x="age",
-        y="utt_is_grammatical",
-        logistic=True,
-        marker=".",
-        scatter_kws={"alpha": 0.2, "s": 20},
-    )
-    plt.tight_layout()
-    axis.set(xlabel="age (months)", ylabel="prop_grammatical")
-    axis.set_xticks(
-        np.arange(
-            conversations.age.min(),
-            conversations.age.max() + 1,
-            step=AGE_BIN_NUM_MONTHS,
-        )
-    )
-    plt.savefig(os.path.join(RESULTS_DIR, "proportion_grammatical.png"), dpi=300)
-
     # Duplicate all entries and set age to infinity to get summary bars over all age groups
     conversations_duplicated = conversations.copy()
     conversations_duplicated["age"] = math.inf
