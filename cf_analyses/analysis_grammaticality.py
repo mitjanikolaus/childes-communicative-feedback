@@ -26,8 +26,7 @@ DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 1
 
 # Ages aligned to study of Warlaumont et al. or to our study (minimum 10 months)
 DEFAULT_MIN_AGE = 10
-#TODO:
-DEFAULT_MAX_AGE = 60
+DEFAULT_MAX_AGE = 48
 
 AGE_BIN_NUM_MONTHS = 6
 
@@ -37,6 +36,9 @@ AGE_BIN_NUM_MONTHS = 6
 # information is of very poor quality
 # DEFAULT_EXCLUDED_CORPORA = ["Providence", "Forrester"]
 DEFAULT_EXCLUDED_CORPORA = ["Forrester"]
+
+CORPORA_INCLUDED = ["Bernstein", "Braunwald", "MPI-EVA-Manchester", "Providence", "Thomas", "EllisWeismer", "Lara"]
+
 
 # The caregivers of these children are using slang (e.g., "you was" or "she don't") and are therefore excluded
 # We are unfortunately only studying mainstream US English
@@ -56,8 +58,8 @@ def parse_args():
         "--corpora",
         nargs="+",
         type=str,
-        required=False,
-        help="Corpora to analyze. If not given, corpora are selected based on a response time variance threshold.",
+        default=CORPORA_INCLUDED,
+        help="Corpora to analyze.",
     )
     argparser.add_argument(
         "--excluded-corpora",
@@ -121,7 +123,9 @@ def perform_analysis_grammaticality(conversations, args):
     conversations.dropna(
         subset=(
             "utt_is_grammatical",
+            "utt_is_intelligible",
             "follow_up_is_grammatical",
+            "follow_up_is_intelligible",
             "response_is_speech_related",
         ),
         inplace=True,
