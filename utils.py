@@ -23,6 +23,8 @@ SPEAKER_CODES_CAREGIVER = [
     "CAR",
 ]
 
+PROJECT_ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 PREPROCESSED_UTTERANCES_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances.csv"
 )
@@ -35,7 +37,7 @@ UTTERANCES_WITH_PREV_UTTS_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances_with_prev_utts.csv"
 )
 
-FILE_GRAMMATICALITY_ANNOTATIONS = "data/manual_annotation/grammaticality_manually_annotated.csv"
+FILE_GRAMMATICALITY_ANNOTATIONS = PROJECT_ROOT_DIR + "/data/manual_annotation/grammaticality_manually_annotated.csv"
 
 UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE = os.path.expanduser(
     "~/data/communicative_feedback/utterances_with_childes_error_annotations.csv"
@@ -752,7 +754,7 @@ OTHER_NONSPEECH = [
 ]
 
 VOCAB_CUSTOM = set(
-    pd.read_csv("data/childes_custom_vocab.csv", header=None, names=["word"]).word
+    pd.read_csv(PROJECT_ROOT_DIR + "/data/childes_custom_vocab.csv", header=None, names=["word"]).word
 )
 
 
