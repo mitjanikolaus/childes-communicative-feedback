@@ -19,10 +19,10 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 from transformers import PreTrainedTokenizerFast
 
-from utils import UTTERANCES_WITH_PREV_UTTS_FILE
+from utils import UTTERANCES_WITH_PREV_UTTS_FILE, PROJECT_ROOT_DIR
 
 LM_DATA = os.path.expanduser("~/data/communicative_feedback/sentences.txt")
-TOKENIZER_PATH = "data/tokenizer-childes.json"
+TOKENIZER_PATH = PROJECT_ROOT_DIR+"/data/tokenizer-childes.json"
 
 BATCH_SIZE = 32
 

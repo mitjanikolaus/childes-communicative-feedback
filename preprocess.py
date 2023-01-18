@@ -17,10 +17,10 @@ from utils import (
     remove_punctuation,
     get_paralinguistic_event,
     paralinguistic_event_is_external, clean_utterance, remove_timing_information, SPEAKER_CODES_CAREGIVER,
-    replace_actually_said_words,
+    replace_actually_said_words, PROJECT_ROOT_DIR,
 )
 
-NAMES_PATH = "data/names.csv"
+NAMES_PATH = PROJECT_ROOT_DIR+"/data/names.csv"
 CHILDES_DATA_BASE_PATH = os.path.expanduser(f"~/data/CHILDES/")
 
 

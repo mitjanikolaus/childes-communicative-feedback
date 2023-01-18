@@ -5,9 +5,11 @@ import pandas as pd
 from krippendorff import krippendorff
 from sklearn.metrics import cohen_kappa_score, matthews_corrcoef
 
+from utils import PROJECT_ROOT_DIR
+
 
 def eval():
-    base_path = "data/manual_annotation"
+    base_path = PROJECT_ROOT_DIR+"/data/manual_annotation"
     data = pd.read_csv(os.path.join(base_path, "grammaticality_manual_annotation_400_600_mit.csv"), index_col=0)
 
     columns = ["is_grammatical"]

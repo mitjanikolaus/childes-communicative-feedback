@@ -5,10 +5,11 @@ import seaborn as sns
 from sklearn.metrics import precision_recall_fscore_support
 
 from cf_analyses.analysis_intelligibility import is_repetition_clarification_request, get_repetition_ratios, response_is_acknowledgement
+from utils import PROJECT_ROOT_DIR
 
 
 def eval_crs():
-    annotated = pd.read_csv("data/CR_manual_annotations.csv", index_col=0)
+    annotated = pd.read_csv(PROJECT_ROOT_DIR+"/data/CR_manual_annotations.csv", index_col=0)
 
     repetition_ratios = annotated.apply(get_repetition_ratios, axis=1)
     annotated["utt_repetition_ratio"] = repetition_ratios.apply(lambda ratios: ratios[0])
@@ -25,7 +26,7 @@ def eval_crs():
 
 
 def eval_acks():
-    annotated = pd.read_csv("data/ACK_manual_annotations.csv", index_col=0)
+    annotated = pd.read_csv(PROJECT_ROOT_DIR+"/data/ACK_manual_annotations.csv", index_col=0)
 
     repetition_ratios = annotated.apply(get_repetition_ratios, axis=1)
     annotated["utt_repetition_ratio"] = repetition_ratios.apply(lambda ratios: ratios[0])

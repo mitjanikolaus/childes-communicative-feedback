@@ -6,10 +6,9 @@ import seaborn as sns
 
 import matplotlib.pyplot as plt
 
+from utils import PROJECT_ROOT_DIR
 
-ANNOTATED_UTTERANCES_FILE = os.path.expanduser(
-    "data/manual_annotation/grammaticality_eval_effect_of_context.csv"
-)
+ANNOTATED_UTTERANCES_FILE = PROJECT_ROOT_DIR+"/data/manual_annotation/grammaticality_eval_effect_of_context.csv"
 
 
 def compare(args):

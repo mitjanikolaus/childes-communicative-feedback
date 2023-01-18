@@ -6,11 +6,11 @@ import pandas as pd
 from utils import (
     remove_superfluous_annotations,
     clean_utterance, ERR_OTHER, ERR_SUBJECT, ERR_OBJECT, ERR_VERB, ERR_AUXILIARY, ERR_DETERMINER, ERR_PAST,
-    ERR_PREPOSITION, ERR_SV_AGREEMENT, ERR_POSSESSIVE, ERR_PRESENT_PROGRESSIVE, ERR_PLURAL,
+    ERR_PREPOSITION, ERR_SV_AGREEMENT, ERR_POSSESSIVE, ERR_PRESENT_PROGRESSIVE, ERR_PLURAL, PROJECT_ROOT_DIR,
 )
 
-DATA_PATH = "data/hiller_fernandez_2016/data/annotated_data"
-HILLER_FERNANDEZ_DATA_OUT_PATH = "data/hiller_fernandez_preprocessed.csv"
+DATA_PATH = PROJECT_ROOT_DIR+"/data/hiller_fernandez_2016/data/annotated_data"
+HILLER_FERNANDEZ_DATA_OUT_PATH = PROJECT_ROOT_DIR+"/data/hiller_fernandez_preprocessed.csv"
 
 LABEL_TRANSFORMATION = {
     'other': ERR_OTHER,
