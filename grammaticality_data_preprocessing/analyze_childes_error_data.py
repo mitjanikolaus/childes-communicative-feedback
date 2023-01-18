@@ -96,13 +96,13 @@ def plot_corpus_error_stats(utterances):
     error_utterances = utterances[utterances.is_grammatical == False]
     print(f"Total utts: {len(utterances)} | Errors: {len(error_utterances)}")
     utts = error_utterances.dropna(subset=["is_grammatical", "labels"]).copy()
-    utts.corpus.value_counts().plot(kind="bar")
+    num_errors = utts.corpus.value_counts()
+
+    num_errors.plot(kind="bar")
     plt.subplots_adjust(bottom=0.3)
     plt.savefig(
         os.path.join(RESULTS_DIR, "error_counts_absolute.png"), dpi=300
     )
-
-    num_errors = utts.corpus.value_counts()
 
     num_utts_data = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD].corpus.value_counts()
     print("Total number of utts per corpus:")
