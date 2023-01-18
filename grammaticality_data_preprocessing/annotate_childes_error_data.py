@@ -11,7 +11,7 @@ from utils import categorize_error, ERR_VERB, ERR_AUXILIARY, ERR_PREPOSITION, \
     ERR_SUBJECT, ERR_OBJECT, ERR_POSSESSIVE, ERR_SV_AGREEMENT, ERR_DETERMINER, ERR_UNKNOWN, \
     remove_superfluous_annotations, \
     ERR_PRESENT_PROGRESSIVE, ERR_PAST, ERR_PLURAL, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, \
-    ERR_OTHER, ANNOTATED_UTTERANCES_FILE
+    ERR_OTHER, ANNOTATED_UTTERANCES_FILE, get_num_unique_words
 from tqdm import tqdm
 tqdm.pandas()
 
@@ -297,20 +297,20 @@ def get_omission_errors(row):
     return errors
 
 
-def prepare(args):
-    utterances = pd.read_csv(args.utterances_file, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval, "gra": literal_eval}, dtype={"error": object})
-
+def annotate(utterances):
     utterances["labels"] = utterances.progress_apply(get_error_labels, axis=1)
 
-    def is_grammatical(label):
-        if pd.isna(label):
+    def is_grammatical(row):
+        if pd.isna(row["labels"]) and row["num_unique_words"] > 1:
             return True
-        if label == ERR_UNKNOWN:
+        elif row["num_unique_words"] <= 1 or row["labels"] == ERR_UNKNOWN:
             return pd.NA
         else:
             return False
 
-    utterances["is_grammatical"] = utterances.labels.apply(is_grammatical).astype(object)
+    utterances["num_unique_words"] = get_num_unique_words(utterances.transcript_clean)
+    utterances["is_grammatical"] = utterances.apply(is_grammatical, axis=1).astype(object)
+    utterances.drop(columns=["num_unique_words"], inplace=True)
 
     return utterances
 
@@ -332,7 +332,8 @@ if __name__ == "__main__":
     args = parse_args()
     print(args)
 
-    utterances = prepare(args)
+    utterances = pd.read_csv(args.utterances_file, index_col=0, converters={"pos": literal_eval, "tokens": literal_eval, "gra": literal_eval}, dtype={"error": object})
+    utterances = annotate(utterances)
 
     os.makedirs(os.path.dirname(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE), exist_ok=True)
     utterances.to_csv(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE)
