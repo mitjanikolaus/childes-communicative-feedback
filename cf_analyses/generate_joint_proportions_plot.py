@@ -8,7 +8,8 @@ from cf_analyses.analysis_intelligibility import DEFAULT_EXCLUDED_CORPORA as DEF
 from cf_analyses.analysis_reproduce_warlaumont import DEFAULT_EXCLUDED_CORPORA as DEFAULT_EXCLUDED_CORPORA_SPEECH_RELATEDNESS
 from cf_analyses.analysis_grammaticality import filter_corpora as filter_corpora_grammaticality
 from cf_analyses.analysis_reproduce_warlaumont import AGE_BIN_NUM_MONTHS
-from utils import MICRO_CONVERSATIONS_FILE, filter_transcripts_based_on_num_child_utts
+from utils import filter_transcripts_based_on_num_child_utts, \
+    UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, PROJECT_ROOT_DIR
 
 MIN_AGE = 12
 MAX_AGE = 60
@@ -16,17 +17,17 @@ MAX_AGE = 60
 DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 10
 
 
-def make_proportion_plots(conversations, results_dir):
+def make_proportion_plots(utterances, results_dir):
     plt.figure(figsize=(15, 7))
 
-    conversations_filtered_speech_relatedness = conversations[~conversations.corpus.isin(DEFAULT_EXCLUDED_CORPORA_SPEECH_RELATEDNESS)]
-    proportion_speech_like_per_transcript = conversations_filtered_speech_relatedness.groupby(
+    utterances_filtered_speech_relatedness = utterances[~utterances.corpus.isin(DEFAULT_EXCLUDED_CORPORA_SPEECH_RELATEDNESS)]
+    proportion_speech_like_per_transcript = utterances_filtered_speech_relatedness.groupby(
         "transcript_file"
-    ).agg({"utt_is_speech_related": "mean", "age": "mean"})
+    ).agg({"is_speech_related": "mean", "age": "mean"})
     axis = sns.regplot(
         data=proportion_speech_like_per_transcript,
         x="age",
-        y="utt_is_speech_related",
+        y="is_speech_related",
         marker=".",
         logistic=True,
         line_kws={"color": sns.color_palette("tab10")[0]},
@@ -34,15 +35,15 @@ def make_proportion_plots(conversations, results_dir):
         label="proportion_speech_like",
     )
 
-    conversations.loc[conversations.utt_is_speech_related == False, "utt_is_intelligible"] = False
-    conversations_filtered_intelligibility = conversations[~conversations.corpus.isin(DEFAULT_EXCLUDED_CORPORA_INTELLIGIBILITY)]
-    proportion_intelligible_per_transcript = conversations_filtered_intelligibility.groupby(
+    utterances.loc[utterances.is_speech_related == False, "is_intelligible"] = False
+    utterances_filtered_intelligibility = utterances[~utterances.corpus.isin(DEFAULT_EXCLUDED_CORPORA_INTELLIGIBILITY)]
+    proportion_intelligible_per_transcript = utterances_filtered_intelligibility.groupby(
         "transcript_file"
-    ).agg({"utt_is_intelligible": "mean", "age": "mean"})
+    ).agg({"is_intelligible": "mean", "age": "mean"})
     sns.regplot(
         data=proportion_intelligible_per_transcript,
         x="age",
-        y="utt_is_intelligible",
+        y="is_intelligible",
         logistic=True,
         marker=".",
         line_kws={"color": sns.color_palette("tab10")[1]},
@@ -50,15 +51,15 @@ def make_proportion_plots(conversations, results_dir):
         label="proportion_intelligible",
     )
 
-    conversations.loc[~conversations.utt_is_intelligible, "utt_is_grammatical"] = False
-    conversations_filtered_grammaticality = filter_corpora_grammaticality(conversations)
-    proportion_grammatical_per_transcript = conversations_filtered_grammaticality.groupby(
+    utterances.loc[~utterances.is_intelligible, "is_grammatical"] = False
+    utterances_filtered_grammaticality = filter_corpora_grammaticality(utterances)
+    proportion_grammatical_per_transcript = utterances_filtered_grammaticality.groupby(
         "transcript_file"
-    ).agg({"utt_is_grammatical": "mean", "age": "mean"})
+    ).agg({"is_grammatical": "mean", "age": "mean"})
     sns.regplot(
         data=proportion_grammatical_per_transcript,
         x="age",
-        y="utt_is_grammatical",
+        y="is_grammatical",
         logistic=True,
         marker=".",
         line_kws={"color": sns.color_palette("tab10")[2]},
@@ -76,16 +77,16 @@ def make_proportion_plots(conversations, results_dir):
 
 
 if __name__ == "__main__":
-    conversations = pd.read_csv(MICRO_CONVERSATIONS_FILE)
+    utterances = pd.read_csv(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, index_col=0, dtype={"error": object})
 
-    conversations = conversations[
-        (MIN_AGE <= conversations.age) & (conversations.age <= MAX_AGE)
+    utterances = utterances[
+        (MIN_AGE <= utterances.age) & (utterances.age <= MAX_AGE)
     ]
-    conversations = filter_transcripts_based_on_num_child_utts(
-        conversations, DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT
+    utterances = filter_transcripts_based_on_num_child_utts(
+        utterances, DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT
     )
 
-    results_dir = "results/"
-    make_proportion_plots(conversations, results_dir)
+    results_dir = PROJECT_ROOT_DIR+"/results/"
+    make_proportion_plots(utterances, results_dir)
 
     plt.show()
