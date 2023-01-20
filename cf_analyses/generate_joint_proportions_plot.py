@@ -9,16 +9,18 @@ from cf_analyses.analysis_reproduce_warlaumont import DEFAULT_EXCLUDED_CORPORA a
 from cf_analyses.analysis_grammaticality import filter_corpora as filter_corpora_grammaticality
 from cf_analyses.analysis_reproduce_warlaumont import AGE_BIN_NUM_MONTHS
 from utils import filter_transcripts_based_on_num_child_utts, \
-    UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, PROJECT_ROOT_DIR
+    UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, PROJECT_ROOT_DIR, SPEAKER_CODE_CHILD, split_into_words
 
-MIN_AGE = 12
+MIN_AGE = 10
 MAX_AGE = 60
 
-DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 10
+DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 100
 
 
 def make_proportion_plots(utterances, results_dir):
     plt.figure(figsize=(15, 7))
+
+    utterances = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD]
 
     utterances_filtered_speech_relatedness = utterances[~utterances.corpus.isin(DEFAULT_EXCLUDED_CORPORA_SPEECH_RELATEDNESS)]
     proportion_speech_like_per_transcript = utterances_filtered_speech_relatedness.groupby(
@@ -53,6 +55,12 @@ def make_proportion_plots(utterances, results_dir):
 
     utterances.loc[~utterances.is_intelligible, "is_grammatical"] = False
     utterances_filtered_grammaticality = filter_corpora_grammaticality(utterances)
+    # TODO filter for >1 words?
+    # num_words = utterances_filtered_grammaticality.transcript_clean.apply(
+    #     lambda x: len(split_into_words(x, split_on_apostrophe=False, remove_commas=True,
+    #                                    remove_trailing_punctuation=True)))
+    # utterances_filtered_grammaticality = utterances_filtered_grammaticality[num_words > 1]
+
     proportion_grammatical_per_transcript = utterances_filtered_grammaticality.groupby(
         "transcript_file"
     ).agg({"is_grammatical": "mean", "age": "mean"})
