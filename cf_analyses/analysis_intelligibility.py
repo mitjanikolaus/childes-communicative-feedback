@@ -142,7 +142,7 @@ def is_repetition_acknowledgement(micro_conv):
 
 
 def response_is_acknowledgement(micro_conv):
-    if micro_conv["has_response"] and not micro_conv["utt_transcript_clean"][-1] == "?":
+    if not micro_conv["utt_transcript_clean"][-1] == "?":
         ack_keyword = contains_acknowledgement_keyword(micro_conv)
         ack_repetition = is_repetition_acknowledgement(micro_conv)
 
@@ -172,11 +172,9 @@ def is_clarification_request_speech_act(micro_conv):
 
 
 def response_is_clarification_request(micro_conv):
-    if micro_conv["has_response"]:
-        cf_speech_act = is_clarification_request_speech_act(micro_conv)
-        cf_repetition = is_repetition_clarification_request(micro_conv)
-        return cf_speech_act or cf_repetition
-    return False
+    cf_speech_act = is_clarification_request_speech_act(micro_conv)
+    cf_repetition = is_repetition_clarification_request(micro_conv)
+    return cf_speech_act or cf_repetition
 
 
 # List of stopwords to be ignored for repetition calculation
@@ -184,6 +182,9 @@ STOPWORDS = {'my', 'doing', 'than', 'doesn', 'do', 'him', 's', 'her', 'won', 'my
 
 
 def get_repetition_ratios(micro_conv):
+    if pd.isna(micro_conv["response_transcript_clean"]):
+        return [0, 0]
+
     utt = micro_conv["utt_transcript_clean"].lower()
     words_utt = set(split_into_words(utt, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True))
     words_utt_no_stopwords = {word for word in words_utt if word not in STOPWORDS}
@@ -226,7 +227,6 @@ def melt_variable(conversations, variable_suffix):
             "child_name",
             "age",
             "transcript_file",
-            "has_response",
         ],
         value_vars=value_var_names,
         var_name="is_follow_up",
@@ -238,6 +238,20 @@ def melt_variable(conversations, variable_suffix):
     conversations_melted["conversation_id"] = conversations_melted["index"]
     del conversations_melted["index"]
     return conversations_melted
+
+
+def filter_utts_for_num_words(conversations, min_num_words):
+    num_unique_words_utt = conversations.utt_transcript_clean.apply(
+        lambda x: len(split_into_words(x, split_on_apostrophe=False, remove_commas=True,
+                                       remove_trailing_punctuation=True)))
+    return conversations[num_unique_words_utt >= min_num_words]
+
+
+def filter_follow_ups_for_num_words(conversations, min_num_words):
+    num_unique_words_follow_up = conversations.follow_up_transcript_clean.apply(
+        lambda x: len(split_into_words(x, split_on_apostrophe=False, remove_commas=True,
+                                       remove_trailing_punctuation=True)))
+    return conversations[num_unique_words_follow_up >= min_num_words]
 
 
 def perform_analysis(conversations, args):
@@ -266,7 +280,10 @@ def perform_analysis(conversations, args):
     conversations["resp_repetition_ratio"] = repetition_ratios.apply(lambda ratios: ratios[1])
 
     conversations["response_is_clarification_request"] = conversations.apply(response_is_clarification_request, axis=1)
+    conversations.loc[~conversations.has_response, "response_is_clarification_request"] = False
+
     conversations["response_is_acknowledgement"] = conversations.apply(response_is_acknowledgement, axis=1)
+    conversations.loc[~conversations.has_response, "response_is_acknowledgement"] = False
 
     print("Number of CRs: ", len(conversations[conversations.response_is_clarification_request]))
     print("Number of Acks: ", len(conversations[conversations.response_is_acknowledgement]))
