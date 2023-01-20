@@ -16,6 +16,9 @@ MAX_AGE = 60
 
 DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 100
 
+# Do not filter for min num words because this will remove many unintelligible utterances which are also not grammatical
+MIN_NUM_WORDS = 0
+
 
 def make_proportion_plots(utterances, results_dir):
     plt.figure(figsize=(15, 7))
@@ -55,11 +58,11 @@ def make_proportion_plots(utterances, results_dir):
 
     utterances.loc[~utterances.is_intelligible, "is_grammatical"] = False
     utterances_filtered_grammaticality = filter_corpora_grammaticality(utterances)
-    # TODO filter for >1 words?
-    # num_words = utterances_filtered_grammaticality.transcript_clean.apply(
-    #     lambda x: len(split_into_words(x, split_on_apostrophe=False, remove_commas=True,
-    #                                    remove_trailing_punctuation=True)))
-    # utterances_filtered_grammaticality = utterances_filtered_grammaticality[num_words > 1]
+
+    num_words = utterances_filtered_grammaticality.transcript_clean.apply(
+        lambda x: len(split_into_words(x, split_on_apostrophe=False, remove_commas=True,
+                                       remove_trailing_punctuation=True)))
+    utterances_filtered_grammaticality = utterances_filtered_grammaticality[num_words >= MIN_NUM_WORDS]
 
     proportion_grammatical_per_transcript = utterances_filtered_grammaticality.groupby(
         "transcript_file"
