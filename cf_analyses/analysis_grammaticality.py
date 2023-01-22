@@ -158,7 +158,7 @@ def make_plots(conversations, conversations_melted):
     sns.move_legend(axis, "lower left")
     axis.set(xlabel="age (months)", ylabel="prop_clarification_request")
     axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
-    plt.ylim((0, 0.35))
+    # plt.ylim((0, 0.35))
     plt.tight_layout()
     plt.savefig(
         os.path.join(RESULTS_DIR, "cf_quality_clarification_request.png"), dpi=300
@@ -179,7 +179,7 @@ def make_plots(conversations, conversations_melted):
     sns.move_legend(axis, "lower left")
     axis.set(xlabel="age (months)", ylabel="prop_acknowledgement")
     axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
-    plt.ylim((0, 0.35))
+    # plt.ylim((0, 0.35))
     plt.tight_layout()
     plt.savefig(
         os.path.join(RESULTS_DIR, "cf_quality_acknowledgements.png"), dpi=300
@@ -308,6 +308,6 @@ if __name__ == "__main__":
     print("Excluding children: ", EXCLUDED_CHILDREN)
     conversations = conversations[~conversations.child_name.isin(EXCLUDED_CHILDREN)]
 
-    corpora = filter_corpora(conversations)
+    conversations = filter_corpora(conversations)
 
     perform_analysis_grammaticality(conversations, args)
