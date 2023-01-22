@@ -6,23 +6,16 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from analysis_intelligibility import response_is_clarification_request, melt_variable, \
-    DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES, response_is_acknowledgement, get_repetition_ratios, \
-    filter_utts_for_num_words, filter_follow_ups_for_num_words
+from analysis_intelligibility import response_is_clarification_request, melt_variable, response_is_acknowledgement, \
+    get_repetition_ratios, filter_utts_for_num_words, filter_follow_ups_for_num_words
 from utils import (
     age_bin,
-    str2bool,
     SPEAKER_CODE_CHILD, get_num_words,
     MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE, PROJECT_ROOT_DIR,
 )
 
-DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES = True
-
-DEFAULT_MIN_RATIO_NONSPEECH = 0.0
-
 # Ages aligned to study of Warlaumont et al. or to our study (minimum 10 months)
 DEFAULT_MIN_AGE = 10
-# TODO: 60?
 DEFAULT_MAX_AGE = 60
 
 AGE_BIN_NUM_MONTHS = 6
@@ -30,7 +23,9 @@ AGE_BIN_NUM_MONTHS = 6
 MIN_NUM_WORDS = 1
 
 CORPORA_EXCLUDED = []
-CORPORA_INCLUDED = ['Thomas', 'MPI-EVA-Manchester', 'Providence', 'Braunwald', 'Lara', 'EllisWeismer']
+# TODO Bates? VanHouten?
+# CORPORA_INCLUDED = ['Thomas', 'MPI-EVA-Manchester', 'Providence', 'Braunwald', 'Lara', 'EllisWeismer']
+CORPORA_INCLUDED = ['Providence', 'VanHouten', 'Thomas', 'Braunwald', 'Lara', 'MPI-EVA-Manchester', 'Bates', 'EllisWeismer']
 
 
 # The caregivers of these children are using slang (e.g., "you was" or "she don't") and are therefore excluded
@@ -57,27 +52,6 @@ def parse_args():
         type=int,
         default=DEFAULT_MAX_AGE,
     )
-    argparser.add_argument(
-        "--min-ratio-nonspeech",
-        type=int,
-        default=DEFAULT_MIN_RATIO_NONSPEECH,
-    )
-
-    argparser.add_argument(
-        "--count-only-speech_related_responses",
-        type=str2bool,
-        const=True,
-        nargs="?",
-        default=DEFAULT_COUNT_ONLY_SPEECH_RELATED_RESPONSES,
-    )
-
-    argparser.add_argument(
-        "--count-only-intelligible_responses",
-        type=str2bool,
-        const=True,
-        nargs="?",
-        default=DEFAULT_COUNT_ONLY_INTELLIGIBLE_RESPONSES,
-    )
 
     args = argparser.parse_args()
 
@@ -98,8 +72,6 @@ def perform_analysis_grammaticality(conversations, args):
         subset=(
             "utt_is_grammatical",
             "utt_is_intelligible",
-            "follow_up_is_grammatical",
-            "follow_up_is_intelligible",
             "response_is_speech_related",
         ),
         inplace=True,
@@ -131,8 +103,15 @@ def perform_analysis_grammaticality(conversations, args):
     conversations = pd.read_csv(RESULTS_DIR + "conversations.csv", index_col=0)
 
     # Melt is_grammatical variable for CR effect analyses
-    conversations_good_follow_ups = filter_follow_ups_for_num_words(conversations.copy(), min_num_words=MIN_NUM_WORDS)
+    conversations_good_follow_ups = conversations.dropna(
+        subset=(
+            "follow_up_is_grammatical",
+            "follow_up_is_intelligible",
+        ),
+    )
+    conversations_good_follow_ups = filter_follow_ups_for_num_words(conversations_good_follow_ups, min_num_words=MIN_NUM_WORDS)
     conversations_good_follow_ups = conversations_good_follow_ups[conversations_good_follow_ups.follow_up_is_intelligible]
+
 
     conversations_melted = melt_variable(conversations_good_follow_ups, "is_grammatical")
     conversations_melted.to_csv(RESULTS_DIR + "conversations_melted.csv")
@@ -200,6 +179,7 @@ def make_plots(conversations, conversations_melted):
     sns.move_legend(axis, "lower left")
     axis.set(xlabel="age (months)", ylabel="prop_acknowledgement")
     axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
+    plt.ylim((0, 0.35))
     plt.tight_layout()
     plt.savefig(
         os.path.join(RESULTS_DIR, "cf_quality_acknowledgements.png"), dpi=300
@@ -319,8 +299,7 @@ if __name__ == "__main__":
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    conversations = pd.read_csv(args.utterances_file, index_col=0, dtype={"error": object})
-
+    conversations = pd.read_csv(args.utterances_file, index_col=0, dtype={"error": object, "utt_is_grammatical": object, "response_is_grammatical": object, "follow_up_is_grammatical": object, "labels": object})
     # Filter by age
     conversations = conversations[
         (args.min_age <= conversations.age) & (conversations.age <= args.max_age)
