@@ -381,20 +381,63 @@ ERR_OBJECT = "object"
 ERR_POSSESSIVE = "possessive"
 ERR_PLURAL = "plural"
 ERR_SV_AGREEMENT = "sv_agreement"
-ERR_PAST = "past"
+ERR_TENSE_ASPECT = "tense_aspect"
 ERR_DETERMINER = "determiner"
 ERR_PREPOSITION = "preposition"
 ERR_AUXILIARY = "auxiliary"
-ERR_PRESENT_PROGRESSIVE = "present_progressive"
 ERR_OTHER = "other"
 ERR_UNKNOWN = "unk"
 
-ERRORS_PAST_TENSE = {('catch', 'caught'), ('aten', 'eaten'), ('draw', 'drew'), ('did', 'have done'), ('did sing', 'sang'), ("i'm", "i was"), ('drink', 'drank'), ("go splash", "splashed"), ("winned", "won"), ("gotted", "got"), ("buyeded", "bought"), ("give", "gave"), ("sticked", "stuck"), ("weared", "wore"), ("holded", "held"), ("stinged", "stung"), ("drinked", "drunk"), ("quitted", "quit"), ("safeded", "saved"), ("safed", "saved"), ("aten", "ate"), ("stayded", "stayed"), ("closded", "closed"), ("wearded", "wore"), ("writed", "written"), ("brokened", "broken"), ("brokened", "broke"), ("takened", "took"), ("falled", "fallen"), ("goded", "went"), ("waked", "woken"), ("stucked", "stuck"), ("led", "let"), ("heared", "heard"), ("leaved", "left"), ("meeted", "met"), ('wrote', 'written'), ('writed', 'written'), ('cry', 'cried'), ('calls', 'called'), ('brung', 'brought'), ('bite', 'bit'), ('knowed', 'knew'), ('letted', 'let'), ('go', 'gone'), ('told', 'telled'), ('shutted', 'shut'), ('lend', 'lent'), ('said', 'goed'), ('meaned', 'meant'), ('growed', 'grew'), ('singed', 'sang'), ('broken', 'broke'), ('sang', 'singed'), ("jumpded", "jumped"), ('went', 'goed'), ('stuck', 'stucked'), ("don't", "didn't"), ('goed', 'said'), ('stick', 'stuck'), ('flieded', 'flied'), ('wear', 'wore'), ('took', 'taked'), ('can', 'could'), ('doed', 'did'), ('stuck', 'stick'), ('said', 'sayed'), ('wore', 'wear'), ('did', 'do'), ('blewed', 'blew'), ('slept', 'sleept'), ('lost', 'lose'), ('breaked', 'broke'), ('ate', 'eaten'), ('getted', 'got'), ('bought', 'buyed'), ('sitted', 'sat'), ('writed', 'wrote'), ('eat', 'ate'), ('leaned', 'leant'), ('eated', 'ate'), ('leaped', 'leapt'), ('stung', 'stunged'), ('told', 'tolded'), ('dranked', 'drank'), ('could', 'can'), ('came', 'come'), ('go', 'went'), ('came', 'comed'), ("didn't", "don't"), ('comed', 'came'), ('spat', 'spit'), ('bent', 'bented'), ('readed', 'read'), ('fixeded', 'fixed'), ('ride', 'ridden'), ('done', 'did'), ('had', 'haved'), ('written', 'wrote'), ('read', 'readed'), ('choose', 'chose'), ('hid', 'hided'), ('breaked', 'broken'), ('bented', 'bent'), ('broke', 'broked'), ('runned', 'ran'), ('hided', 'hid'), ('dugged', 'dug'), ('built', 'builded'), ('slept', 'sleeped'), ('sayed', 'said'), ('broken', 'broked'), ('sawed', 'saw'), ('sawed', 'sawded'), ('come', 'came'), ('flew', 'flyed'), ('gone', 'goned'), ('left', 'leave'), ('said', 'say'), ('falled', 'fell'), ('sat', 'sit'), ('chose', 'choose'), ('burned', 'burnt'), ('lost', 'losed'), ('ated', 'ate'), ('goed', 'went'), ('ate', 'ated'), ('lose', 'lost'), ('drawed', 'drew'), ('drew', 'draw'), ('builded', 'built'), ('caught', 'catched'), ('blew', 'blewed'), ('throwed', 'threw'), ('threw', 'throwed'), ('brokened', 'broken'), ('fell', 'fallen'), ('drinked', 'drank'), ('ate', 'et'), ('leapt', 'leaped'), ('ate', 'eat'), ('made', 'maded'), ('forgat', 'forgot'), ('broked', 'broke'), ('sleept', 'slept'), ('dug', 'dugged'), ('fall', 'fell'), ('got', 'get'), ('losed', 'lost'), ('see', 'seen'), ('broke', 'breaked'), ('do', 'did'), ('founded', 'found'), ('goed', 'went like'), ('take', 'took'), ('seed', 'saw'), ('flied', 'flieded'), ('bringed', 'brought'), ('bringeded', 'brought'), ("leaved", "left"), ("cutted", "cut"), ("showded", "showed"), ("buyded", "bought"), ("haveded", "had"), ("pickted", "picked"), ('buyed', 'bought'), ('broken', 'breaked'), ('sent', 'sended'), ('burnt', 'burned'), ('slid', 'slided'), ('took', 'taken'), ('fell', 'fall'), ('eaten', 'ate'), ('et', 'ate'), ('see', 'saw'), ('hold', 'held'), ('leant', 'leaned'), ('stucked', 'stuck'), ('swam', 'swimmed'), ('broked', 'broken'), ('haved', 'had'), ('putted', 'put'), ('brought', 'bringed'), ('hit', 'hitted'), ('say', 'said'), ('made', 'make'), ('felled', 'fell'), ('camed', 'came'), ('ridden', 'ride'), ('sang', 'sanged'), ('drink', 'drunk'), ('spit', 'spat'), ('drew', 'drawed'), ('fell', 'felled'), ('waked', 'woke'), ('bent', 'bended'), ('have', 'had'), ('fixed', 'fixeded'), ('sleeped', 'slept'), ('babysitted', 'babysat'), ('spitted', 'spat'), ('catched', 'caught'), ('wrote', 'writed'), ('buy', 'bought'), ('maked', 'made'), ('maded', 'made'), ('goed', 'got'), ('held', 'hold'), ('got', 'gat'), ('flied', 'flew'), ('stunged', 'stung'), ('made', 'maked'), ('woke', 'waked'), ('bited', 'bit'), ('grew', 'growed'), ('broken', 'brokened'), ('flew', 'flied'), ('shut', 'shutted'), ('telled', 'told'), ('swimmed', 'swam'), ('cwied', 'cried'), ('spat', 'spitted'), ('flewed', 'flew'), ('went like', 'goed'), ('make', 'made'), ('went', 'go'), ('ran', 'runned'), ('swam', 'swammed'), ('flyed', 'flew'), ('leave', 'left'), ('fallen', 'fell'), ('got', 'getted'), ('hitted', 'hit'), ('bit', 'bited'), ('broke', 'broken'), ('cried', 'cwied'), ('gat', 'got'), ('taken', 'took'), ('ate', 'eated'), ('took', 'take'), ('get', 'got'), ('saw', 'seed'), ('goned', 'gone'), ('tolded', 'told'), ('swammed', 'swam'), ('had', 'have'), ('put', 'putted'), ('babysat', 'babysitted'), ('did', 'doed'), ('flew', 'flewed'), ('sawded', 'sawed'), ('taked', 'took'), ('drank', 'dranked'), ('saw', 'sawed'), ('sat', 'sitted'), ('fell', 'falled'), ('forgot', 'forgat'), ('sit', 'sat'), ('bought', 'buy'), ('drunk', 'drink'), ('came', 'camed'), ('saw', 'see'), ('meant', 'meaned'), ('seen', 'see'), ('did', 'done'), ('slided', 'slid'), ('sanged', 'sang'), ('drank', 'drinked'), ('found', 'founded'), ('sended', 'sent'), ('got', 'goed'), ('bended', 'bent')}
-ERRORS_PLURAL = [('mans', 'men'), ('mans@c', 'men'), ('baby', 'babies'), ("that's", "they're"), ("name", "names"), ("voice", "voices"), ('this', 'these'), ("wristes", "wrists"), ("half", "halves"), ("bodies", "body"), ("one", "ones"), ("ghostes", "ghosts"), ('mens', 'men'), ('womans', 'women'), ('policemens', 'policemen'), ('firemens', 'firemen'), ('firemans', 'firemen'), ("snowmans", "snowman"),  ('foremans', 'foremen'), ('mouses', 'mice'), ('sheeps', 'sheep'), ('foots', 'feet'), ('foots', 'foot'), ('knifes', 'knives'), ('‹barefeeted', 'barefoot')]
-ERRORS_SV_AGREEMENT = [("be", "are"), ("sneez", "sneezes"), ('has', 'have'), ("want", "wants"), ('goes', 'go'), ('dunt', "doesn't"), ("i's", "i am"), ("coughes", "coughs"), ("mean", "means"), ("be", "am"), ("be", "is"), ("like", "likes"), ("babysit", "babysits"), ("light", "lights"), ("are", "is"), ("are", "am"), ("does", "do"), ("do", "does"), ("weren't", "wasn't"), ("have", "has"), ("there's", "there're"), ("where's", "where're"), ("was", "were"), ("don't", "doesn't"), ('is', 'are'), ('gots', 'got'), ("live", "lives"), ("present", "presents"), ("here's", 'here are'), ("there's", "there are")]
+WORDS_WRONG_TENSE_ASPECT_INFLECTION = {'sleept', 'maded', 'droved', 'sanged', 'writed', 'gones', 'seewed', 'takened', 'hitted', 'dranked', 'bended', 'flewed', 'heared', 'drinked', 'doed', 'eated', 'forgeted', 'weared', 'brokened', 'holded', 'slided', 'sayed', 'sewed', 'ranned', 'jumpded', 'winned', 'taked', 'meaned', 'spilt', 'showded', 'comed', 'forgat', 'sawded', 'throwed', 'broked', 'ated', 'camed', 'shutted', 'splitted', 'led', 'haveded', 'flieded', 'sleeped', 'babysitted', 'bented', 'swammed', 'knowed', 'spitted', 'maked', 'swimmed', 'wearded', 'readed', 'brung', 'stunged', 'safed', 'bringed', 'falled', 'buyded', 'bringeded', 'goed', 'flied', 'blewed', 'sitted', 'fixeded', 'putted', 'stayded', 'dugged', 'letted', 'stucked', 'goded', 'goned', 'flyed', 'feeled', 'builded', 'sawed', 'shooted', 'closded', 'buyed', 'sended', 'waked', 'drived', 'fighted', 'felled', 'cutted', 'telled', 'tolded', 'sticked', 'broking', 'getted', 'aten', 'meeted', 'singed', 'quitted', 'safeded', 'losed', 'bited', 'haved', 'buyeded', 'stinged', 'hided', 'leaved', 'growed', 'breaked', 'slid', 'runned', 'catched', 'drawed', 'leaped', 'digged', 'pickted', 'gotted'}
+WORDS_WRONG_PLURAL_INFLECTION = {'mans', 'mans@c', 'leafs', 'tooths', 'wristes', 'boyses', 'friendses', 'ghostes', 'mens', 'womans', 'policemens', 'firemens', 'firemans', 'snowmans', 'foremans', 'mouses', 'foots', 'sheeps', 'knifes', '‹barefeeted'}
+
+ERRORS_TENSE_ASPECT = {('broke', 'broken'), ('drunk', 'drink'), ('calls', 'called'), ('eat', 'ate'), ('come', 'came'), ('lend', 'lent'), ("it's", 'it was'), ('say', 'said'), ('took', 'taken'), ('cwied', 'cried'), ("i'm", 'i was'), ('wrote', 'written'), ('ride', 'ridden'), ('saw', 'see'), ('go', 'gone'), ('did', 'have done'), ('said', 'say'), ('see', 'saw'), ('fell', 'fall'), ('go splash', 'splashed'), ('cry', 'cried'), ('found', 'founded'), ('came', 'come'), ('done', 'did'), ('sat', 'sit'), ('spit', 'spat'), ('saw', 'seed'), ('fell', 'fallen'), ('drink', 'drank'), ('see', 'seen'), ('broke', 'break'), ('went', 'go'), ('had', 'have'), ('gone', 'going to'), ('forgot', 'forgotten'), ('did', 'do'), ('ate', 'et'), ('took', 'take'), ('catch', 'caught'), ('draw', 'drew'), ('leaned', 'leant'), ('got', 'gat'), ('make', 'made'), ('sit', 'sat'), ('have', 'had'), ('lose', 'lost'), ('burned', 'burnt'), ('leant', 'leaned'), ('get', 'got'), ('fallen', 'fell'), ('seed', 'saw'), ('made', 'make'), ('written', 'wrote'), ('left', 'leave'), ('wore', 'wear'), ('ate', 'eaten'), ('held', 'hold'), ('do', 'did'), ('drink', 'drunk'), ('leave', 'left'), ('ridden', 'ride'), ('wear', 'wore'), ('buy', 'bought'), ('et', 'ate'), ('founded', 'found'), ('give', 'gave'), ('drew', 'draw'), ('eaten', 'ate'), ('fall', 'fell'), ('could', 'can'), ("i'm", 'going to'), ('did', 'done'), ('burnt', 'burned'), ('did sing', 'sang'), ('gat', 'got'), ('taken', 'took'), ('take', 'took'), ('broken', 'broke'), ("didn't", "don't"), ('spat', 'spit'), ('hold', 'held'), ('cried', 'cwied'), ('bought', 'buy'), ('can', 'could'), ('lost', 'lose'), ('got', 'get'), ('stick', 'stuck'), ('stuck', 'stick'), ('choose', 'chose'), ('seen', 'see'), ("don't", "didn't"), ('bite', 'bit'), ('chose', 'choose'), ('go', 'went'), ('seen', 'saw'), ('ate', 'eat')}
+ERRORS_PLURAL = [('man', 'men'), ('baby', 'babies'), ('feet', 'foot'), ("that's", "they're"), ('name', 'names'), ('voice', 'voices'), ('this', 'these'), ('half', 'halves'), ('bodies', 'body'), ('one', 'ones')]
+ERRORS_SV_AGREEMENT = [("be", "are"), ("sneez", "sneezes"), ('has', 'have'), ("doesn't", "don't"), ("isn't", "aren't"), ("want", "wants"), ('wanna', 'wants to'), ('goes', 'go'), ('dunt', "doesn't"), ("i's", "i am"), ("coughes", "coughs"), ("mean", "means"), ("be", "am"), ("be", "is"), ("like", "likes"), ("babysit", "babysits"), ("light", "lights"), ("are", "is"), ("are", "am"), ("does", "do"), ("do", "does"), ("weren't", "wasn't"), ("have", "has"), ("there's", "there're"), ("where's", "where're"), ("was", "were"), ("don't", "doesn't"), ('is', 'are'), ('gots', 'got'), ("live", "lives"), ("present", "presents"), ("here's", 'here are'), ("there's", "there are")]
 ERRORS_PREPOSITION = [("for", "to"), ("by", "with"), ("a", "to"), ("to", "into"), ("to", "to"), ("with", "to"), ("your", "to"), ("in", "at"), ("the", "as"), ("at", "in"), ("up", "out"), ("a", "for"), ("on", "to"), ('a', 'of'), ('at', 'to'), ('want', 'want to'), ('to', 'at'), ('in', 'on')]
-ERRORS_AUXILIARY = [("has", "does"), ("can", "have"), ("no", "don't"), ("is", "has"), ("is", "have"), ("do", "have"), ("do", "won't"), ("do", "will"), ("haven't", "isn't"), ('not', "don't"), ("i'm", "i've"), ("not", "doesn't"), ("is", "has"), ("we", "we'd"), ("aren't", "hasn't"), ("go", "will"), ("i'm", "i've")]
-ERRORS_DIALECT = [("int", "isn't"), ('dare', 'there'), ('a', 'going to'), ('deir', 'there'), ('liddle', 'little'), ('limme', 'let me'), ('kuhz', 'because'), ('waimit', 'wait a minute'), ('doz', 'those'), ('deez', 'these'), ('das', "that's"), ('fink', 'think'), ('nis', 'this'), ('dint', "didn't"), ('yare', 'you are'), ('thas', 'that is'), ('dei', 'they'), ('fings', 'things'), ('innit', "isn't it"), ('whata', 'what do'), ('em', 'him'), ('yuh', 'you'), ('looka', 'look'), ('nat', 'that'), ('haf', 'have'), ('ma', 'mother'), ('wanta', 'wanna'), ('nere', 'there'), ('choo', 'you'), ('fing', 'thing'), ('gon', 'going to'), ('duh', 'the'), ('tuh', 'to'), ('da', 'that'), ('na', 'the'), ('daet', 'that'), ('huh', 'what'), ('awright', 'alright'), ('corder', 'recorder'), ('plenny', 'plenty'), ("diddy", "dinner"), ("them", "those"), ("ain't", "isn't"), ("ma", "my"), ("ya", "you"), ('gonna', 'going to'), ('ya', 'you'), ('yep', 'yes'), ('lemme', 'let me'), ('kinda', 'kind of'), ('yup', 'yes'), ('dyou', 'do you'), ('lil', 'little'), ('bout', 'about'), ('dunno', "don't know"), ("d'you", 'do you'), ('yer', 'your'), ('cause', 'because'), ("where'd", 'where did'), ('nope', 'no'), ("let's", 'let us'), ('em', 'them'), ('wouldja', 'would you'), ('da', 'the'), ('whada', 'what do'), ("'cause", 'because'), ("what're", 'what are'), ('dya', 'do you'), ('gon(na)', 'going to'), ('wanna', 'want to'), ('djou', 'do you'), ('didjou', 'did you'), ('cmon', 'come on'), ("c'mon", 'come on'), ('whatcha', 'what are you'), ('gimme', 'give me'), ('ta', 'to'), ("'em", 'them'), ('wanna', 'want a'), ("c'mere", 'come here'), ('yea:h', 'yes'), ('yeah', 'yes'), ('mkay', 'okay'), ('outta', 'out of'), ('wouldjou', 'would you'), ('lotta', 'lot of'), ('cmere', 'come here'), ('kay', 'okay'), ('gotcha', 'got you'), ('havta', 'have to'), ('whaddya', 'what do you'), ("dat's", 'that (i)s'), ('comere', 'come here'), ('yeah:', 'yes'), ('mhm', 'yes'), ('lookit', 'look'), ("s'more", 'some more'), ('gotta', 'got to'), ('cuz', 'because'), ("you're", 'you are'), ('wan(na)', 'wanna'), ('dontcha', "don't you"), ('howbout', 'how about'), ('whadyou', 'what do you'), ("what's", 'what does'), ('comon', 'come on'), ('camere', 'come here'), ('<gonna', 'going to'), ("com'ere", 'come here'), ('whad', 'what'), ('<dis', 'this'), ('wha', 'what'), ("d'ya", 'do you'), ('wannoo', 'wanna'), ('ya', 'your'), ('getcha', 'get you'), ('wiff', 'with'), ("don't", 'do not'), ('scuse', 'excuse'), ("y'know", 'you know'), ('ya', 'yes'), ('didja', 'did you'), ('whadya', 'what do you'), ('betcha', 'bet you'), ("how'd", 'how did'), ("jumpin'", 'jumping'), ('mmkay', 'okay'), ("how's", 'how does'), ("'bout", 'about'), ('whatcha', 'what do you'), ('cha', 'you'), ('sorta', 'sort of'), ('whaddaya', 'what do you'), ('<de', 'the'), ('putcher', 'put your'), ('k', 'okay'), ('mm+kay', 'okay'), ('wight', 'right'), ("you'd", 'you would'), ('til', 'until'), ("where're", 'where are'), ("n'", 'and'), ('whatcha', 'what you'), ('en', 'and'), ("doin'", 'doing'), ("y'wanna", 'you want to'), ('doncha', "don't you"), ("that'd", 'that would'), ('ye:ah', 'yes'), ('yea', 'yes'), ('sa', "what's that"), ('gotta', 'have got to'), ('udder', 'other'), ('peam', 'cream'), ("where's", 'where are'), ('nah', 'no'), ("doesn't", 'does not'), ("i'm", 'i am'), ('whadda', 'what do'), ('gotchu', 'got you'), ("dere's", 'there (i)s'), ("g'head", 'go ahead'), ('getcher', 'get your'), ('whadyou', 'what are you'), ('woujou', 'would you'), ('outta', 'out_of'), ("come'ere", 'come here'), ("who're", 'who are'), ('till', 'until'), ('dijou', 'did you'), ("we're", 'we are'), ('yessie', 'yes'), ("i've", 'i have'), ("they're", 'they are'), ('donna', 'going to'), ('cos', 'because'), ("mommy's", 'mommy has'), ('peejays', 'pajamas'), ("you've", 'you have'), ('gotta', 'got a'), ('lotsa', 'lots_of'), ('gatta', 'gotta'), ('wan', 'want'), ("<dat's", 'that (i)s'), ('likkle', 'little'), ('gahead', 'go ahead'), ('yeh', 'yes'), ("wha's", 'what does'), ('‹ya', 'yes'), ('aminal', 'animal'), ("why're", 'why are'), ('whadja', 'what did you'), ("where's", 'where does'), ('longit', 'longitudinal'), ("dere's", 'there is'), ("wha's", 'what is'), ('n', 'and'), ('inta', 'into'), ('ywanna', 'you want to'), ('hasta', 'has to'), ('donchou', "don't you"), ("an'", 'and'), ('der', 'there')]
+ERRORS_AUXILIARY = [("has", "does"), ("can", "have"), ("no", "don't"), ("is", "has"), ("is", "have"), ("do", "have"), ("do", "won't"), ("do", "will"), ('you', 'do you'), ("haven't", "isn't"), ('not', "don't"), ("i'm", "i've"), ("not", "doesn't"), ("is", "has"), ("we", "we'd"), ("aren't", "hasn't"), ("go", "will"), ("i'm", "i've")]
+ERRORS_VERB = [("i", "i'm"), ("in", "is"), ("got", "has"), ("got", "have"), ('does', 'goes'), ("it", "is"), ('dat', "that's"), ('dere', "there's"), ('gots', 'has')]
+ERRORS_POSSESSIVE = [("me", "my"), ("your", "my"), ("yours", "your"), ('mine', 'my'), ("it's", "her"), ("I", "my"), ("him", "his"), ("she's", 'her'), ('they', 'their'), ('you', 'your'), ("him's", 'his'), ("he's", 'his')]
+ERRORS_DETERMINER = [("a", "an"), ("an", "a"), ("a", "a"), ("the", "the"), ("a", "the"), ("some", "a"), ("my", "the"), ("it", "this"), ("", "a")]
+ERRORS_SUBJECT = [("me", "i"), ('i', 'it'), ('is', "it's"), ("i", "we"), ("you", "he"), ("it", "they"), ("i", "i"), ("him", "he"), ("them", "they"), ("my", "i"), ("who", "what"), ("he's", "it's"), ("they", "he"), ("what's", "that's")]
+ERRORS_OBJECT = [("it", "her"), ("the", "them"), ("what", "that")]
+ERRORS_OTHER = [('better', 'gooder'), ("himself", "herself"), ("herself", "himself"), ('theyselves', 'themselves'), ('themselfs', 'themselves'), ('hissself', 'himself'), ('theirselves', 'themselves'), ('ourself', 'ourselves'), ('they', 'them'), ('hisself', 'himself'), ('themself', 'themselves'), ("too", "either"), ("badder", "worse"), ("gooder", "better"), ("taller", "tallest"), ("loud", "louder"), ("much", "many"), ("furry", "fur"), ("really", "real"), ("poison", "poisonous"), ("no", "any"), ("littler", "smaller"), ("anything", "something")]
+ERRORS_DIALECT = [("int", "isn't"), ('deh', 'there'), ('yesh', 'yes'), ('zis', 'this'), ('hatu', 'matthew'), ('dats', 'that is'), ('dare', 'there'), ('anudder', 'another'),
+                  ('wis', 'with'), ("der's", "there's"), ("dat's", 'that is'), ('kaka', 'car car'), ('du', 'the'), ('a', 'going to'), ('deir', 'there'), ('liddle', 'little'),
+                  ('limme', 'let me'), ('kuhz', 'because'), ('waimit', 'wait a minute'), ('doz', 'those'), ('deez', 'these'), ('das', "that's"), ('fink', 'think'), ('nis', 'this'),
+                  ('dint', "didn't"), ('yare', 'you are'), ('thas', 'that is'), ('dei', 'they'), ('fings', 'things'), ('innit', "isn't it"), ('whata', 'what do'), ('em', 'him'),
+                  ('yuh', 'you'), ('looka', 'look'), ('nat', 'that'), ('haf', 'have'), ('ma', 'mother'), ('wanta', 'wanna'), ('nere', 'there'), ('choo', 'you'),
+                  ('fing', 'thing'), ('gon', 'going to'), ('duh', 'the'), ('tuh', 'to'), ('da', 'that'), ('na', 'the'), ('daet', 'that'), ('huh', 'what'),
+                  ('awright', 'alright'), ('corder', 'recorder'), ('plenny', 'plenty'), ("diddy", "dinner"), ("them", "those"), ("ain't", "isn't"),
+                  ("ma", "my"), ("ya", "you"), ('gonna', 'going to'), ('ya', 'you'), ('yep', 'yes'), ('lemme', 'let me'), ('kinda', 'kind of'),
+                  ('yup', 'yes'), ('dyou', 'do you'), ('lil', 'little'), ('bout', 'about'), ('dunno', "don't know"), ("d'you", 'do you'), ('yer', 'your'),
+                  ('cause', 'because'), ("where'd", 'where did'), ('nope', 'no'), ("let's", 'let us'), ('em', 'them'), ('wouldja', 'would you'), ('da', 'the'),
+                  ('whada', 'what do'), ("'cause", 'because'), ("what're", 'what are'), ('dya', 'do you'), ('gon(na)', 'going to'), ('wanna', 'want to'),
+                  ('djou', 'do you'), ('didjou', 'did you'), ('cmon', 'come on'), ("c'mon", 'come on'), ('whatcha', 'what are you'), ('gimme', 'give me'),
+                  ('ta', 'to'), ("'em", 'them'), ('wanna', 'want a'), ("c'mere", 'come here'), ('yea:h', 'yes'), ('yeah', 'yes'), ('mkay', 'okay'),
+                  ('outta', 'out of'), ('wouldjou', 'would you'), ('lotta', 'lot of'), ('cmere', 'come here'), ('kay', 'okay'), ('gotcha', 'got you'),
+                  ('havta', 'have to'), ('whaddya', 'what do you'), ("dat's", 'that (i)s'), ('comere', 'come here'), ('yeah:', 'yes'), ('mhm', 'yes'),
+                  ('lookit', 'look'), ("s'more", 'some more'), ('gotta', 'got to'), ('cuz', 'because'), ("you're", 'you are'), ('wan(na)', 'wanna'),
+                  ('dontcha', "don't you"), ('howbout', 'how about'), ('whadyou', 'what do you'), ("what's", 'what does'), ('comon', 'come on'),
+                  ('camere', 'come here'), ('<gonna', 'going to'), ("com'ere", 'come here'), ('whad', 'what'), ('<dis', 'this'), ('wha', 'what'),
+                  ("d'ya", 'do you'), ('wannoo', 'wanna'), ('ya', 'your'), ('getcha', 'get you'), ('wiff', 'with'), ("don't", 'do not'),
+                  ('scuse', 'excuse'), ("y'know", 'you know'), ('ya', 'yes'), ('didja', 'did you'), ('whadya', 'what do you'), ('betcha', 'bet you'),
+                  ("how'd", 'how did'), ("jumpin'", 'jumping'), ('mmkay', 'okay'), ("how's", 'how does'), ("'bout", 'about'),
+                  ('whatcha', 'what do you'), ('cha', 'you'), ('sorta', 'sort of'), ('whaddaya', 'what do you'), ('<de', 'the'), ('putcher', 'put your'),
+                  ('k', 'okay'), ('mm+kay', 'okay'), ('wight', 'right'), ("you'd", 'you would'), ('til', 'until'), ("where're", 'where are'), ("n'", 'and'),
+                  ('whatcha', 'what you'), ('en', 'and'), ("doin'", 'doing'), ("y'wanna", 'you want to'), ('doncha', "don't you"), ("that'd", 'that would'),
+                  ('ye:ah', 'yes'), ('yea', 'yes'), ('sa', "what's that"), ('gotta', 'have got to'), ('udder', 'other'), ('peam', 'cream'), ("where's", 'where are'),
+                  ('nah', 'no'), ("doesn't", 'does not'), ("i'm", 'i am'), ('whadda', 'what do'), ('gotchu', 'got you'), ("dere's", 'there (i)s'), ("g'head", 'go ahead'),
+                  ('getcher', 'get your'), ('whadyou', 'what are you'), ('woujou', 'would you'), ('outta', 'out_of'), ("come'ere", 'come here'), ("who're", 'who are'),
+                  ('till', 'until'), ('dijou', 'did you'), ("we're", 'we are'), ('yessie', 'yes'), ("i've", 'i have'), ("they're", 'they are'), ('donna', 'going to'),
+                  ('cos', 'because'), ("mommy's", 'mommy has'), ('peejays', 'pajamas'), ("you've", 'you have'), ('gotta', 'got a'), ('lotsa', 'lots_of'), ('gatta', 'gotta'),
+                  ('wan', 'want'), ("<dat's", 'that (i)s'), ('likkle', 'little'), ('gahead', 'go ahead'), ('yeh', 'yes'), ("wha's", 'what does'), ('‹ya', 'yes'),
+                  ("why're", 'why are'), ('whadja', 'what did you'), ("where's", 'where does'), ('longit', 'longitudinal'), ("dere's", 'there is'),
+                  ("wha's", 'what is'), ('n', 'and'), ('inta', 'into'), ('ywanna', 'you want to'), ('hasta', 'has to'), ('donchou', "don't you"), ("an'", 'and'),
+                  ('der', 'there'), ('wantuh', 'wanna'), ('der', "they're"), ('de', 'there'), ('dee', 'the'), ("de're", "they're"), ('uder', 'other'), ('chu', 'you'),
+                  ('mah', 'my'), ('derz', "there's"), ('ders', "there's"), ('daetz', "that's"), ('nuttin', 'nothing'), ("i'ma", "i'm going to"), ('des', "there's"),
+                  ('zat', 'that'), ('din', "didn't"), ("whyn't", "why don't"), ("ain't", 'is not'), ('uhhuh', 'yes'), ('mm', 'good'), ('do', 'the')
+                  ]
 
 ERRORS_LEXICAL_OR_PHONOLOGICAL = [("do", "went"), ("coming", "getting"), ("lay", "lie"), ("where", "what"),
                                   ("people", "person"), ("what", "how"), ("winning", "beating"),
@@ -409,7 +452,36 @@ ERRORS_LEXICAL_OR_PHONOLOGICAL = [("do", "went"), ("coming", "getting"), ("lay",
                                   ('baura', 'laura'), ('jo', 'joanna'), ('cy', 'cry'), ('git', 'get'), ('du', 'juice'),
                                   ('toto', 'christopher'), ('dino', 'dinosaur'), ('kaking', 'ice cream'), ('toffer', 'christopher'),
                                   ('caca', 'erica'), ('hay', 'hair'), ('wead', 'read'), ('dink', 'drink'), ('carcar', 'car'),
-                                  ('ooching', 'scooching'), ('pairplane', 'airplane')]
+                                  ('ooching', 'scooching'), ('pairplane', 'airplane'), ('i', 'just'), ('gween', 'green'),
+                                  ('wike', 'like'), ('fer', 'for'), ('pway', 'play'), ("we's", "let's"), ('dis', 'just'),
+                                  ('dit', 'it'), ('appul', 'apple'), ('fwee', 'three'), ('airpwane', 'airplane'), ('pea', 'please'),
+                                  ('enne', 'wanna'), ('mouf', 'mouth'), ('pwease', 'please'), ('free', 'three'), ('of', 'if'),
+                                  ('ahunting', 'hunting'), ('yook', 'look'), ('hallo', 'hello'), ('peanuh', 'peanuts'),
+                                  ('wed', 'red'), ('poddy', 'potty'), ('weady', 'ready'), ('peanus', 'peanuts'),
+                                  ('pit', 'put'), ('someping', 'something'), ("wet's", "let's"), ('nene', 'wanna'),
+                                  ('awound', 'around'), ('di', 'the'), ('wigh', 'right'), ('kahl', 'carl'),
+                                  ('nother', 'other'), ('mores', 'more'), ('tata', 'petra'), ('tatoo', 'tattoo'),
+                                  ('wif', 'with'), ('aminal', 'animal'),
+                                  ('on', "don't"), ('twuck', 'truck'), ('baba', 'baby'), ('cwash', 'crash'),
+                                  ('wock', 'rock'), ('tsair', 'chair'), ('widdle', 'little'), ('e', 'a'),
+                                  ('airkane', 'airplane'),
+                                  ('un', 'one'), ('wook', 'look'), ('papu', 'paper'), ('ba', 'milk'), ('da', 'there'),
+                                  ('inna', 'in the'), ('do', 'joanna'), ('tuh', 'truck'), ('cici', 'susie'),
+                                  ('hopital', 'hospital'), ("jo's", "joanna's"), ('woom', 'room'), ('wun', 'run'),
+                                  ('frow', 'throw'), ('bitatin', 'vitamins'), ('dwink', 'drink'), ('kiddy', 'kitty'),
+                                  ('suck', 'stuck'), ('bow', 'blow'), ('gink', 'drink'), ('nere', 'here'),
+                                  ('cweam', 'ice cream'), ('gawage', 'garage'), ('wecord', 'record'), ('weal', 'real'),
+                                  ('robit', 'robert'), ('bwoke', 'broke'), ('der', 'the'), ('no', 'not'),
+                                  ('lala', 'laura'), ('meme', 'me'), ('mulk', 'milk'), ('mattie', 'matthew'),
+                                  ('twy', 'try'),
+                                  ('moshyko', 'motorcycle'), ('yadee', 'lady'), ('ee', 'he'), ('nuh', 'the'),
+                                  ('ei', 'a'), ('ee', 'i'), ('peam', 'stream'), ('ou', 'oh'), ('goak', 'coat'),
+                                  ('gape', 'grape'), ('mines', 'mine'),
+                                  ('doo', 'cock a doodle doo'), ('manys', 'many'), ('sumpin', 'something'), ('ah', 'i'),
+                                  ('frough', 'through'), ('baw', 'ball'), ('bohs', 'both'), ('wit', 'with'),
+                                  ('pwate', 'plate'), ('baba', 'bottle'), ('swish', 'swiss'), ('joo', 'you'),
+                                  ('bebe', 'baby'), ('another', 'other'), ('prower', 'flower'), ('tommy', 'tummy')
+                                  ]
 
 
 def categorize_error(word_error, word_corrected, row=None):
@@ -422,16 +494,15 @@ def categorize_error(word_error, word_corrected, row=None):
         return []   # Lexical error
     elif "$pho" in word_corrected:
         return []   # Phonological error
-    elif word_corrected in ["?", "[?]"]:
-        return [ERR_UNKNOWN]
+    elif word_corrected in ["?", "[?]"] or word_error in ["[?]"]:
+        return [ERR_OTHER]
     word_corrected = word_corrected.replace("[?]", "").strip()
     word_error = word_error.replace("[?]", "").strip()
-    if (word_error, word_corrected) in ERRORS_DIALECT or word_error == word_corrected.replace("th", "d") or "@d" in word_error or word_corrected == word_error.replace("'ll", " will") or word_corrected == word_error.replace("'s", " is") or word_corrected == word_error.replace("'d", " did"):
-        # Dialect
+    if (word_error, word_corrected) in ERRORS_DIALECT or word_error == word_corrected.replace("th", "d") or word_error == word_corrected.replace("th", "s") or word_error == word_corrected.replace("th", "t") or word_error == word_corrected.replace("r", "w") or "@d" in word_error or word_corrected == word_error.replace("'ll", " will") or word_corrected == word_error.replace("'s", " is") or word_corrected == word_error.replace("'s", " has") or word_corrected == word_error.replace("'d", " did") or word_corrected == word_error.replace("'", "g") or word_corrected == word_error.replace("'re", " are") or word_corrected == word_error.replace("f", "th"):
         return []
     elif word_corrected in [word_error + suffix for suffix in ["'ve", "'ll"]]:
         err = ERR_VERB
-    elif (word_error, word_corrected) in [("i", "i'm"), ("is", "is"), ("read", "read"), ("threw", "threw"), ("in", "is"), ("got", "has"), ("got", "have"), ("it", "is")]:
+    elif (word_error, word_corrected) in ERRORS_VERB:
         err = ERR_VERB
     elif (word_error, word_corrected) in ERRORS_AUXILIARY:
         err = ERR_AUXILIARY
@@ -439,27 +510,29 @@ def categorize_error(word_error, word_corrected, row=None):
         err = ERR_SV_AGREEMENT
     elif (word_error, word_corrected) in ERRORS_PREPOSITION:
         err = ERR_PREPOSITION
-    elif (word_error, word_corrected) in [("a", "an"), ("an", "a"), ("a", "a"), ("the", "the"), ("a", "the"), ("some", "a"), ("my", "the"), ("it", "this"), ("", "a")]:
+    elif (word_error, word_corrected) in ERRORS_DETERMINER:
         err = ERR_DETERMINER
     elif word_corrected == word_error + "'s" or word_error == word_corrected + "'s":
         err = ERR_POSSESSIVE
-    elif (word_error, word_corrected) in [("me", "my"), ("your", "my"), ("yours", "your"), ("it's", "her"), ("I", "my"), ("him", "his"), ('they', 'their')]:
+    elif (word_error, word_corrected) in ERRORS_POSSESSIVE:
         err = ERR_POSSESSIVE
+    elif word_error in WORDS_WRONG_PLURAL_INFLECTION:
+        err = ERR_PLURAL
     elif (word_error, word_corrected) in ERRORS_PLURAL:
         err = ERR_PLURAL
-    elif word_corrected in [word_error + suffix for suffix in ["ed", "d", "ped"]] or word_error in [word_corrected + suffix for suffix in ["ed", "d", "ped"]]:
-        err = ERR_PAST
-    elif (word_error, word_corrected) in ERRORS_PAST_TENSE:
-        err = ERR_PAST
+    elif word_corrected in [word_error + suffix for suffix in ["ed", "d", "ped", "ted"]] or word_error in [word_corrected + suffix for suffix in ["ed", "d", "ped", "ted"]]:
+        err = ERR_TENSE_ASPECT
+    elif word_error in WORDS_WRONG_TENSE_ASPECT_INFLECTION:
+        err = ERR_TENSE_ASPECT
+    elif (word_error, word_corrected) in ERRORS_TENSE_ASPECT:
+        err = ERR_TENSE_ASPECT
     elif word_corrected in [word_error + suffix for suffix in ["ing", "ting", "ning"]] or word_error in [word_corrected + suffix for suffix in ["ing", "ting", "ning"]] or word_corrected in [word_error[:-1] + "ing"] or word_error in [word_corrected[:-1] + "ing"] or word_corrected in [word_error[:-2] + "ing"]:
-        err = ERR_PRESENT_PROGRESSIVE
-    elif (word_error, word_corrected) in [("broking", "breaking")]:
-        err = ERR_PRESENT_PROGRESSIVE
-    elif (word_error, word_corrected) in [("me", "i"), ("i", "we"), ("you", "he"), ("it", "they"), ("i", "i"), ("him", "he"), ("them", "they"), ("my", "i"), ("who", "what"), ("he's", "it's"), ("they", "he"), ("what's", "that's")]:
+        err = ERR_TENSE_ASPECT
+    elif (word_error, word_corrected) in ERRORS_SUBJECT:
         err = ERR_SUBJECT
-    elif (word_error, word_corrected) in [("it", "her"), ("the", "them"), ("what", "that")]:
+    elif (word_error, word_corrected) in ERRORS_OBJECT:
         err = ERR_OBJECT
-    elif (word_error, word_corrected) in [("himself", "herself"), ("herself", "himself"), ('theirselves', 'themselves'), ('hisself', 'himself'), ('themself', 'themselves'), ("too", "either"), ("badder", "worse"), ("gooder", "better"), ("taller", "tallest"), ("loud", "louder"), ("much", "many"), ("furry", "fur"), ("really", "real"), ("poison", "poisonous"), ("no", "any"), ("littler", "smaller"), ("anything", "something")]:
+    elif (word_error, word_corrected) in ERRORS_OTHER:
         err = ERR_OTHER
     elif word_corrected in [word_error + suffix for suffix in ["s", "es"]] or word_error in [word_corrected + suffix for suffix in ["s", "es"]]:
         # find pos in tokens
@@ -506,7 +579,8 @@ def replace_actually_said_words(utterance):
             before = before.replace(event, "")
         before = before.split(" ")
         words_to_replace = " ".join(before[len(before) - num_words:])
-        if replacement == "dunno" and words_to_replace == "know":
+        if replacement == "dunno" and words_to_replace == "know" or replacement == "gimme" and words_to_replace == "me"\
+                or replacement == "innit" and words_to_replace == "it":
             num_words += 1
             words_to_replace = " ".join(before[len(before) - num_words:])
         if "'" in replacement and "'" not in words_to_replace:
@@ -520,7 +594,7 @@ def replace_actually_said_words(utterance):
 
         errors = categorize_error(replacement, words_to_replace)
         if len(errors) == 0:
-            # No grammatical error, most probably semantic
+            # No grammatical error, most probably semantic or phonological
             utterance = " ".join([before, words_to_replace, after])
         else:
             utterance = " ".join([before, replacement, after])
@@ -895,7 +969,8 @@ def remove_babbling(utterance):
 def filter_transcripts_based_on_num_child_utts(
     conversations, min_child_utts_per_transcript
 ):
-    child_utts_per_transcript = conversations.groupby("transcript_file").size()
+    child_utts = conversations[conversations.speaker_code == SPEAKER_CODE_CHILD]
+    child_utts_per_transcript = child_utts.groupby("transcript_file").size()
     transcripts_enough_utts = child_utts_per_transcript[
         child_utts_per_transcript > min_child_utts_per_transcript
     ]

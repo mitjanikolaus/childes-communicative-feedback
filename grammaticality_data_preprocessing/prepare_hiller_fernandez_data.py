@@ -5,8 +5,8 @@ import pandas as pd
 
 from utils import (
     remove_superfluous_annotations,
-    clean_utterance, ERR_OTHER, ERR_SUBJECT, ERR_OBJECT, ERR_VERB, ERR_AUXILIARY, ERR_DETERMINER, ERR_PAST,
-    ERR_PREPOSITION, ERR_SV_AGREEMENT, ERR_POSSESSIVE, ERR_PRESENT_PROGRESSIVE, ERR_PLURAL, PROJECT_ROOT_DIR,
+    clean_utterance, ERR_OTHER, ERR_SUBJECT, ERR_OBJECT, ERR_VERB, ERR_AUXILIARY, ERR_DETERMINER, ERR_TENSE_ASPECT,
+    ERR_PREPOSITION, ERR_SV_AGREEMENT, ERR_POSSESSIVE, ERR_PLURAL, PROJECT_ROOT_DIR,
 )
 
 DATA_PATH = PROJECT_ROOT_DIR+"/data/hiller_fernandez_2016/data/annotated_data"
@@ -19,13 +19,13 @@ LABEL_TRANSFORMATION = {
     'synt:verb': ERR_VERB,
     'umorph:auxverb': ERR_AUXILIARY,
     'umorph:det': ERR_DETERMINER,
-    'vmorph:regpast': ERR_PAST,
+    'vmorph:regpast': ERR_TENSE_ASPECT,
     'vmorph:other': ERR_OTHER,
     'umorph:prep': ERR_PREPOSITION,
     'vmorph:3rdpers': ERR_SV_AGREEMENT,
     'nmorph:poss': ERR_POSSESSIVE,
-    'vmorph:irrpast': ERR_PAST,
-    'umorph:presprogr': ERR_PRESENT_PROGRESSIVE,
+    'vmorph:irrpast': ERR_TENSE_ASPECT,
+    'umorph:presprogr': ERR_TENSE_ASPECT,
     'nmorph:regplural': ERR_PLURAL,
     'nmorph:irrplural': ERR_PLURAL,
     'umorph:other': ERR_OTHER

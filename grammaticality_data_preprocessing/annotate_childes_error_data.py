@@ -1,4 +1,5 @@
 import argparse
+import itertools
 import os
 import re
 from ast import literal_eval
@@ -10,8 +11,9 @@ from grammaticality_data_preprocessing.analyze_childes_error_data import plot_co
 from utils import categorize_error, ERR_VERB, ERR_AUXILIARY, ERR_PREPOSITION, \
     ERR_SUBJECT, ERR_OBJECT, ERR_POSSESSIVE, ERR_SV_AGREEMENT, ERR_DETERMINER, ERR_UNKNOWN, \
     remove_superfluous_annotations, \
-    ERR_PRESENT_PROGRESSIVE, ERR_PAST, ERR_PLURAL, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, \
-    ERR_OTHER, UTTERANCES_WITH_SPEECH_ACTS_FILE
+    ERR_TENSE_ASPECT, ERR_PLURAL, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, \
+    ERR_OTHER, UTTERANCES_WITH_SPEECH_ACTS_FILE, split_into_words, WORDS_WRONG_TENSE_ASPECT_INFLECTION, \
+    WORDS_WRONG_PLURAL_INFLECTION, clean_utterance
 from tqdm import tqdm
 tqdm.pandas()
 
@@ -43,7 +45,7 @@ def get_errors_marked_with_star(row):
     if "[:" in utt:
         # Error with colons have already been processed
         return []
-    if "[*]" in utt:
+    if "[*]" in utt and not re.findall("\[\* [^]]*]", utt):
         err = get_error_from_whole_utt(row)
         return [err]
     else:
@@ -61,71 +63,109 @@ def get_errors_marked_with_star(row):
                 word_corrected = word.replace("0", "").strip().lower()
                 errs = categorize_error(word_error, word_corrected, row)
                 errors.extend(errs)
-            elif word == "pos":
+            elif word in ["pos", "i"]:
                 errors.append(ERR_SUBJECT)
-            elif word in ["m:=ed", "+ed", "-ed", "m:ed", "m"]:
-                errors.append(ERR_PAST)
-            elif word in["m:=s"]:
+            elif word in ["m:=ed", "m:+ed", "+ed", "-ed", "m:ed", "m", "m:m", "m:", "forgot", "fell"]:
+                errors.append(ERR_TENSE_ASPECT)
+            elif word in ["+is"]:
+                errors.append(ERR_VERB)
+            elif word in ["m:+s", "m:0s", "her"]:
+                errors.append(ERR_POSSESSIVE)
+            elif word in["m:=s", "-s", "+s"]:
                 errors.append(ERR_PLURAL)
             else:
                 errors.append(ERR_UNKNOWN)
 
         return errors
 
+NOUNS_THIRD_PERSON = ["daddy", "that", "this", "lion", "what", "he", "she", "it"]
+VERBS_NOT_THIRD_PERSON = ["go", "happen", "do", "want", "can", "come", "like", "have"]
+NOUN_VERB_ILLEGAL = [" ".join(t) for t in itertools.product(NOUNS_THIRD_PERSON, VERBS_NOT_THIRD_PERSON)]
+
 
 def get_error_from_whole_utt(row):
     utt = row["transcript_raw"].lower()
-    prev_word = utt.split("[*]")[0].strip().split(" ")[-1]
-    following_word = utt.split("[*]")[1].strip().split(" ")[0]
+    before = clean_utterance(utt.split("[*]")[0].strip())
+    split_previous = split_into_words(before, split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=True)
+    prev_word = split_previous[-1] if split_previous else ""
+    after = clean_utterance(utt.split("[*]")[1].strip())
+    split_following = split_into_words(after, split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=True)
+    following_word = split_following[0] if split_following else ""
 
-    if prev_word in ["here", "there"] and following_word in ["are", "go"]:
+    if prev_word in ["here", "there", "me"] and following_word in ["are", "go", "do"]:
         return ERR_SUBJECT
 
-    for t in ["what are them [*]", "do [*] like this"]:
+    for t in ["what are them [*]", "do [*] like this", "can me [*]"]:
         if t in utt:
             return ERR_OBJECT
 
-    if prev_word in ["do"] and following_word in ["again"]:
-        return ERR_OBJECT
-
-    if prev_word in ["a"] and following_word[0] in ["a", "e", "i", "o", "u"]:
+    if prev_word in ["a"] and following_word and following_word[0] in ["a", "e", "i", "o", "u"]:
         return ERR_DETERMINER
 
     if prev_word in ["this"] and following_word in ["beginning"]:
         return ERR_DETERMINER
 
-    if prev_word in ["want"] and following_word in ["do", "play", "go", "put"]:
+    if prev_word in AUXILIARIES and following_word in VERBS:
         return ERR_PREPOSITION
 
-    for t in ["i done [*] it", "finish [*]", "fall [*] over"]:
-        if t in utt:
-            return ERR_PAST
+    if prev_word in ["in", "on", "next", "one"] and following_word in ["the", "my"]:
+        return ERR_PREPOSITION
 
-    if prev_word in ["throwed", "falled", "telled"]:
-        return ERR_PAST
+    if prev_word in ["it"] and following_word in ["me"]:
+        return ERR_PREPOSITION
 
-    for t in ["that go [*]", "this go [*]", "lion go [*]", "i weren't [*]", "what's [*] these", "go [*] there", "what happen [*]", "he do [*]", "he want [*]"]:
+    for t in NOUN_VERB_ILLEGAL + ["i weren't [*]", "they goes [*]", "is [*] there", "what's [*] these", "go [*] there", "there's [*] two", "don't [*] fit"]:
         if t in utt:
             return ERR_SV_AGREEMENT
 
-    for t in ["what [*] that say", "i [*] done it", "where [*] that go", "where [*] this go", "what [*] he", "what [*] she"]:
+    for t in ["what [*] that say", "i [*] done it", "i done [*] it", "i not [*]", "not eat it [*]", "where [*] that go", "where [*] this go", "what [*] he", "what [*] she", "i [*] gonna", "is [*] that go", "why [*] you"]:
         if t in utt:
             return ERR_AUXILIARY
 
-    if prev_word in ["i", "you", "he", "she", "we", "they"] and following_word in ["done", "go", "do", "finished", "show", "get", "finish", "found", "broken", "put", "be", "got", "make", "like", "gone", "read"]:
+    if prev_word in ["i", "you", "he", "she", "we", "they"] and following_word in ["done", "go", "do", "finished", "show", "get", "finish", "found", "broken", "put", "be", "got", "make", "like", "gone", "read", "just", "already"]:
         return ERR_AUXILIARY
 
-    if re.search("\[\*] \S*[\s\S]+ing", utt):
-        return ERR_PRESENT_PROGRESSIVE
+    for t in ["two bed [*]", "two box [*]", "more ball [*]", "a scissors"]:
+        if t in utt:
+            return ERR_PLURAL
 
-    if prev_word in ["what", "it", "i", "you", "he", "it", "that", "who", "where", "mummy", "they", "there", "this"] and following_word in \
-            ["you", "here", "broken", "better", "mine", "that", "there", "these", "this", "not", "dada", "daddy", "jacob", "pilchard", "the", "my", "his", "her", "our", "your", "not", "no", "what", "all", "lots", "a", "dizzy"]:
+    if re.search("\[\*] \S*[\s\S]+ing", utt):
+        return ERR_TENSE_ASPECT
+
+    if prev_word in VERBS + AUXILIARIES and following_word in ["again", "in", "a", "here"]:
+        return ERR_OBJECT
+
+    if prev_word in VERBS + AUXILIARIES and following_word in ["cheese", "barbie", "elephant", "orange", "green", "yellow",
+                                                               "banana", "tissue", "small", "sandwich", "sun", "bottle",
+                                                               "horse", "crayon", "puzzle", "noisy", "tent", "fairy", "cup"]:
+        return ERR_DETERMINER
+
+    if prev_word in SUBJECTS + ["one"] and following_word in SUBJECTS + OBJECTS + DETERMINERS + ['purple', 'for', 'here', 'broken', 'mine', 'these', 'not', 'better', 'pilchard', 'my', 'his', 'our', 'my', 'your', 'not', 'no', 'lots', 'dizzy']:
         return ERR_VERB
+
     for t in ["here it [*]", "what [?] [*] that", "where [*] dada", "who's [*] a girl", "<a@p this> [*]"]:
         if t in utt:
             return ERR_VERB
 
-    return ERR_UNKNOWN
+    if prev_word in ["much", "many"]:
+        return ERR_OTHER
+
+    words = set(split_into_words(row["transcript_clean"].lower(), split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=True))
+    if len(words & WORDS_WRONG_TENSE_ASPECT_INFLECTION) > 0:
+        return ERR_TENSE_ASPECT
+    if len (words & WORDS_WRONG_PLURAL_INFLECTION) > 0:
+        return ERR_PLURAL
+
+    # if row["gra"]:
+    #     all_rels = set([gra["rel"] for gra in row["gra"]])
+        # if len(set(RELS_VERB) & all_rels) == 0:
+        #     # print(f"Verb error: {utt} ") #({all_rels})
+        #     return ERR_VERB
+        # if len(set(RELS_SUBJECT) & all_rels) == 0:
+        #     print(f"Subject error: {utt} ({all_rels})") #
+        #     return ERR_SUBJECT
+
+    return ERR_OTHER
 
 
 def get_errors_marked_on_tier(row):
@@ -142,7 +182,7 @@ def get_errors_marked_on_tier(row):
         error = error.strip()
 
         if error in ["[?]", "?", ""]:
-            out_errors.append(ERR_UNKNOWN)
+            continue
         elif error == "self correction":
             continue
         elif error in ["break in syllable", "breaks in syllable"]:
@@ -193,7 +233,8 @@ def get_errors_marked_with_colon(row):
         if word_error == word_corrected:
             continue
         else:
-            errors.extend(categorize_error(word_error, word_corrected, row))
+            errs = categorize_error(word_error, word_corrected, row)
+            errors.extend(errs)
 
     return errors
 
@@ -201,16 +242,19 @@ def get_errors_marked_with_colon(row):
 VERBS = ["is", "am", "are", "were", "was", "v", "be", "want", "like", "see", "know", "need", "think", "come",
           "put", "said", "says", "play", "look", "make", "let", "let's", "go", "ran", "got", "came", "hear", "get",
           "brought", "going", "gonna", "grunts", "fussing", "fusses", "whines", "squeals", "yells", "singing",
-         "turn", "whining", "sighs", "laughs", "saw", "'re", "'m", "eat", "re"]
+         "turn", "whining", "sighs", "laughs", "saw", "'re", "'m", "eat", "re", "do", "shake", "pick", "cut", "use",
+         "sit", "smell", "drink", "have", "help", "speak", "tip", "stick", "take", "flush", "try", "hold", "dress",
+         "carry", "watch", "read", "color", "find", "listen", "open", "draw", "sleep", "press", "stay", "tie", "leave",
+         "count", "wait"]
 
 AUXILIARIES = ["will", "had", "do", "does", "did", "have", "has", "hav", "can", "may", "would", "could", "shall", "'ve",
-                  "'ll"]
+                  "'ll", "want"]
 
 PREPOSITIONS = ["prep", "to", "of", "at", "off", "up", "in", "on", "from", "as", "for", "about", "with", "out"]
 
 DETERMINERS = ["det", "a", "an", "the", "one", "some", "all", "more", "any", "many"]
 
-SUBJECTS = ["i", "pro", "you", "it", "they", "she", "he", "we", "what", "that", "there", "where", "when", "who", "how", "why"]
+SUBJECTS = ['you', 'that', 'how', 'why', 'when', 'i', 'she', 'he', 'there', 'who', 'where', 'mummy', 'dada', 'daddy', 'jacob', 'it', 'this', 'they', 'pro', 'what', 'we']
 
 OBJECTS = ["them", "her", "me", "myself", "him"]
 
@@ -221,23 +265,25 @@ def guess_omission_error_types(word, utt, prev_word=None):
     word = word.lower().replace(":", "")
     if word in DETERMINERS or word == "n" and prev_word == "a":
         error = ERR_DETERMINER
-    elif word in VERBS:
-        error = ERR_VERB
     elif word in AUXILIARIES:
         error = ERR_AUXILIARY
+    elif word in VERBS:
+        error = ERR_VERB
     elif word in PREPOSITIONS:
         error = ERR_PREPOSITION
     elif word in SUBJECTS:
         error = ERR_SUBJECT
     elif word in OBJECTS:
         error = ERR_OBJECT
-    elif word in ["'s", "0's", "my", "his"]:
+    elif word in ["'s"] and prev_word in SUBJECTS:
+        error = ERR_VERB
+    elif word in ["'s", "0's", "my", "his", "your"]:
         error = ERR_POSSESSIVE
     elif word in ["ing"]:
-        error = ERR_PRESENT_PROGRESSIVE
+        error = ERR_TENSE_ASPECT
     elif word in ["ed", "en", "ne", "n", "ten", "ped"]:
-        error = ERR_PAST
-    elif (word in ["es", "es'nt"] or word in ["s"] and prev_word in VERBS):
+        error = ERR_TENSE_ASPECT
+    elif word in ["es", "es'nt"] or word in ["s"] and prev_word in VERBS:
         error = ERR_SV_AGREEMENT
     elif word in ["s"]:
         error = ERR_PLURAL
@@ -247,12 +293,15 @@ def guess_omission_error_types(word, utt, prev_word=None):
         errors = [ERR_SUBJECT, ERR_VERB]
         return errors
     elif word in ["zero", "x", "etc"]:
-        error = ERR_UNKNOWN
+        error = ERR_OTHER
+    elif word in ["."]:
+        return []
     else:
-        error = ERR_UNKNOWN
+        error = ERR_OTHER
     return [error]
 
 
+RELS_SUBJECT = ["SUBJ"]
 RELS_VERB = ["ROOT", "CSUBJ", "COBJ", "CPRED", "CPOBJ", "POBJ", "SRL", "PRED", "XJCT", "CJCT", "CMOD", "XMOD", "COMP"]
 
 
@@ -277,21 +326,12 @@ def get_omission_errors(row):
                 elif rel in ["JCT", "NJCT"]:
                     errors.append(ERR_PREPOSITION)
                 elif rel in ["INF"]:    # "to" for infinitive verbs
-                    errors.append(ERR_VERB)
+                    errors.append(ERR_PREPOSITION)
                 elif rel in ["AUX"]:
                     errors.append(ERR_AUXILIARY)
                 else:
                     # Fallback: check whether we can guess the category by looking at the actual omitted word
                     errs = guess_omission_error_types(word, row)
-                    if errs == [ERR_UNKNOWN]:
-                        errs = []
-                        all_rels = set([gra["rel"] for gra in row["gra"]])
-                        if "SUBJ" not in all_rels:
-                            errs.append(ERR_SUBJECT)
-                        if len(set(RELS_VERB) & all_rels) == 0:
-                            errs.append(ERR_VERB)
-                        if len(errs) == 0:
-                            errs = [ERR_UNKNOWN]
                     errors.extend(errs)
 
     return errors
@@ -300,15 +340,17 @@ def get_omission_errors(row):
 def annotate(utterances):
     utterances["labels"] = utterances.progress_apply(get_error_labels, axis=1)
 
-    def is_grammatical(row):
-        if pd.isna(row["labels"]):
+    print("Num unknown errors: ", len(utterances[utterances["labels"] == ERR_UNKNOWN]))
+
+    def is_grammatical(labels):
+        if pd.isna(labels):
             return True
-        elif row["labels"] == ERR_UNKNOWN:
+        elif labels == ERR_UNKNOWN:
             return pd.NA
         else:
             return False
 
-    utterances["is_grammatical"] = utterances.apply(is_grammatical, axis=1).astype(object)
+    utterances["is_grammatical"] = utterances.labels.apply(is_grammatical).astype(object)
 
     return utterances
 
