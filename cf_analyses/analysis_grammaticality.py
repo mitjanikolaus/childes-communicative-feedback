@@ -14,18 +14,18 @@ from utils import (
     MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE, PROJECT_ROOT_DIR,
 )
 
-# Ages aligned to study of Warlaumont et al. or to our study (minimum 10 months)
-DEFAULT_MIN_AGE = 10
+DEFAULT_MIN_AGE = 15
 DEFAULT_MAX_AGE = 60
 
 AGE_BIN_NUM_MONTHS = 6
 
+# TODO
 MIN_NUM_WORDS = 1
 
 CORPORA_EXCLUDED = []
 # TODO Bates? VanHouten?
-# CORPORA_INCLUDED = ['Thomas', 'MPI-EVA-Manchester', 'Providence', 'Braunwald', 'Lara', 'EllisWeismer']
-CORPORA_INCLUDED = ['Providence', 'VanHouten', 'Thomas', 'Braunwald', 'Lara', 'MPI-EVA-Manchester', 'Bates', 'EllisWeismer']
+CORPORA_INCLUDED = ['Thomas', 'MPI-EVA-Manchester', 'Providence', 'Braunwald', 'Lara', 'EllisWeismer']
+# CORPORA_INCLUDED = ['Providence', 'VanHouten', 'Thomas', 'Braunwald', 'Lara', 'MPI-EVA-Manchester', 'Bates', 'EllisWeismer']
 
 
 # The caregivers of these children are using slang (e.g., "you was" or "she don't") and are therefore excluded

@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 
 from utils import (
-    SPEAKER_CODE_CHILD, get_num_unique_words,
-    SPEAKER_CODES_CAREGIVER, ANNOTATED_UTTERANCES_FILE
+    SPEAKER_CODE_CHILD,
+    SPEAKER_CODES_CAREGIVER, ANNOTATED_UTTERANCES_FILE, filter_for_min_num_utts, PROJECT_ROOT_DIR
 )
 
 from tqdm import tqdm
@@ -18,6 +18,10 @@ TOKEN_CAREGIVER = "[CAR]"
 TOKEN_OTHER = "[OTH]"
 
 
+MIN_NUM_WORDS = 1
+CORPORA_INCLUDED = ['Thomas', 'MPI-EVA-Manchester', 'Providence', 'Braunwald', 'Lara', 'EllisWeismer']
+
+
 def speaker_code_to_special_token(code):
     if code == SPEAKER_CODE_CHILD:
         return TOKEN_CHILD
@@ -27,38 +31,57 @@ def speaker_code_to_special_token(code):
         return TOKEN_OTHER
 
 
+def get_utts_to_annotate(utterances):
+    utts_to_annotate = utterances[(utterances.speaker_code == SPEAKER_CODE_CHILD)]
+    utts_to_annotate = filter_for_min_num_utts(utts_to_annotate, MIN_NUM_WORDS)
+    return utts_to_annotate
+
+
 def prepare(args):
     utterances = pd.read_csv(args.utterances_file, index_col=0, dtype={"error": object})
 
     utterances = utterances.iloc[args.num_utts_ignore:]
 
-    utterances = utterances[utterances.corpus == "Providence"].copy()
-    transcripts = utterances.transcript_file.unique()
-    np.random.seed(4)
-    transcript = np.random.choice(transcripts)
-    utts_transcript = utterances[utterances.transcript_file == transcript].copy()
-    utts_transcript_child = utts_transcript[utts_transcript.speaker_code == SPEAKER_CODE_CHILD]
-    while (utts_transcript.age.min() < 36) or (utts_transcript.age.min() > 40) or len(utts_transcript_child) < 10:
+    base_path = PROJECT_ROOT_DIR+"/data/manual_annotation/transcripts"
+
+    for corpus in CORPORA_INCLUDED:
+        utterances_corpus = utterances[utterances.corpus == corpus].copy()
+        transcripts = utterances_corpus.transcript_file.unique()
+        np.random.seed(2)
         transcript = np.random.choice(transcripts)
-        utts_transcript = utterances[utterances.transcript_file == transcript].copy()
-        utts_transcript_child = utts_transcript[utts_transcript.speaker_code == SPEAKER_CODE_CHILD]
+        print("Filtering for only speech-like utterances")
+        utts_transcript = filter_for_min_num_utts(
+            utterances_corpus[(utterances_corpus.transcript_file == transcript) & (utterances_corpus.is_speech_related == True)],
+            MIN_NUM_WORDS).copy()
 
-    print("Transcript: ", transcript)
-    print("Num child utts: ", len(utts_transcript_child))
+        utts_to_annotate = get_utts_to_annotate(utts_transcript)
 
-    utts_transcript["utterance"] = utts_transcript["speaker_code"].apply(speaker_code_to_special_token) + " " + utts_transcript["transcript_clean"]
+        while len(utts_to_annotate) < args.num_utts:
+            transcript = np.random.choice(transcripts)
+            utts_transcript = filter_for_min_num_utts(utterances_corpus[(utterances_corpus.transcript_file == transcript) & (utterances_corpus.is_speech_related == True)], MIN_NUM_WORDS).copy()
+            utts_to_annotate = get_utts_to_annotate(utts_transcript)
 
-    utts_transcript["is_grammatical"] = ""
-    utts_transcript["labels"] = ""
-    utts_transcript["note"] = ""
+        print("Transcript: ", transcript)
+        utts_transcript["utterance"] = utts_transcript["speaker_code"].apply(speaker_code_to_special_token) + " " + utts_transcript["transcript_clean"]
 
-    utts_transcript["num_unique_words"] = get_num_unique_words(utts_transcript.transcript_clean)
-    utts_transcript.loc[(utts_transcript.speaker_code == SPEAKER_CODE_CHILD) & (utts_transcript.num_unique_words > 1) & (utts_transcript.is_speech_related == True), "is_grammatical"] = "TODO"
-    print("Num utts to annotate: ", len(utts_transcript[(utts_transcript.speaker_code == SPEAKER_CODE_CHILD) & (utts_transcript.num_unique_words > 1) & (utts_transcript.is_speech_related == True)]))
-    utts_transcript = utts_transcript[["utterance", "is_grammatical", "labels", "note"]]
+        utts_transcript["is_grammatical"] = ""
+        utts_transcript["labels"] = ""
+        utts_transcript["note"] = ""
 
-    transcript_name = transcript.replace("/", "_")
-    return utts_transcript, transcript_name
+        index_max = utts_to_annotate.iloc[args.num_utts - 1].name
+        utts_transcript = utts_transcript.loc[:index_max]
+
+        utts_transcript.loc[utts_transcript.index.isin(utts_to_annotate.index), "is_grammatical"] = "TODO"
+
+        print("Num utts to annotate: ", len(utts_transcript.loc[utts_transcript.index.isin(utts_to_annotate.index)]))
+        print("Total num utts: ", len(utts_transcript))
+
+        utts_transcript = utts_transcript[["utterance", "is_grammatical", "labels", "note"]]
+
+        transcript_name = transcript.replace("/", "_")
+
+        file_name = os.path.join(base_path, transcript_name.replace(".cha", ".csv"))
+        utts_transcript.to_csv(file_name)
 
 
 def parse_args():
@@ -77,7 +100,7 @@ def parse_args():
     argparser.add_argument(
         "--num-utts",
         type=int,
-        default=None,
+        default=100,
         help="Number of utts to annotate"
     )
 
@@ -90,8 +113,4 @@ if __name__ == "__main__":
     args = parse_args()
     print(args)
 
-    utterances, transcript_name = prepare(args)
-
-    base_path = os.path.expanduser("~/data/communicative_feedback/annotations_")
-    file_name = base_path + transcript_name.replace(".cha", ".csv")
-    utterances.to_csv(file_name)
+    prepare(args)
