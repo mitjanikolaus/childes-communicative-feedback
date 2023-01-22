@@ -473,10 +473,10 @@ ERRORS_LEXICAL_OR_PHONOLOGICAL = [("do", "went"), ("coming", "getting"), ("lay",
                                   ('cweam', 'ice cream'), ('gawage', 'garage'), ('wecord', 'record'), ('weal', 'real'),
                                   ('robit', 'robert'), ('bwoke', 'broke'), ('der', 'the'), ('no', 'not'),
                                   ('lala', 'laura'), ('meme', 'me'), ('mulk', 'milk'), ('mattie', 'matthew'),
-                                  ('twy', 'try'),
+                                  ('twy', 'try'), ('goggie', 'doggie'), ('pay', 'pail'), ('chay', 'chair'),
                                   ('moshyko', 'motorcycle'), ('yadee', 'lady'), ('ee', 'he'), ('nuh', 'the'),
                                   ('ei', 'a'), ('ee', 'i'), ('peam', 'stream'), ('ou', 'oh'), ('goak', 'coat'),
-                                  ('gape', 'grape'), ('mines', 'mine'),
+                                  ('gape', 'grape'), ('mines', 'mine'), ('oni', 'on'), ('dada', 'fat'), ('da', 'fat'),
                                   ('doo', 'cock a doodle doo'), ('manys', 'many'), ('sumpin', 'something'), ('ah', 'i'),
                                   ('frough', 'through'), ('baw', 'ball'), ('bohs', 'both'), ('wit', 'with'),
                                   ('pwate', 'plate'), ('baba', 'bottle'), ('swish', 'swiss'), ('joo', 'you'),
@@ -964,6 +964,13 @@ def remove_babbling(utterance):
 
     filtered_utterance = " ".join(filtered_utterance)
     return filtered_utterance.strip()
+
+
+def filter_for_min_num_utts(utterances, min_num_words):
+    num_words = utterances.transcript_clean.apply(
+        lambda x: len(split_into_words(x, split_on_apostrophe=False, remove_commas=True,
+                                       remove_trailing_punctuation=True)))
+    return utterances[num_words >= min_num_words]
 
 
 def filter_transcripts_based_on_num_child_utts(
