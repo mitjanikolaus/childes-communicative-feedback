@@ -107,6 +107,7 @@ CAREGIVER_NAMES = [
     "mummy",
     "mama",
     "mamma",
+    "nin",
 ]
 
 
