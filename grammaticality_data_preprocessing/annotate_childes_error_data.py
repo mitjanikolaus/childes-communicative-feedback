@@ -165,7 +165,7 @@ def get_error_from_whole_utt(row):
         #     print(f"Subject error: {utt} ({all_rels})") #
         #     return ERR_SUBJECT
 
-    return ERR_OTHER
+    return ERR_UNKNOWN
 
 
 def get_errors_marked_on_tier(row):

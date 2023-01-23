@@ -47,7 +47,7 @@ def prepare(args):
     for corpus in CORPORA_INCLUDED:
         utterances_corpus = utterances[utterances.corpus == corpus].copy()
         transcripts = utterances_corpus.transcript_file.unique()
-        np.random.seed(2)
+        np.random.seed(8)
         transcript = np.random.choice(transcripts)
         print("Filtering for only speech-like utterances")
         utts_transcript = filter_for_min_num_utts(

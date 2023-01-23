@@ -14,7 +14,7 @@ from utils import (
     MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE, PROJECT_ROOT_DIR,
 )
 
-DEFAULT_MIN_AGE = 15
+DEFAULT_MIN_AGE = 10
 DEFAULT_MAX_AGE = 60
 
 AGE_BIN_NUM_MONTHS = 6
@@ -24,7 +24,8 @@ MIN_NUM_WORDS = 1
 
 CORPORA_EXCLUDED = []
 # TODO Bates? VanHouten?
-CORPORA_INCLUDED = ['Thomas', 'MPI-EVA-Manchester', 'Providence', 'Braunwald', 'Lara', 'EllisWeismer']
+CORPORA_INCLUDED = ['Providence', 'Lara', 'EllisWeismer']
+# CORPORA_INCLUDED = ['Thomas', 'MPI-EVA-Manchester', 'Providence', 'Braunwald', 'Lara', 'EllisWeismer']
 # CORPORA_INCLUDED = ['Providence', 'VanHouten', 'Thomas', 'Braunwald', 'Lara', 'MPI-EVA-Manchester', 'Bates', 'EllisWeismer']
 
 
@@ -158,7 +159,7 @@ def make_plots(conversations, conversations_melted):
     sns.move_legend(axis, "lower left")
     axis.set(xlabel="age (months)", ylabel="prop_clarification_request")
     axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
-    # plt.ylim((0, 0.35))
+    plt.ylim((0, 0.4))
     plt.tight_layout()
     plt.savefig(
         os.path.join(RESULTS_DIR, "cf_quality_clarification_request.png"), dpi=300
