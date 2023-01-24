@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
+from nltk import SnowballStemmer
 from statsmodels.stats.weightstats import ztest
 
 from analysis_reproduce_warlaumont import (
@@ -181,17 +182,22 @@ def response_is_clarification_request(micro_conv):
 # List of stopwords to be ignored for repetition calculation
 STOPWORDS = {'my', 'doing', 'than', 'doesn', 'do', 'him', 's', 'her', 'won', 'myself', 'his', 'were', 'during', 'few', 'yourself', 'mightn', 'into', 'we', 'above', 'below', 'you', 'what', 'has', 'under', 'each', 'before', 'am', 'after', 'me', 'once', 'out', 'y', 'have', 'ain', 'of', 'will', 'weren', 'with', 'no', 'm', 'whom', 'only', 'ours', 'nor', 'mustn', 'himself', 're', 'was', 'o', 'having', 'for', 'ourselves', 'theirs', 'ma', 'off', 'too', 'i', 'further', 'hadn', 'wasn', 'their', 'more', 'or', 'them', 'again', 't', 'against', 'own', 'those', 'hers', 'does', 've', 'its', 'herself', 'over', 'not', 'should', 'aren', 'that', 'our', 'as', 'been', 'who', 'while', 'to', 'hasn', 'through', 'about', 'haven', 'how', 'can', 'and', 'they', 'in', 'until', 'had', 'an', 'between', 'then', 'both', 'shouldn', 'this', 'down', 'don', 'now', 'yourselves', 'he', 'couldn', 'a', 'where', 'themselves', 'other', 'these', 'wouldn', 'the', 'because', 'but', 'your', 'why', 'up', 'by', 'if', 'most', 'she', 'be', 'is', 'just', 'any', 'such', 'very', 'all', 'are', 'on', 'didn', 'itself', 'll', 'so', 'yours', 'same', 'needn', 'd', 'which', 'isn', 'some', 'here', 'it', 'when', 'at', 'from', 'did', 'being', 'there', 'oh', 'ooh', 'huh', 'ah', 'mhm', 'ooh', 'mm', 'shan'}
 
+stemmer = SnowballStemmer("english")
+
 
 def get_repetition_ratios(micro_conv):
     if pd.isna(micro_conv["response_transcript_clean"]):
         return [0, 0]
 
     utt = micro_conv["utt_transcript_clean"].lower()
-    words_utt = set(split_into_words(utt, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True))
+    utt_split = split_into_words(utt, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True)
+    words_utt = set([stemmer.stem(w) for w in utt_split])
     words_utt_no_stopwords = {word for word in words_utt if word not in STOPWORDS}
 
     response = micro_conv["response_transcript_clean"].lower()
-    words_response = set(split_into_words(response, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True))
+    response_split = split_into_words(response, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True)
+    words_response = set([stemmer.stem(w) for w in response_split])
+
     words_response_no_stopwords = {word for word in words_response if word not in STOPWORDS}
 
     overlap = words_utt_no_stopwords & words_response_no_stopwords
