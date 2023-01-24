@@ -137,7 +137,7 @@ def contains_acknowledgement_keyword(micro_conv):
 
 def is_repetition_acknowledgement(micro_conv):
     if micro_conv["response_transcript_clean"][-1] != "?":
-        if micro_conv["utt_repetition_ratio"] == 1 and micro_conv["resp_repetition_ratio"] >= 0.5:
+        if micro_conv["rep_utt"] == 1 and micro_conv["rep_response"] >= 0.5:
             return True
     return False
 
@@ -154,7 +154,7 @@ def response_is_acknowledgement(micro_conv):
 
 def is_repetition_clarification_request(micro_conv):
     if micro_conv["response_transcript_clean"][-1] == "?":
-        if (micro_conv["resp_repetition_ratio"] >= 0.5) and (micro_conv["utt_repetition_ratio"] >= 0.0):
+        if (micro_conv["rep_response"] >= 0.5) and (micro_conv["rep_utt"] >= 0.0):
             return True
     return False
 
@@ -278,8 +278,8 @@ def perform_analysis(conversations, args):
     conversations.response_transcript_clean = conversations.response_transcript_clean.astype(str)
 
     repetition_ratios = conversations.apply(get_repetition_ratios, axis=1)
-    conversations["utt_repetition_ratio"] = repetition_ratios.apply(lambda ratios: ratios[0])
-    conversations["resp_repetition_ratio"] = repetition_ratios.apply(lambda ratios: ratios[1])
+    conversations["rep_utt"] = repetition_ratios.apply(lambda ratios: ratios[0])
+    conversations["rep_response"] = repetition_ratios.apply(lambda ratios: ratios[1])
 
     conversations["response_is_clarification_request"] = conversations.apply(response_is_clarification_request, axis=1)
     conversations.loc[~conversations.has_response, "response_is_clarification_request"] = False

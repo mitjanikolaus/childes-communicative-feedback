@@ -24,7 +24,7 @@ AGE_BIN_NUM_MONTHS = 6
 MIN_NUM_WORDS = 1
 
 CORPORA_EXCLUDED = []
-# TODO Bates? VanHouten?
+
 CORPORA_INCLUDED = ['Providence', 'Lara', 'EllisWeismer']
 # CORPORA_INCLUDED = ['Thomas', 'MPI-EVA-Manchester', 'Providence', 'Braunwald', 'Lara', 'EllisWeismer']
 # CORPORA_INCLUDED = ['Providence', 'VanHouten', 'Thomas', 'Braunwald', 'Lara', 'MPI-EVA-Manchester', 'Bates', 'EllisWeismer']
@@ -86,8 +86,8 @@ def perform_analysis_grammaticality(conversations, args):
     conversations = filter_utts_for_num_words(conversations, min_num_words=MIN_NUM_WORDS)
 
     repetition_ratios = conversations.apply(get_repetition_ratios, axis=1)
-    conversations["utt_repetition_ratio"] = repetition_ratios.apply(lambda ratios: ratios[0])
-    conversations["resp_repetition_ratio"] = repetition_ratios.apply(lambda ratios: ratios[1])
+    conversations["rep_utt"] = repetition_ratios.apply(lambda ratios: ratios[0])
+    conversations["rep_response"] = repetition_ratios.apply(lambda ratios: ratios[1])
 
     conversations["response_is_clarification_request"] = conversations.apply(response_is_clarification_request, axis=1)
     conversations["response_is_acknowledgement"] = conversations.apply(response_is_acknowledgement, axis=1)
