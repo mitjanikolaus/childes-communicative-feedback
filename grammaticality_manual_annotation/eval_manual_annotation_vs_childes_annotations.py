@@ -11,6 +11,7 @@ def eval():
 
     utterances = pd.read_csv(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, index_col=0, dtype={"error": object})
 
+    table_data = []
     for corpus in CORPORA_INCLUDED:
         data = []
 
@@ -41,11 +42,17 @@ def eval():
         kappa = cohen_kappa_score(data.is_error_manual, data.is_error_childes)
         print(f"Cohen's Kappa: {kappa:.2f}")
 
-        prf = precision_recall_fscore_support(data.is_error_manual, data.is_error_childes, average="binary", zero_division=0)
-        print(f"Precision: {prf[0]:.2f}, recall: {prf[1]:.2f}, f-score: {prf[2]:.2f}")
+        precision, recall, f_score, support = precision_recall_fscore_support(data.is_error_manual, data.is_error_childes, average="binary", zero_division=0)
+        print(f"Precision: {precision:.2f}, recall: {recall:.2f}, f-score: {f_score:.2f}")
 
+        table_data.append({"corpus": corpus, "kappa": kappa, "precision": precision, "recall": recall, "f_score": f_score})
         # mcc = matthews_corrcoef(utts_annotated.is_error_manual, utts_annotated.is_error_childes)
         # print(f"MCC: {mcc:.2f}")
+
+    table_data = pd.DataFrame(table_data)
+    table_data.set_index("corpus", inplace=True)
+    print(table_data.to_latex(float_format="%.2f"))
+
 
 
 if __name__ == "__main__":
