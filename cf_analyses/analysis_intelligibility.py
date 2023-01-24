@@ -228,6 +228,7 @@ def melt_variable(conversations, variable_suffix):
             "child_name",
             "age",
             "transcript_file",
+            "labels",
         ],
         value_vars=value_var_names,
         var_name="is_follow_up",

@@ -7,7 +7,8 @@ import pandas as pd
 import seaborn as sns
 
 from analysis_intelligibility import response_is_clarification_request, melt_variable, response_is_acknowledgement, \
-    get_repetition_ratios, filter_utts_for_num_words, filter_follow_ups_for_num_words
+    get_repetition_ratios, filter_utts_for_num_words, filter_follow_ups_for_num_words, \
+    is_clarification_request_speech_act, is_repetition_clarification_request
 from utils import (
     age_bin,
     SPEAKER_CODE_CHILD, get_num_words,
@@ -77,6 +78,7 @@ def perform_analysis_grammaticality(conversations, args):
         ),
         inplace=True,
     )
+    conversations["utt_is_grammatical"] = conversations.utt_is_grammatical.astype(bool)
     conversations = conversations[conversations.utt_is_intelligible].copy()
 
     # Filtering out dummy responses (cases in which the child continues to talk
@@ -113,7 +115,6 @@ def perform_analysis_grammaticality(conversations, args):
     conversations_good_follow_ups = filter_follow_ups_for_num_words(conversations_good_follow_ups, min_num_words=MIN_NUM_WORDS)
     conversations_good_follow_ups = conversations_good_follow_ups[conversations_good_follow_ups.follow_up_is_intelligible]
 
-
     conversations_melted = melt_variable(conversations_good_follow_ups, "is_grammatical")
     conversations_melted.to_csv(RESULTS_DIR + "conversations_melted.csv")
     conversations_melted = pd.read_csv(RESULTS_DIR + "conversations_melted.csv", index_col=0)
@@ -122,6 +123,62 @@ def perform_analysis_grammaticality(conversations, args):
     ###
     # Analyses
     ###
+    make_plots(conversations, conversations_melted, RESULTS_DIR)
+    make_plots_error_types(conversations)
+
+
+def make_plots_error_types(conversations):
+    results_dir_error_types = PROJECT_ROOT_DIR + "/results/grammaticality/error_types/"
+    os.makedirs(results_dir_error_types, exist_ok=True)
+
+    convs = conversations[conversations.utt_is_grammatical == False]
+    convs = explode_labels(convs.copy())
+
+    err_counts = convs["label"].value_counts(normalize=True).rename("Baseline").reset_index()
+
+    err_counts_cr = convs[convs.response_is_clarification_request]["label"].value_counts(normalize=True).rename("CR").reset_index()
+    merged = err_counts.merge(err_counts_cr)
+
+    # err_counts_ack = convs[convs.response_is_acknowledgement]["label"].value_counts(normalize=True).rename("ACK").reset_index()
+    # merged = merged.merge(err_counts_ack)
+
+    merged = merged.melt(id_vars="index", value_name="proportion", var_name="condition")
+    plt.figure(figsize=(6, 3))
+    sns.barplot(data=merged, x="index", y="proportion", hue="condition")
+    plt.xticks(rotation=90)
+    plt.xlabel("")
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(results_dir_error_types, "error_types.png"), dpi=300
+    )
+
+    convs["response_is_speech_act_cr"] = convs.apply(is_clarification_request_speech_act, axis=1)
+    convs["response_is_repetition_cr"] = convs.apply(is_repetition_clarification_request, axis=1)
+    err_counts_cr_sp = convs[convs.response_is_speech_act_cr]["label"].value_counts(normalize=True).rename("CR_SP").reset_index()
+    merged = err_counts.merge(err_counts_cr_sp)
+
+    err_counts_cr_rep = convs[convs.response_is_repetition_cr]["label"].value_counts(normalize=True).rename("CR_REP").reset_index()
+    merged = merged.merge(err_counts_cr_rep)
+    merged = merged.melt(id_vars="index", value_name="proportion", var_name="condition")
+    plt.figure(figsize=(6, 3))
+    sns.barplot(data=merged, x="index", y="proportion", hue="condition")
+    plt.xticks(rotation=90)
+    plt.xlabel("")
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(results_dir_error_types, "error_types_cr_type.png"), dpi=300
+    )
+
+
+def explode_labels(conversations):
+    conversations["label"] = conversations.labels.astype(str).apply(lambda x: x.split(", "))
+    conversations.drop(columns="labels", inplace=True)
+    return conversations.explode("label")
+
+
+def make_plots(conversations, conversations_melted, results_dir):
+    os.makedirs(results_dir, exist_ok=True)
+
     print(f"\nFound {len(conversations)} micro-conversations")
     print(f"Number of corpora in the analysis: {len(conversations.corpus.unique())}")
     print(
@@ -131,14 +188,6 @@ def perform_analysis_grammaticality(conversations, args):
         f"Number of transcripts in the analysis: {len(conversations.transcript_file.unique())}"
     )
 
-    # perform_per_transcript_analyses(conversations)
-
-    make_plots(conversations, conversations_melted)
-
-    return conversations
-
-
-def make_plots(conversations, conversations_melted):
     # Duplicate all entries and set age to infinity to get summary bars over all age groups
     conversations_duplicated = conversations.copy()
     conversations_duplicated["age"] = math.inf
@@ -162,7 +211,7 @@ def make_plots(conversations, conversations_melted):
     plt.ylim((0, 0.4))
     plt.tight_layout()
     plt.savefig(
-        os.path.join(RESULTS_DIR, "cf_quality_clarification_request.png"), dpi=300
+        os.path.join(results_dir, "cf_quality_clarification_request.png"), dpi=300
     )
 
     plt.figure(figsize=(6, 3))
@@ -183,7 +232,7 @@ def make_plots(conversations, conversations_melted):
     # plt.ylim((0, 0.35))
     plt.tight_layout()
     plt.savefig(
-        os.path.join(RESULTS_DIR, "cf_quality_acknowledgements.png"), dpi=300
+        os.path.join(results_dir, "cf_quality_acknowledgements.png"), dpi=300
     )
 
     plt.figure(figsize=(6, 3))
@@ -203,7 +252,7 @@ def make_plots(conversations, conversations_melted):
     axis.set(ylabel="prop_is_grammatical")
     plt.tight_layout()
     plt.savefig(
-        os.path.join(RESULTS_DIR, "cf_effect_clarification_request_control.png"),
+        os.path.join(results_dir, "cf_effect_clarification_request_control.png"),
         dpi=300,
     )
 
@@ -224,7 +273,7 @@ def make_plots(conversations, conversations_melted):
     axis.set(ylabel="prop_is_grammatical")
     plt.tight_layout()
     plt.savefig(
-        os.path.join(RESULTS_DIR, "cf_effect_acknowledgement_control.png"),
+        os.path.join(results_dir, "cf_effect_acknowledgement_control.png"),
         dpi=300,
     )
 
@@ -255,7 +304,7 @@ def make_plots(conversations, conversations_melted):
     axis.set_xticklabels(sorted(conversations_melted_cr_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
     plt.tight_layout()
     plt.savefig(
-        os.path.join(RESULTS_DIR, "cf_effect_clarification_request.png"), dpi=300
+        os.path.join(results_dir, "cf_effect_clarification_request.png"), dpi=300
     )
 
     conversations_melted_ack_with_avg_age = conversations_melted_with_avg_age[
@@ -280,7 +329,7 @@ def make_plots(conversations, conversations_melted):
     axis.set_xticklabels(sorted(conversations_melted_ack_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
     plt.tight_layout()
     plt.savefig(
-        os.path.join(RESULTS_DIR, "cf_effect_acknowledgement.png"), dpi=300
+        os.path.join(results_dir, "cf_effect_acknowledgement.png"), dpi=300
     )
 
 
@@ -300,7 +349,7 @@ if __name__ == "__main__":
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    conversations = pd.read_csv(args.utterances_file, index_col=0, dtype={"error": object, "utt_is_grammatical": object, "response_is_grammatical": object, "follow_up_is_grammatical": object, "labels": object})
+    conversations = pd.read_csv(args.utterances_file, index_col=0, dtype={"error": object, "labels": object})
     # Filter by age
     conversations = conversations[
         (args.min_age <= conversations.age) & (conversations.age <= args.max_age)
