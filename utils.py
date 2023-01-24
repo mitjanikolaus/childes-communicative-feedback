@@ -1,6 +1,9 @@
 import argparse
 import os
 import re
+import matplotlib
+matplotlib.use('TkAgg')
+
 from multiprocessing import Pool
 
 import enchant
