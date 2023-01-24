@@ -20,10 +20,18 @@ DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT = 100
 MIN_NUM_WORDS = 0
 
 
-def make_proportion_plots(utterances, results_dir):
+def make_proportion_plots(utterances_all, results_dir):
     plt.figure(figsize=(13, 7))
 
-    utterances = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD]
+    utterances_all = utterances_all[
+        (MIN_AGE <= utterances_all.age) & (utterances_all.age <= MAX_AGE)
+    ].copy()
+
+    utterances_all = utterances_all[utterances_all.speaker_code == SPEAKER_CODE_CHILD].copy()
+
+    utterances = filter_transcripts_based_on_num_child_utts(
+        utterances_all, DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT
+    )
 
     utterances_filtered_speech_relatedness = utterances[~utterances.corpus.isin(DEFAULT_EXCLUDED_CORPORA_SPEECH_RELATEDNESS)]
     proportion_speech_like_per_transcript = utterances_filtered_speech_relatedness.groupby(
@@ -82,18 +90,33 @@ def make_proportion_plots(utterances, results_dir):
     plt.xlim((MIN_AGE-1, MAX_AGE+1))
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, "proportions.png"), dpi=300)
+
+    # utterances_filtered_grammaticality = filter_corpora_grammaticality(utterances_all)
+    # utts_grammaticality_analysis = utterances_filtered_grammaticality[utterances_filtered_grammaticality.is_intelligible]
+    # utts_grammaticality_analysis = filter_for_min_num_utts(utts_grammaticality_analysis, min_num_words=1)
+    #
+    # plt.figure(figsize=(13, 7))
+    # data = utts_grammaticality_analysis.groupby("age").agg({"is_grammatical": "mean", "utterance_id": "size"}).reset_index().rename(
+    #     columns={"is_grammatical": "prop_grammatical", "utterance_id": "num_utterances"})
+    # sns.barplot(data=data, x="age", y="prop_grammatical", label="proportion_grammatical", color="b")
+    # plt.savefig(os.path.join(results_dir, "prop_grammatical.png"), dpi=300)
+    #
+    # plt.figure(figsize=(13, 7))
+    # sns.barplot(data=data, x="age", y="num_utterances", label="num_utterances", color="r")
+    # plt.savefig(os.path.join(results_dir, "num_utterances.png"), dpi=300)
+    #
+    # not_grammatical = utts_grammaticality_analysis[utts_grammaticality_analysis.is_grammatical == False]
+    # not_grammatical = not_grammatical.groupby("age").agg({"utterance_id": "size"}).reset_index().rename(
+    #     columns={"utterance_id": "num_errors"})
+    # plt.figure(figsize=(13, 7))
+    # sns.barplot(data=not_grammatical, x="age", y="num_errors", label="num_errors", color="g")
+    # plt.savefig(os.path.join(results_dir, "num_errors.png"), dpi=300)
+
     plt.show()
 
 
 if __name__ == "__main__":
     utterances = pd.read_csv(UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, index_col=0, dtype={"error": object})
-
-    utterances = utterances[
-        (MIN_AGE <= utterances.age) & (utterances.age <= MAX_AGE)
-    ]
-    utterances = filter_transcripts_based_on_num_child_utts(
-        utterances, DEFAULT_MIN_CHILD_UTTS_PER_TRANSCRIPT
-    )
 
     results_dir = PROJECT_ROOT_DIR+"/results/"
     make_proportion_plots(utterances, results_dir)
