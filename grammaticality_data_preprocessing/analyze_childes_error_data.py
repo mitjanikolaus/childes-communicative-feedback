@@ -146,12 +146,15 @@ def plot_corpus_error_stats(utterances):
 
     err_counts["ratio"] = err_counts.apply(lambda row: row["count"] / num_utts_data[row.corpus], axis=1)
     sns.set_palette(COLORS_PLOT_CATEGORICAL)
-    plt.figure(figsize=(20, 10))
+    plt.figure(figsize=(12, 4))
     ax = sns.barplot(x="corpus", y="ratio", hue="label", data=err_counts, order=joined.index)
     plt.ylim((0, 0.03))
-    plt.xlabel("num errors per child utterance")
-    plt.legend(loc='upper right')
-    plt.setp(ax.get_xticklabels(), rotation=90)
+    plt.ylabel("num errors per child utterance")
+    plt.xlabel("")
+    plt.legend(loc='upper left', ncol=2)
+    plt.setp(ax.get_xticklabels(), rotation=75, size=7)
+    plt.tight_layout()
+    plt.subplots_adjust(bottom=0.3)
     plt.savefig(
         os.path.join(RESULTS_DIR, "error_proportions_by_label.png"), dpi=300
     )
