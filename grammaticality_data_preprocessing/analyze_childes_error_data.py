@@ -148,7 +148,6 @@ def plot_corpus_error_stats(utterances):
     sns.set_palette(COLORS_PLOT_CATEGORICAL)
     plt.figure(figsize=(12, 4))
     ax = sns.barplot(x="corpus", y="ratio", hue="label", data=err_counts, order=joined.index)
-    plt.ylim((0, 0.03))
     plt.ylabel("num errors per child utterance")
     plt.xlabel("")
     plt.legend(loc='upper left', ncol=2)

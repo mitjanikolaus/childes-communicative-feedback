@@ -78,10 +78,6 @@ def get_errors_marked_with_star(row):
 
         return errors
 
-NOUNS_THIRD_PERSON = ["daddy", "that", "this", "lion", "what", "he", "she", "it"]
-VERBS_NOT_THIRD_PERSON = ["go", "happen", "do", "want", "can", "come", "like", "have"]
-NOUN_VERB_ILLEGAL = [" ".join(t) for t in itertools.product(NOUNS_THIRD_PERSON, VERBS_NOT_THIRD_PERSON)]
-
 
 def get_error_from_whole_utt(row):
     utt = row["transcript_raw"].lower()
@@ -95,17 +91,23 @@ def get_error_from_whole_utt(row):
     if prev_word in ["here", "there", "me"] and following_word in ["are", "go", "do"]:
         return ERR_SUBJECT
 
+    if split_previous and split_previous[0] in ["want", "wanna"] + VERBS_INFLECTED_THIRD_PERSON:
+        return ERR_SUBJECT
+
     for t in ["what are them [*]", "do [*] like this", "can me [*]"]:
         if t in utt:
             return ERR_OBJECT
 
-    if prev_word in ["a"] and following_word and following_word[0] in ["a", "e", "i", "o", "u"]:
+    if following_word and (prev_word, following_word[0]) in TUPLES_WRONG_DETERMINER:
         return ERR_DETERMINER
 
     if prev_word in ["this"] and following_word in ["beginning"]:
         return ERR_DETERMINER
 
-    if prev_word in AUXILIARIES and following_word in VERBS:
+    if (prev_word, following_word) in TUPLES_MISSING_DETERMINER + TUPLES_WRONG_DETERMINER:
+        return ERR_DETERMINER
+
+    if prev_word in AUXILIARIES and following_word in VERBS_INFINITIVES:
         return ERR_PREPOSITION
 
     if prev_word in ["in", "on", "next", "one"] and following_word in ["the", "my"]:
@@ -114,7 +116,7 @@ def get_error_from_whole_utt(row):
     if prev_word in ["it"] and following_word in ["me"]:
         return ERR_PREPOSITION
 
-    for t in NOUN_VERB_ILLEGAL + ["i weren't [*]", "they goes [*]", "is [*] there", "what's [*] these", "go [*] there", "there's [*] two", "don't [*] fit"]:
+    for t in NOUN_VERB_ILLEGAL + ["i weren't [*]", "they goes [*]", "is [*] there", "what's [*] these", "go [*] there", "there's [*] two", "don't [*] fit", "where's [*]", "what's these [*]"]:
         if t in utt:
             return ERR_SV_AGREEMENT
 
@@ -132,38 +134,44 @@ def get_error_from_whole_utt(row):
     if re.search("\[\*] \S*[\s\S]+ing", utt):
         return ERR_TENSE_ASPECT
 
-    if prev_word in VERBS + AUXILIARIES and following_word in ["again", "in", "a", "here"]:
+    if prev_word in ALL_VERBS + AUXILIARIES and following_word in ["again", "in", "a", "here"]:
         return ERR_OBJECT
 
-    if prev_word in VERBS + AUXILIARIES and following_word in ["cheese", "barbie", "elephant", "orange", "green", "yellow",
-                                                               "banana", "tissue", "small", "sandwich", "sun", "bottle",
-                                                               "horse", "crayon", "puzzle", "noisy", "tent", "fairy", "cup"]:
-        return ERR_DETERMINER
-
-    if prev_word in SUBJECTS + ["one"] and following_word in SUBJECTS + OBJECTS + DETERMINERS + ['purple', 'for', 'here', 'broken', 'mine', 'these', 'not', 'better', 'pilchard', 'my', 'his', 'our', 'my', 'your', 'not', 'no', 'lots', 'dizzy']:
+    if (prev_word, following_word) in TUPLES_MISSING_VERB:
         return ERR_VERB
 
-    for t in ["here it [*]", "what [?] [*] that", "where [*] dada", "who's [*] a girl", "<a@p this> [*]"]:
+    for t in ["here it [*]", "what [?] [*] that", "where [*] dada", "who's [*] a girl", "<a@p this> [*]", "this the "]:
         if t in utt:
             return ERR_VERB
 
     if prev_word in ["much", "many"]:
         return ERR_OTHER
 
-    words = set(split_into_words(row["transcript_clean"].lower(), split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=True))
-    if len(words & WORDS_WRONG_TENSE_ASPECT_INFLECTION) > 0:
-        return ERR_TENSE_ASPECT
-    if len (words & WORDS_WRONG_PLURAL_INFLECTION) > 0:
-        return ERR_PLURAL
+    words = split_into_words(row["transcript_clean"].lower(), split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=True)
 
-    # if row["gra"]:
-    #     all_rels = set([gra["rel"] for gra in row["gra"]])
-        # if len(set(RELS_VERB) & all_rels) == 0:
-        #     # print(f"Verb error: {utt} ") #({all_rels})
-        #     return ERR_VERB
-        # if len(set(RELS_SUBJECT) & all_rels) == 0:
-        #     print(f"Subject error: {utt} ({all_rels})") #
-        #     return ERR_SUBJECT
+    for t in zip(words, words[1:]):
+        if t in TUPLES_MISSING_PROGRESSIVE_ENDING + TUPLES_MISSING_IS_ARE:
+            return ERR_TENSE_ASPECT
+
+        if t in TUPLES_MISSING_DETERMINER:
+            return ERR_DETERMINER
+
+        if (t[0], t[1][0]) in TUPLES_WRONG_DETERMINER:
+            return ERR_DETERMINER
+
+        if t in TUPLES_MISSING_AUXILIARY:
+            return ERR_AUXILIARY
+
+        if t in TUPLES_MISSING_VERB:
+            return ERR_VERB
+
+    if len(words) > 1 and words[0] in ALL_VERBS + ["can't", "don't"] and words[1] in ALL_VERBS:
+        return ERR_SUBJECT
+
+    if len(set(words) & WORDS_WRONG_TENSE_ASPECT_INFLECTION) > 0:
+        return ERR_TENSE_ASPECT
+    if len (set(words) & WORDS_WRONG_PLURAL_INFLECTION) > 0:
+        return ERR_PLURAL
 
     return ERR_UNKNOWN
 
@@ -239,13 +247,24 @@ def get_errors_marked_with_colon(row):
     return errors
 
 
-VERBS = ["is", "am", "are", "were", "was", "v", "be", "want", "like", "see", "know", "need", "think", "come",
-          "put", "said", "says", "play", "look", "make", "let", "let's", "go", "ran", "got", "came", "hear", "get",
-          "brought", "going", "gonna", "grunts", "fussing", "fusses", "whines", "squeals", "yells", "singing",
-         "turn", "whining", "sighs", "laughs", "saw", "'re", "'m", "eat", "re", "do", "shake", "pick", "cut", "use",
-         "sit", "smell", "drink", "have", "help", "speak", "tip", "stick", "take", "flush", "try", "hold", "dress",
-         "carry", "watch", "read", "color", "find", "listen", "open", "draw", "sleep", "press", "stay", "tie", "leave",
-         "count", "wait"]
+VERBS_INFINITIVES = ["v", "be", "want", "like", "see", "know", "need", "think", "come", "put", "play", "look", "make",
+                     "let", "go", "hear", "get", "turn", "eat", "do", "shake", "pick", "cut", "use", "sit", "smell",
+                     "drink", "have", "help", "speak", "tip", "stick", "take", "flush", "try", "hold", "dress", "cry",
+                     "carry", "watch", "read", "color", "find", "listen", "open", "draw", "sleep", "press", "stay",
+                     "tie", "leave", "count", "wait", "happen", "grunt", "whine", "squeal", "sigh", "laugh", "yell",
+                     "live", "match", "push", "wear", "rain", "close", "cook", "fall", "sing", "need"]
+
+VERBS_INFLECTED_NOT_THIRD_PERSON = ["am", "are", "'re", "re", "'m", "were", "singing", "fussing", "gonna", "going", "whining"]
+VERBS_INFLECTED_THIRD_PERSON = [v+"s" for v in VERBS_INFINITIVES] + ["goes"]
+VERBS_INFLECTED_PRESENT_PROGRESSIVE = [v+"ing" for v in VERBS_INFINITIVES]
+
+VERBS_INFLECTED =  VERBS_INFLECTED_THIRD_PERSON + VERBS_INFLECTED_NOT_THIRD_PERSON + \
+                  ["is", "was", "said", "can", "says", "fusses", "saw", "got", "brought", "came", "ran"]
+
+ALL_VERBS = VERBS_INFINITIVES + VERBS_INFLECTED
+
+NOUNS_THIRD_PERSON = ["daddy", "mommy", "that", "this", "lion", "farmer", "what", "he", "she", "it", "baby", "everything", "girl", "boy", "who"]
+NOUN_VERB_ILLEGAL = [" ".join(t) for t in itertools.product(NOUNS_THIRD_PERSON, VERBS_INFINITIVES+VERBS_INFLECTED_NOT_THIRD_PERSON)]
 
 AUXILIARIES = ["will", "had", "do", "does", "did", "have", "has", "hav", "can", "may", "would", "could", "shall", "'ve",
                   "'ll", "want"]
@@ -254,11 +273,26 @@ PREPOSITIONS = ["prep", "to", "of", "at", "off", "up", "in", "on", "from", "as",
 
 DETERMINERS = ["det", "a", "an", "the", "one", "some", "all", "more", "any", "many"]
 
-SUBJECTS = ['you', 'that', 'how', 'why', 'when', 'i', 'she', 'he', 'there', 'who', 'where', 'mummy', 'dada', 'daddy', 'jacob', 'it', 'this', 'they', 'pro', 'what', 'we']
+SUBJECTS = NOUNS_THIRD_PERSON + ['you', 'that', 'how', 'why', 'when', 'i', 'she', 'he', 'there', 'who', 'where', 'there', 'mummy', 'dada', 'daddy', 'baby', 'horsie', 'cow', 'jacob', 'girls', 'hat', 'it', 'this', 'these', 'they', 'pro', 'what', 'we']
 
 OBJECTS = ["them", "her", "me", "myself", "him"]
 
 WORDS_OTHER = ["and", "if", "not", "no", "or", "because"]
+
+TUPLES_MISSING_VERB = list(itertools.product(SUBJECTS + ["one"], SUBJECTS + OBJECTS + DETERMINERS + ['purple', 'for', 'here', 'broken', 'mine', 'these', 'not', 'better', 'tiny', 'pilchard', 'my', 'his', 'our', 'my', 'your', 'not', 'no', 'lots', 'dizzy', 'fat']))
+TUPLES_MISSING_IS_ARE = list(itertools.product(SUBJECTS, VERBS_INFLECTED_PRESENT_PROGRESSIVE + ["done"]))
+TUPLES_MISSING_PROGRESSIVE_ENDING = list(itertools.product(["am", "is", "are", "was", "were", "i'm", "you're", "he's", "she's", "it's", "they're", "we're", "what's"], VERBS_INFINITIVES+VERBS_INFLECTED_THIRD_PERSON+VERBS_INFLECTED))
+
+TUPLES_MISSING_DETERMINER = list(itertools.product(ALL_VERBS + AUXILIARIES + ["that's"], ["cheese", "barbie", "elephant",
+                                                                                          "orange", "green", "yellow",
+                                                                                "banana", "tissue", "small", "sandwich",
+                                                                                "sun", "bottle", "dirty",
+                                                                                "horse", "crayon", "puzzle", "noisy",
+                                                                                "tent", "fairy", "cup", "nose"]))
+
+TUPLES_MISSING_AUXILIARY = list(itertools.product(["not"], ALL_VERBS))
+
+TUPLES_WRONG_DETERMINER = list(itertools.product(["a"], ["a", "e", "i", "o", "u"]))
 
 
 def guess_omission_error_types(word, utt, prev_word=None):
@@ -267,7 +301,7 @@ def guess_omission_error_types(word, utt, prev_word=None):
         error = ERR_DETERMINER
     elif word in AUXILIARIES:
         error = ERR_AUXILIARY
-    elif word in VERBS:
+    elif word in ALL_VERBS:
         error = ERR_VERB
     elif word in PREPOSITIONS:
         error = ERR_PREPOSITION
@@ -283,7 +317,7 @@ def guess_omission_error_types(word, utt, prev_word=None):
         error = ERR_TENSE_ASPECT
     elif word in ["ed", "en", "ne", "n", "ten", "ped"]:
         error = ERR_TENSE_ASPECT
-    elif word in ["es", "es'nt"] or word in ["s"] and prev_word in VERBS:
+    elif word in ["es", "es'nt"] or word in ["s"] and prev_word in ALL_VERBS:
         error = ERR_SV_AGREEMENT
     elif word in ["s"]:
         error = ERR_PLURAL
