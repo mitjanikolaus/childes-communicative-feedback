@@ -45,14 +45,16 @@ def eval():
         precision, recall, f_score, support = precision_recall_fscore_support(data.is_error_manual, data.is_error_childes, average="binary", zero_division=0)
         print(f"Precision: {precision:.2f}, recall: {recall:.2f}, f-score: {f_score:.2f}")
 
-        table_data.append({"corpus": corpus, "kappa": kappa, "precision": precision, "recall": recall, "f_score": f_score})
+        utterances_corpus = utterances[utterances.corpus == corpus]
+        print(f"Corpus size: {len(utterances_corpus)}")
+
+        table_data.append({"corpus": corpus, "kappa": kappa, "precision": precision, "recall": recall})
         # mcc = matthews_corrcoef(utts_annotated.is_error_manual, utts_annotated.is_error_childes)
         # print(f"MCC: {mcc:.2f}")
 
     table_data = pd.DataFrame(table_data)
     table_data.set_index("corpus", inplace=True)
     print(table_data.to_latex(float_format="%.2f"))
-
 
 
 if __name__ == "__main__":
