@@ -88,7 +88,7 @@ COLORS_PLOT_CATEGORICAL = [
 
 RESULTS_DIR = "results/grammaticality_annotations_childes"
 
-MIN_NUM_ERRORS = 10
+MIN_NUM_ERRORS = 100
 ERROR_RATIO_THRESHOLD = 0.01
 
 
