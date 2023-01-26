@@ -98,13 +98,13 @@ def get_error_from_whole_utt(row):
         if t in utt:
             return ERR_OBJECT
 
-    if following_word and (prev_word, following_word[0]) in TUPLES_WRONG_DETERMINER:
+    if following_word and (prev_word, following_word[0]) in BIGRAMS_WRONG_DETERMINER:
         return ERR_DETERMINER
 
     if prev_word in ["this"] and following_word in ["beginning"]:
         return ERR_DETERMINER
 
-    if (prev_word, following_word) in TUPLES_MISSING_DETERMINER + TUPLES_WRONG_DETERMINER:
+    if (prev_word, following_word) in BIGRAMS_MISSING_DETERMINER + BIGRAMS_WRONG_DETERMINER:
         return ERR_DETERMINER
 
     if prev_word in AUXILIARIES and following_word in VERBS_INFINITIVES:
@@ -116,7 +116,7 @@ def get_error_from_whole_utt(row):
     if prev_word in ["it"] and following_word in ["me"]:
         return ERR_PREPOSITION
 
-    for t in NOUN_VERB_ILLEGAL + ["i weren't [*]", "they goes [*]", "is [*] there", "what's [*] these", "go [*] there", "there's [*] two", "don't [*] fit", "where's [*]", "what's these [*]"]:
+    for t in ["i weren't [*]", "they goes [*]", "is [*] there", "what's [*] these", "go [*] there", "there's [*] two", "don't [*] fit", "where's [*]", "what's these [*]"]:
         if t in utt:
             return ERR_SV_AGREEMENT
 
@@ -137,8 +137,11 @@ def get_error_from_whole_utt(row):
     if prev_word in ALL_VERBS + AUXILIARIES and following_word in ["again", "in", "a", "here"]:
         return ERR_OBJECT
 
-    if (prev_word, following_word) in TUPLES_MISSING_VERB:
+    if (prev_word, following_word) in BIGRAMS_MISSING_VERB:
         return ERR_VERB
+
+    if (prev_word, following_word) in BIGRAMS_ILLEGAL_VERB:
+        return ERR_SV_AGREEMENT
 
     for t in ["here it [*]", "what [?] [*] that", "where [*] dada", "who's [*] a girl", "<a@p this> [*]", "this the "]:
         if t in utt:
@@ -150,19 +153,22 @@ def get_error_from_whole_utt(row):
     words = split_into_words(row["transcript_clean"].lower(), split_on_apostrophe=False, remove_commas=True, remove_trailing_punctuation=True)
 
     for t in zip(words, words[1:]):
-        if t in TUPLES_MISSING_PROGRESSIVE_ENDING + TUPLES_MISSING_IS_ARE:
+        if t in BIGRAMS_MISSING_PROGRESSIVE_ENDING + BIGRAMS_MISSING_IS_ARE:
             return ERR_TENSE_ASPECT
 
-        if t in TUPLES_MISSING_DETERMINER:
+        if t in BIGRAMS_ILLEGAL_VERB:
+            return ERR_SV_AGREEMENT
+
+        if t in BIGRAMS_MISSING_DETERMINER:
             return ERR_DETERMINER
 
-        if (t[0], t[1][0]) in TUPLES_WRONG_DETERMINER:
+        if (t[0], t[1][0]) in BIGRAMS_WRONG_DETERMINER:
             return ERR_DETERMINER
 
-        if t in TUPLES_MISSING_AUXILIARY:
+        if t in BIGRAMS_MISSING_AUXILIARY:
             return ERR_AUXILIARY
 
-        if t in TUPLES_MISSING_VERB:
+        if t in BIGRAMS_MISSING_VERB:
             return ERR_VERB
 
     if len(words) > 1 and words[0] in ALL_VERBS + ["can't", "don't"] and words[1] in ALL_VERBS:
@@ -264,7 +270,6 @@ VERBS_INFLECTED =  VERBS_INFLECTED_THIRD_PERSON + VERBS_INFLECTED_NOT_THIRD_PERS
 ALL_VERBS = VERBS_INFINITIVES + VERBS_INFLECTED
 
 NOUNS_THIRD_PERSON = ["daddy", "mommy", "that", "this", "lion", "farmer", "what", "he", "she", "it", "baby", "everything", "girl", "boy", "who"]
-NOUN_VERB_ILLEGAL = [" ".join(t) for t in itertools.product(NOUNS_THIRD_PERSON, VERBS_INFINITIVES+VERBS_INFLECTED_NOT_THIRD_PERSON)]
 
 AUXILIARIES = ["will", "had", "do", "does", "did", "have", "has", "hav", "can", "may", "would", "could", "shall", "'ve",
                   "'ll", "want"]
@@ -279,20 +284,21 @@ OBJECTS = ["them", "her", "me", "myself", "him"]
 
 WORDS_OTHER = ["and", "if", "not", "no", "or", "because"]
 
-TUPLES_MISSING_VERB = list(itertools.product(SUBJECTS + ["one"], SUBJECTS + OBJECTS + DETERMINERS + ['purple', 'for', 'here', 'broken', 'mine', 'these', 'not', 'better', 'tiny', 'pilchard', 'my', 'his', 'our', 'my', 'your', 'not', 'no', 'lots', 'dizzy', 'fat']))
-TUPLES_MISSING_IS_ARE = list(itertools.product(SUBJECTS, VERBS_INFLECTED_PRESENT_PROGRESSIVE + ["done"]))
-TUPLES_MISSING_PROGRESSIVE_ENDING = list(itertools.product(["am", "is", "are", "was", "were", "i'm", "you're", "he's", "she's", "it's", "they're", "we're", "what's"], VERBS_INFINITIVES+VERBS_INFLECTED_THIRD_PERSON+VERBS_INFLECTED))
+BIGRAMS_ILLEGAL_VERB = list(itertools.product(NOUNS_THIRD_PERSON, VERBS_INFINITIVES + VERBS_INFLECTED_NOT_THIRD_PERSON))
+BIGRAMS_MISSING_VERB = list(itertools.product(SUBJECTS + ["one"], SUBJECTS + OBJECTS + DETERMINERS + ['purple', 'for', 'here', 'broken', 'mine', 'these', 'not', 'better', 'tiny', 'pilchard', 'my', 'his', 'our', 'my', 'your', 'not', 'no', 'lots', 'dizzy', 'fat']))
+BIGRAMS_MISSING_IS_ARE = list(itertools.product(SUBJECTS, VERBS_INFLECTED_PRESENT_PROGRESSIVE + ["done"]))
+BIGRAMS_MISSING_PROGRESSIVE_ENDING = list(itertools.product(["am", "is", "are", "was", "were", "i'm", "you're", "he's", "she's", "it's", "they're", "we're", "what's"], VERBS_INFINITIVES + VERBS_INFLECTED_THIRD_PERSON + VERBS_INFLECTED))
 
-TUPLES_MISSING_DETERMINER = list(itertools.product(ALL_VERBS + AUXILIARIES + ["that's"], ["cheese", "barbie", "elephant",
+BIGRAMS_MISSING_DETERMINER = list(itertools.product(ALL_VERBS + AUXILIARIES + ["that's"], ["cheese", "barbie", "elephant",
                                                                                           "orange", "green", "yellow",
                                                                                 "banana", "tissue", "small", "sandwich",
                                                                                 "sun", "bottle", "dirty",
                                                                                 "horse", "crayon", "puzzle", "noisy",
                                                                                 "tent", "fairy", "cup", "nose"]))
 
-TUPLES_MISSING_AUXILIARY = list(itertools.product(["not"], ALL_VERBS))
+BIGRAMS_MISSING_AUXILIARY = list(itertools.product(["not"], ALL_VERBS))
 
-TUPLES_WRONG_DETERMINER = list(itertools.product(["a"], ["a", "e", "i", "o", "u"]))
+BIGRAMS_WRONG_DETERMINER = list(itertools.product(["a"], ["a", "e", "i", "o", "u"]))
 
 
 def guess_omission_error_types(word, utt, prev_word=None):
