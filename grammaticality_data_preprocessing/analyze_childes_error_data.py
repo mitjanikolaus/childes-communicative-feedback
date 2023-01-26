@@ -2,7 +2,9 @@ import os
 
 import pandas as pd
 
-from utils import SPEAKER_CODE_CHILD, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE
+from utils import SPEAKER_CODE_CHILD, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, ERR_SUBJECT, ERR_PLURAL, \
+    ERR_TENSE_ASPECT, ERR_PROGRESSIVE, ERR_OTHER, ERR_VERB, ERR_AUXILIARY, ERR_PREPOSITION, \
+    ERR_SUBJECT, ERR_OBJECT, ERR_POSSESSIVE, ERR_SV_AGREEMENT, ERR_DETERMINER
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -10,86 +12,14 @@ from tqdm import tqdm
 tqdm.pandas()
 
 
-COLORS_PLOT_CATEGORICAL = [
-"#000000",
-"#FF34FF",
-"#FFFF00",
-"#1CE6FF",
-"#FF4A46",
-"#008941",
-"#006FA6",
-"#A30059",
-"#FFDBE5",
-"#7A4900",
-"#0000A6",
-"#63FFAC",
-"#B79762",
-"#004D43",
-"#8FB0FF",
-"#997D87",
-"#5A0007",
-"#809693",
-"#FEFFE6",
-"#1B4400",
-"#4FC601",
-"#3B5DFF",
-"#4A3B53",
-"#FF2F80",
-"#61615A",
-"#BA0900",
-"#6B7900",
-"#00C2A0",
-"#FFAA92",
-"#FF90C9",
-"#B903AA",
-"#D16100",
-"#DDEFFF",
-"#000035",
-"#7B4F4B",
-"#A1C299",
-"#300018",
-"#0AA6D8",
-"#013349",
-"#00846F",
-"#372101",
-"#FFB500",
-"#C2FFED",
-"#A079BF",
-"#CC0744",
-"#C0B9B2",
-"#C2FF99",
-"#001E09",
-"#00489C",
-"#6F0062",
-"#0CBD66",
-"#EEC3FF",
-"#456D75",
-"#B77B68",
-"#7A87A1",
-"#788D66",
-"#885578",
-"#FAD09F",
-"#FF8A9A",
-"#D157A0",
-"#BEC459",
-"#456648",
-"#0086ED",
-"#886F4C",
-"#34362D",
-"#B4A8BD",
-"#00A6AA",
-"#452C2C",
-"#636375",
-"#A3C8C9",
-"#FF913F",
-"#938A81",
-"#575329",
-]
-
 RESULTS_DIR = "results/grammaticality_annotations_childes"
 
 MIN_NUM_ERRORS = 100
 ERROR_RATIO_THRESHOLD = 0.01
+
+HUE_ORDER = [ERR_SUBJECT, ERR_VERB, ERR_OBJECT, ERR_DETERMINER, ERR_PREPOSITION, ERR_AUXILIARY, ERR_PROGRESSIVE, ERR_POSSESSIVE, ERR_SV_AGREEMENT, ERR_TENSE_ASPECT, ERR_PLURAL, ERR_OTHER]
+
+PALETTE_CATEGORICAL = sns.color_palette() + [(0, 0, 0), (1, 1, 1)]
 
 
 def plot_corpus_error_stats(utterances):
@@ -145,9 +75,10 @@ def plot_corpus_error_stats(utterances):
     err_counts = utts_exploded.groupby(['corpus'])["label"].value_counts().rename("count").reset_index()
 
     err_counts["ratio"] = err_counts.apply(lambda row: row["count"] / num_utts_data[row.corpus], axis=1)
-    sns.set_palette(COLORS_PLOT_CATEGORICAL)
+    sns.set_palette(PALETTE_CATEGORICAL)
     plt.figure(figsize=(12, 4))
-    ax = sns.barplot(x="corpus", y="ratio", hue="label", data=err_counts, order=joined.index)
+    ax = sns.barplot(x="corpus", y="ratio", hue="label", data=err_counts, order=joined.index, hue_order=HUE_ORDER,
+                     linewidth=1, edgecolor=".1")
     plt.ylabel("num errors per child utterance")
     plt.xlabel("")
     plt.legend(loc='upper left', ncol=2)
