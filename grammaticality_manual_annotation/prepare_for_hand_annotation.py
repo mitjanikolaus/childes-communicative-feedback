@@ -19,7 +19,7 @@ TOKEN_OTHER = "[OTH]"
 
 
 MIN_NUM_WORDS = 1
-CORPORA_INCLUDED = ['Thomas', 'MPI-EVA-Manchester', 'Providence', 'Braunwald', 'Lara', 'EllisWeismer']
+CORPORA_INCLUDED = ['Bates', 'Thomas', 'MPI-EVA-Manchester', 'Providence', 'Braunwald', 'Lara', 'EllisWeismer']
 
 
 def speaker_code_to_special_token(code):
@@ -100,7 +100,7 @@ def parse_args():
     argparser.add_argument(
         "--num-utts",
         type=int,
-        default=100,
+        default=50,
         help="Number of utts to annotate"
     )
 
