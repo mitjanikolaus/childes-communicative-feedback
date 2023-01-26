@@ -8,7 +8,8 @@ import seaborn as sns
 
 from analysis_intelligibility import response_is_clarification_request, melt_variable, response_is_acknowledgement, \
     get_repetition_ratios, filter_utts_for_num_words, filter_follow_ups_for_num_words, \
-    is_clarification_request_speech_act, is_repetition_clarification_request
+    is_clarification_request_speech_act, is_repetition_clarification_request, is_repetition_acknowledgement, \
+    is_keyword_acknowledgement
 from utils import (
     age_bin,
     SPEAKER_CODE_CHILD, get_num_words,
@@ -25,9 +26,7 @@ MIN_NUM_WORDS = 1
 CORPORA_EXCLUDED = []
 
 CORPORA_INCLUDED = ['Providence', 'Lara', 'EllisWeismer']
-# CORPORA_INCLUDED = ['Thomas', 'MPI-EVA-Manchester', 'Providence', 'Braunwald', 'Lara', 'EllisWeismer']
-# CORPORA_INCLUDED = ['Providence', 'VanHouten', 'Thomas', 'Braunwald', 'Lara', 'MPI-EVA-Manchester', 'Bates', 'EllisWeismer']
-
+# CORPORA_INCLUDED = ['Thomas', 'MPI-EVA-Manchester', 'Providence', 'Braunwald', 'Lara', 'EllisWeismer', 'Bates']
 
 # The caregivers of these children are using slang (e.g., "you was" or "she don't") and are therefore excluded
 # We are unfortunately only studying mainstream US English
@@ -78,6 +77,8 @@ def perform_analysis_grammaticality(conversations, args):
         inplace=True,
     )
     conversations["utt_is_grammatical"] = conversations.utt_is_grammatical.astype(bool)
+    conversations["follow_up_is_grammatical"] = conversations.follow_up_is_grammatical.astype(bool)
+
     conversations = conversations[conversations.utt_is_intelligible].copy()
 
     # Filtering out dummy responses (cases in which the child continues to talk
@@ -88,11 +89,34 @@ def perform_analysis_grammaticality(conversations, args):
     conversations["rep_utt"] = repetition_ratios.apply(lambda ratios: ratios[0])
     conversations["rep_response"] = repetition_ratios.apply(lambda ratios: ratios[1])
 
+    conversations["response_is_clarification_request_speech_act"] = conversations.apply(is_clarification_request_speech_act, axis=1)
+    conversations["response_is_repetition_clarification_request"] = conversations.apply(is_repetition_clarification_request, axis=1)
+
+    conversations["response_is_keyword_acknowledgement"] = conversations.apply(is_keyword_acknowledgement, axis=1)
+    conversations["response_is_repetition_acknowledgement"] = conversations.apply(is_repetition_acknowledgement, axis=1)
+
     conversations["response_is_clarification_request"] = conversations.apply(response_is_clarification_request, axis=1)
     conversations["response_is_acknowledgement"] = conversations.apply(response_is_acknowledgement, axis=1)
 
+    num_utts_grammatical = len(conversations[conversations.utt_is_grammatical])
+    num_utts_ungrammatical = len(conversations[~conversations.utt_is_grammatical])
+    percentage_ungrammatical = 100 * num_utts_ungrammatical / len(conversations)
+    print(f"Number of grammatical utterances: {num_utts_grammatical}")
+    print(f"Number of ungrammatical utterances: {num_utts_ungrammatical} ({percentage_ungrammatical:.1f}%)")
+
+    num_follow_ups_grammatical = len(conversations[conversations.follow_up_is_grammatical])
+    num_follow_ups_ungrammatical = len(conversations[~conversations.follow_up_is_grammatical])
+    percentage_ungrammatical = 100 * num_follow_ups_ungrammatical / len(conversations)
+    print(f"Number of grammatical follow-ups: {num_follow_ups_grammatical}")
+    print(f"Number of ungrammatical follow-ups: {num_follow_ups_ungrammatical} ({percentage_ungrammatical:.1f}%)")
+
     print("Number of CRs: ", len(conversations[conversations.response_is_clarification_request]))
+    print("Number of speech act CRs: ", len(conversations[conversations.response_is_clarification_request_speech_act]))
+    print("Number of repetition CRs: ", len(conversations[conversations.response_is_repetition_clarification_request]))
+
     print("Number of Acks: ", len(conversations[conversations.response_is_acknowledgement]))
+    print("Number of keyword Acks: ", len(conversations[conversations.response_is_keyword_acknowledgement]))
+    print("Number of repetition Acks: ", len(conversations[conversations.response_is_repetition_acknowledgement]))
 
     conversations["age"] = conversations.age.apply(
         age_bin,
@@ -130,7 +154,7 @@ def make_plots_error_types(conversations):
     results_dir_error_types = PROJECT_ROOT_DIR + "/results/grammaticality/error_types/"
     os.makedirs(results_dir_error_types, exist_ok=True)
 
-    convs = conversations[conversations.utt_is_grammatical == False]
+    convs = conversations[~conversations.utt_is_grammatical]
     convs = explode_labels(convs.copy())
 
     err_counts = convs["label"].value_counts(normalize=True).rename("Baseline").reset_index()
@@ -144,20 +168,19 @@ def make_plots_error_types(conversations):
     merged = merged.melt(id_vars="index", value_name="proportion", var_name="condition")
     plt.figure(figsize=(6, 3))
     sns.barplot(data=merged, x="index", y="proportion", hue="condition")
-    plt.xticks(rotation=90)
+    plt.xticks(rotation=75)
+    # plt.setp(ax.get_xticklabels(), rotation=75, size=7)
     plt.xlabel("")
     plt.tight_layout()
     plt.savefig(
         os.path.join(results_dir_error_types, "error_types.png"), dpi=300
     )
 
-    convs["response_is_speech_act_cr"] = convs.apply(is_clarification_request_speech_act, axis=1)
-    convs["response_is_repetition_cr"] = convs.apply(is_repetition_clarification_request, axis=1)
-    err_counts_cr_sp = convs[convs.response_is_speech_act_cr]["label"].value_counts(normalize=True).rename("CR_SP").reset_index()
-    merged = err_counts.merge(err_counts_cr_sp)
+    err_counts_cr_sp = convs[convs.response_is_clarification_request_speech_act]["label"].value_counts(normalize=True).rename("CR_SP").reset_index()
+    merged = err_counts.merge(err_counts_cr_sp, how="left")
 
-    err_counts_cr_rep = convs[convs.response_is_repetition_cr]["label"].value_counts(normalize=True).rename("CR_REP").reset_index()
-    merged = merged.merge(err_counts_cr_rep)
+    err_counts_cr_rep = convs[convs.response_is_repetition_clarification_request]["label"].value_counts(normalize=True).rename("CR_REP").reset_index()
+    merged = merged.merge(err_counts_cr_rep, how="left")
     merged = merged.melt(id_vars="index", value_name="proportion", var_name="condition")
     plt.figure(figsize=(6, 3))
     sns.barplot(data=merged, x="index", y="proportion", hue="condition")

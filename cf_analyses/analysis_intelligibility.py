@@ -119,40 +119,39 @@ RESPONSES_ACKNOWLEDGEMENT_CERTAIN = {"uhhuh", "uhuh", "uhhum", "mhm", "mm", "huh
 RESPONSES_ACKNOWLEDGEMENT_EVALUATIVE = {"oh", "ooh", "wow", "uhoh"}
 
 
-def contains_acknowledgement_keyword(micro_conv):
-    response = micro_conv["response_transcript_clean"].lower()
+def is_keyword_acknowledgement(micro_conv):
+    if micro_conv["utt_transcript_clean"][-1] != "?":
+        response = micro_conv["response_transcript_clean"].lower()
 
-    words = [word.lower() for word in split_into_words(response, split_on_apostrophe=True, remove_commas=True,
-                                                       remove_trailing_punctuation=True)]
-    if len(words) > 0:
-        if len(set(words) & (RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_EVALUATIVE | RESPONSES_ACKNOWLEDGEMENT_IF_ALONE)) == len(
-                set(words)):
-            # Consider sentences ending with full stop, but not exclamation marks or question marks, as they are changing
-            # the function of the word (i.e. "okay?" or "huh?" are not acknowledgements)
-            if len(response) > 0 and response[-1] == ".":
+        words = [word.lower() for word in split_into_words(response, split_on_apostrophe=True, remove_commas=True,
+                                                           remove_trailing_punctuation=True)]
+        if len(words) > 0:
+            if len(set(words) & (RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_EVALUATIVE | RESPONSES_ACKNOWLEDGEMENT_IF_ALONE)) == len(
+                    set(words)):
+                # Consider sentences ending with full stop, but not exclamation marks or question marks, as they are changing
+                # the function of the word (i.e. "okay?" or "huh?" are not acknowledgements)
+                if len(response) > 0 and response[-1] == ".":
+                    return True
+                else:
+                    return False
+            elif words[0] in RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_EVALUATIVE:
                 return True
-            else:
-                return False
-        elif words[0] in RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_EVALUATIVE:
-            return True
     return False
 
 
 def is_repetition_acknowledgement(micro_conv):
-    if micro_conv["response_transcript_clean"][-1] != "?":
-        if micro_conv["rep_utt"] == 1 and micro_conv["rep_response"] >= 0.5:
-            return True
+    if micro_conv["utt_transcript_clean"][-1] != "?":
+        if micro_conv["response_transcript_clean"][-1] != "?":
+            if micro_conv["rep_utt"] == 1 and micro_conv["rep_response"] >= 0.5:
+                return True
     return False
 
 
 def response_is_acknowledgement(micro_conv):
-    if not micro_conv["utt_transcript_clean"][-1] == "?":
-        ack_keyword = contains_acknowledgement_keyword(micro_conv)
-        ack_repetition = is_repetition_acknowledgement(micro_conv)
+    ack_keyword = micro_conv["response_is_keyword_acknowledgement"]
+    ack_repetition = micro_conv["response_is_repetition_acknowledgement"]
 
-        return ack_keyword or ack_repetition
-
-    return False
+    return ack_keyword or ack_repetition
 
 
 def is_repetition_clarification_request(micro_conv):
@@ -176,8 +175,8 @@ def is_clarification_request_speech_act(micro_conv):
 
 
 def response_is_clarification_request(micro_conv):
-    cf_speech_act = is_clarification_request_speech_act(micro_conv)
-    cf_repetition = is_repetition_clarification_request(micro_conv)
+    cf_speech_act = micro_conv["response_is_clarification_request_speech_act"]
+    cf_repetition = micro_conv["response_is_repetition_clarification_request"]
     return cf_speech_act or cf_repetition
 
 
