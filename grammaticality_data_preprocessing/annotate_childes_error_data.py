@@ -286,7 +286,7 @@ WORDS_OTHER = ["and", "if", "not", "no", "or", "because"]
 
 BIGRAMS_ILLEGAL_VERB = list(itertools.product(NOUNS_THIRD_PERSON, VERBS_INFINITIVES + VERBS_INFLECTED_NOT_THIRD_PERSON))
 BIGRAMS_MISSING_VERB = list(itertools.product(SUBJECTS + ["one"], SUBJECTS + OBJECTS + DETERMINERS + ['purple', 'for', 'here', 'broken', 'mine', 'these', 'not', 'better', 'tiny', 'pilchard', 'my', 'his', 'our', 'my', 'your', 'not', 'no', 'lots', 'dizzy', 'fat']))
-BIGRAMS_MISSING_IS_ARE = list(itertools.product(SUBJECTS, VERBS_INFLECTED_PRESENT_PROGRESSIVE + ["done"]))
+BIGRAMS_MISSING_IS_ARE = list(itertools.product(SUBJECTS, VERBS_INFLECTED_PRESENT_PROGRESSIVE + ["done", "been"]))
 BIGRAMS_MISSING_PROGRESSIVE_ENDING = list(itertools.product(["am", "is", "are", "was", "were", "i'm", "you're", "he's", "she's", "it's", "they're", "we're", "what's"], VERBS_INFINITIVES + VERBS_INFLECTED_THIRD_PERSON + VERBS_INFLECTED))
 
 BIGRAMS_MISSING_DETERMINER = list(itertools.product(ALL_VERBS + AUXILIARIES + ["that's"], ["cheese", "barbie", "elephant",
