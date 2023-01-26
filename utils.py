@@ -385,6 +385,7 @@ ERR_POSSESSIVE = "possessive"
 ERR_PLURAL = "plural"
 ERR_SV_AGREEMENT = "sv_agreement"
 ERR_TENSE_ASPECT = "tense_aspect"
+ERR_PRESENT_PROGRESSIVE = "present_progressive"
 ERR_DETERMINER = "determiner"
 ERR_PREPOSITION = "preposition"
 ERR_AUXILIARY = "auxiliary"
@@ -394,7 +395,27 @@ ERR_UNKNOWN = "unk"
 WORDS_WRONG_TENSE_ASPECT_INFLECTION = {'sleept', 'maded', 'droved', 'sanged', 'writed', 'gones', 'flinged', 'seewed', 'takened', 'hitted', 'dranked', 'bended', 'flewed', 'heared', 'drinked', 'doed', 'eated', 'forgeted', 'weared', 'brokened', 'holded', 'slided', 'sayed', 'sewed', 'ranned', 'jumpded', 'winned', 'taked', 'meaned', 'spilt', 'showded', 'comed', 'forgat', 'sawded', 'throwed', 'broked', 'ated', 'camed', 'shutted', 'splitted', 'led', 'haveded', 'flieded', 'sleeped', 'babysitted', 'bented', 'swammed', 'knowed', 'spitted', 'maked', 'swimmed', 'wearded', 'readed', 'brung', 'stunged', 'safed', 'bringed', 'falled', 'buyded', 'bringeded', 'goed', 'flied', 'blewed', 'sitted', 'fixeded', 'putted', 'stayded', 'dugged', 'letted', 'stucked', 'goded', 'goned', 'flyed', 'feeled', 'builded', 'sawed', 'shooted', 'closded', 'buyed', 'sended', 'waked', 'drived', 'fighted', 'felled', 'cutted', 'telled', 'tolded', 'sticked', 'broking', 'getted', 'aten', 'meeted', 'singed', 'quitted', 'safeded', 'losed', 'bited', 'haved', 'buyeded', 'stinged', 'hided', 'leaved', 'growed', 'breaked', 'slid', 'runned', 'catched', 'drawed', 'leaped', 'digged', 'pickted', 'gotted'}
 WORDS_WRONG_PLURAL_INFLECTION = {'mans', 'mans@c', 'leafs', 'tooths', 'wristes', 'boyses', 'chickens', 'friendses', 'ghostes', 'mens', 'womans', 'policemens', 'firemens', 'firemans', 'snowmans', 'foremans', 'mouses', 'foots', 'sheeps', 'knifes', '‹barefeeted'}
 
-ERRORS_TENSE_ASPECT = {('broke', 'broken'), ('drunk', 'drink'), ('calls', 'called'), ('eat', 'ate'), ('come', 'came'), ('lend', 'lent'), ("it's", 'it was'), ('say', 'said'), ('took', 'taken'), ('cwied', 'cried'), ("i'm", 'i was'), ('wrote', 'written'), ('ride', 'ridden'), ('saw', 'see'), ('go', 'gone'), ('did', 'have done'), ('said', 'say'), ('see', 'saw'), ('fell', 'fall'), ('go splash', 'splashed'), ('cry', 'cried'), ('found', 'founded'), ('came', 'come'), ('done', 'did'), ('sat', 'sit'), ('spit', 'spat'), ('saw', 'seed'), ('fell', 'fallen'), ('drink', 'drank'), ('see', 'seen'), ('broke', 'break'), ('went', 'go'), ('had', 'have'), ('gone', 'going to'), ('forgot', 'forgotten'), ('did', 'do'), ('ate', 'et'), ('took', 'take'), ('catch', 'caught'), ('draw', 'drew'), ('leaned', 'leant'), ('got', 'gat'), ('make', 'made'), ('sit', 'sat'), ('have', 'had'), ('lose', 'lost'), ('burned', 'burnt'), ('leant', 'leaned'), ('get', 'got'), ('fallen', 'fell'), ('seed', 'saw'), ('made', 'make'), ('written', 'wrote'), ('left', 'leave'), ('wore', 'wear'), ('ate', 'eaten'), ('held', 'hold'), ('do', 'did'), ('drink', 'drunk'), ('leave', 'left'), ('ridden', 'ride'), ('wear', 'wore'), ('buy', 'bought'), ('et', 'ate'), ('founded', 'found'), ('give', 'gave'), ('drew', 'draw'), ('eaten', 'ate'), ('fall', 'fell'), ('could', 'can'), ("i'm", 'going to'), ('did', 'done'), ('burnt', 'burned'), ('did sing', 'sang'), ('gat', 'got'), ('taken', 'took'), ('take', 'took'), ('broken', 'broke'), ("didn't", "don't"), ('spat', 'spit'), ('hold', 'held'), ('cried', 'cwied'), ('bought', 'buy'), ('can', 'could'), ('lost', 'lose'), ('got', 'get'), ('stick', 'stuck'), ('stuck', 'stick'), ('choose', 'chose'), ('seen', 'see'), ("don't", "didn't"), ('bite', 'bit'), ('chose', 'choose'), ('go', 'went'), ('seen', 'saw'), ('ate', 'eat')}
+ERRORS_TENSE_ASPECT = {('broke', 'broken'), ('drunk', 'drink'), ('calls', 'called'), ('eat', 'ate'), ('come', 'came'),
+                       ('lend', 'lent'), ("it's", 'it was'), ('say', 'said'), ('took', 'taken'), ('cwied', 'cried'),
+                       ("i'm", 'i was'), ('wrote', 'written'), ('ride', 'ridden'), ('saw', 'see'), ('go', 'gone'),
+                       ('did', 'have done'), ('said', 'say'), ('see', 'saw'), ('fell', 'fall'), ('ate', 'eat'),
+                       ('go splash', 'splashed'), ('cry', 'cried'), ('found', 'founded'), ('came', 'come'),
+                       ('done', 'did'), ('sat', 'sit'), ('spit', 'spat'), ('saw', 'seed'), ('fell', 'fallen'),
+                       ('drink', 'drank'), ('see', 'seen'), ('broke', 'break'), ('went', 'go'), ('had', 'have'),
+                       ('forgot', 'forgotten'), ('did', 'do'), ('ate', 'et'), ('took', 'take'), ('catch', 'caught'),
+                       ('draw', 'drew'), ('leaned', 'leant'), ('got', 'gat'), ('make', 'made'), ('sit', 'sat'),
+                       ('have', 'had'), ('lose', 'lost'), ('burned', 'burnt'), ('leant', 'leaned'), ('get', 'got'),
+                       ('fallen', 'fell'), ('seed', 'saw'), ('made', 'make'), ('written', 'wrote'), ('left', 'leave'),
+                       ('wore', 'wear'), ('ate', 'eaten'), ('held', 'hold'), ('do', 'did'), ('drink', 'drunk'),
+                       ('leave', 'left'), ('ridden', 'ride'), ('wear', 'wore'), ('buy', 'bought'), ('et', 'ate'),
+                       ('founded', 'found'), ('give', 'gave'), ('drew', 'draw'), ('eaten', 'ate'), ('fall', 'fell'),
+                       ('could', 'can'), ('did', 'done'), ('burnt', 'burned'), ('did sing', 'sang'), ('gat', 'got'),
+                       ('taken', 'took'), ('take', 'took'), ('broken', 'broke'), ("didn't", "don't"), ('spat', 'spit'),
+                       ('hold', 'held'), ('cried', 'cwied'), ('bought', 'buy'), ('can', 'could'), ('lost', 'lose'),
+                       ('got', 'get'), ('stick', 'stuck'), ('stuck', 'stick'), ('choose', 'chose'), ('seen', 'see'),
+                       ("don't", "didn't"), ('bite', 'bit'), ('chose', 'choose'), ('go', 'went'), ('seen', 'saw'),
+                       ('splash', 'splashed')}
+ERRORS_PRESENT_PROGRESSIVE = {('gone', 'going to'), ("i'm", 'going to')}
 ERRORS_PLURAL = [('man', 'men'), ('baby', 'babies'), ('feet', 'foot'), ("that's", "they're"), ('name', 'names'), ('voice', 'voices'), ('this', 'these'), ('half', 'halves'), ('bodies', 'body'), ('one', 'ones')]
 ERRORS_SV_AGREEMENT = [("be", "are"), ("sneez", "sneezes"), ('has', 'have'), ("doesn't", "don't"), ("isn't", "aren't"), ("want", "wants"), ('wanna', 'wants to'), ('goes', 'go'), ('dunt', "doesn't"), ("i's", "i am"), ("coughes", "coughs"), ("mean", "means"), ("be", "am"), ("be", "is"), ("like", "likes"), ("babysit", "babysits"), ("light", "lights"), ("are", "is"), ("are", "am"), ("does", "do"), ("do", "does"), ("weren't", "wasn't"), ("have", "has"), ("there's", "there're"), ("where's", "where're"), ("was", "were"), ("don't", "doesn't"), ('is', 'are'), ('gots', 'got'), ("live", "lives"), ("present", "presents"), ("here's", 'here are'), ("there's", "there are")]
 ERRORS_PREPOSITION = [("for", "to"), ("by", "with"), ("a", "to"), ("to", "into"), ("to", "to"), ("with", "to"), ("your", "to"), ("in", "at"), ("the", "as"), ("at", "in"), ("up", "out"), ("a", "for"), ("on", "to"), ('a', 'of'), ('at', 'to'), ('want', 'want to'), ('to', 'at'), ('in', 'on')]
@@ -529,8 +550,10 @@ def categorize_error(word_error, word_corrected, row=None):
         err = ERR_TENSE_ASPECT
     elif (word_error, word_corrected) in ERRORS_TENSE_ASPECT:
         err = ERR_TENSE_ASPECT
+    elif (word_error, word_corrected) in ERRORS_PRESENT_PROGRESSIVE:
+        err = ERR_PRESENT_PROGRESSIVE
     elif word_corrected in [word_error + suffix for suffix in ["ing", "ting", "ning"]] or word_error in [word_corrected + suffix for suffix in ["ing", "ting", "ning"]] or word_corrected in [word_error[:-1] + "ing"] or word_error in [word_corrected[:-1] + "ing"] or word_corrected in [word_error[:-2] + "ing"]:
-        err = ERR_TENSE_ASPECT
+        err = ERR_PRESENT_PROGRESSIVE
     elif (word_error, word_corrected) in ERRORS_SUBJECT:
         err = ERR_SUBJECT
     elif (word_error, word_corrected) in ERRORS_OBJECT:

@@ -13,7 +13,7 @@ from utils import categorize_error, ERR_VERB, ERR_AUXILIARY, ERR_PREPOSITION, \
     remove_superfluous_annotations, \
     ERR_TENSE_ASPECT, ERR_PLURAL, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, \
     ERR_OTHER, UTTERANCES_WITH_SPEECH_ACTS_FILE, split_into_words, WORDS_WRONG_TENSE_ASPECT_INFLECTION, \
-    WORDS_WRONG_PLURAL_INFLECTION, clean_utterance
+    WORDS_WRONG_PLURAL_INFLECTION, clean_utterance, ERR_PRESENT_PROGRESSIVE
 from tqdm import tqdm
 tqdm.pandas()
 
@@ -132,7 +132,7 @@ def get_error_from_whole_utt(row):
             return ERR_PLURAL
 
     if re.search("\[\*] \S*[\s\S]+ing", utt):
-        return ERR_TENSE_ASPECT
+        return ERR_PRESENT_PROGRESSIVE
 
     if prev_word in ALL_VERBS + AUXILIARIES and following_word in ["again", "in", "a", "here"]:
         return ERR_OBJECT
@@ -154,7 +154,7 @@ def get_error_from_whole_utt(row):
 
     for t in zip(words, words[1:]):
         if t in BIGRAMS_MISSING_PROGRESSIVE_ENDING + BIGRAMS_MISSING_IS_ARE:
-            return ERR_TENSE_ASPECT
+            return ERR_PRESENT_PROGRESSIVE
 
         if t in BIGRAMS_ILLEGAL_VERB:
             return ERR_SV_AGREEMENT
@@ -285,8 +285,8 @@ OBJECTS = ["them", "her", "me", "myself", "him"]
 WORDS_OTHER = ["and", "if", "not", "no", "or", "because"]
 
 BIGRAMS_ILLEGAL_VERB = list(itertools.product(NOUNS_THIRD_PERSON, VERBS_INFINITIVES + VERBS_INFLECTED_NOT_THIRD_PERSON))
-BIGRAMS_MISSING_VERB = list(itertools.product(SUBJECTS + ["one"], SUBJECTS + OBJECTS + DETERMINERS + ['purple', 'for', 'here', 'broken', 'mine', 'these', 'not', 'better', 'tiny', 'pilchard', 'my', 'his', 'our', 'my', 'your', 'not', 'no', 'lots', 'dizzy', 'fat']))
-BIGRAMS_MISSING_IS_ARE = list(itertools.product(SUBJECTS, VERBS_INFLECTED_PRESENT_PROGRESSIVE + ["done", "been"]))
+BIGRAMS_MISSING_VERB = list(itertools.product(SUBJECTS + ["one"], SUBJECTS + OBJECTS + DETERMINERS + ['purple', 'for', 'here', 'broken', 'mine', 'these', 'not', 'better', 'tiny', 'pilchard', 'my', 'his', 'our', 'my', 'your', 'not', 'no', 'lots', 'dizzy', 'fat', "done", "been"]))
+BIGRAMS_MISSING_IS_ARE = list(itertools.product(SUBJECTS, VERBS_INFLECTED_PRESENT_PROGRESSIVE))
 BIGRAMS_MISSING_PROGRESSIVE_ENDING = list(itertools.product(["am", "is", "are", "was", "were", "i'm", "you're", "he's", "she's", "it's", "they're", "we're", "what's"], VERBS_INFINITIVES + VERBS_INFLECTED_THIRD_PERSON + VERBS_INFLECTED))
 
 BIGRAMS_MISSING_DETERMINER = list(itertools.product(ALL_VERBS + AUXILIARIES + ["that's"], ["cheese", "barbie", "elephant",
@@ -320,7 +320,7 @@ def guess_omission_error_types(word, utt, prev_word=None):
     elif word in ["'s", "0's", "my", "his", "your"]:
         error = ERR_POSSESSIVE
     elif word in ["ing"]:
-        error = ERR_TENSE_ASPECT
+        error = ERR_PRESENT_PROGRESSIVE
     elif word in ["ed", "en", "ne", "n", "ten", "ped"]:
         error = ERR_TENSE_ASPECT
     elif word in ["es", "es'nt"] or word in ["s"] and prev_word in ALL_VERBS:
