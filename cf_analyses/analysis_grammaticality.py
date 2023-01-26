@@ -5,11 +5,13 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+from matplotlib.patches import Patch
 
 from analysis_intelligibility import response_is_clarification_request, melt_variable, response_is_acknowledgement, \
     get_repetition_ratios, filter_utts_for_num_words, filter_follow_ups_for_num_words, \
     is_clarification_request_speech_act, is_repetition_clarification_request, is_repetition_acknowledgement, \
     is_keyword_acknowledgement
+from grammaticality_data_preprocessing.analyze_childes_error_data import PALETTE_CATEGORICAL, HUE_ORDER
 from utils import (
     age_bin,
     SPEAKER_CODE_CHILD, get_num_words,
@@ -162,15 +164,26 @@ def make_plots_error_types(conversations):
     err_counts_cr = convs[convs.response_is_clarification_request]["label"].value_counts(normalize=True).rename("CR").reset_index()
     merged = err_counts.merge(err_counts_cr)
 
-    # err_counts_ack = convs[convs.response_is_acknowledgement]["label"].value_counts(normalize=True).rename("ACK").reset_index()
-    # merged = merged.merge(err_counts_ack)
-
     merged = merged.melt(id_vars="index", value_name="proportion", var_name="condition")
-    plt.figure(figsize=(6, 3))
-    sns.barplot(data=merged, x="index", y="proportion", hue="condition")
-    plt.xticks(rotation=75)
-    # plt.setp(ax.get_xticklabels(), rotation=75, size=7)
-    plt.xlabel("")
+    fig, ax = plt.subplots(figsize=(7, 3))
+    colors_with_little_alpha = [(p, q, r, .9) for p, q, r in PALETTE_CATEGORICAL]
+    data_bs = merged[merged.condition == 'Baseline'].set_index("index").reindex(HUE_ORDER).reset_index()
+    ax.bar(x='index', height='proportion', data=data_bs, width=-0.4, align='edge',
+           color=colors_with_little_alpha, linewidth=1, edgecolor=".1")
+    colors_with_alpha = [(p, q, r, .5) for p, q, r in PALETTE_CATEGORICAL]
+    data_cr = merged[merged.condition == 'CR'].set_index("index").reindex(HUE_ORDER).reset_index()
+    ax.bar(x='index', height='proportion', data=data_cr, width=0.4, align='edge',
+           color=colors_with_alpha, linewidth=1, edgecolor=".1", hatch="///")
+    plt.xticks("")
+    plt.xlabel("Error type")
+    plt.ylabel("Proportion")
+    patches = [Patch(facecolor=c, label=l, edgecolor="black") for c, l in zip(PALETTE_CATEGORICAL, HUE_ORDER)]
+    first_legend = ax.legend(handles=patches, ncol=2, fontsize=9)
+    ax.add_artist(first_legend)
+    patches_2 = [Patch(facecolor=PALETTE_CATEGORICAL[0], label="Baseline", edgecolor="black"),
+                 Patch(facecolor=colors_with_alpha[0], label="After Clarification Request", hatch="///",
+                       edgecolor="black")]
+    ax.legend(handles=patches_2, bbox_to_anchor=(0.628, 0.47), fontsize=9)
     plt.tight_layout()
     plt.savefig(
         os.path.join(results_dir_error_types, "error_types.png"), dpi=300
@@ -184,7 +197,7 @@ def make_plots_error_types(conversations):
     merged = merged.melt(id_vars="index", value_name="proportion", var_name="condition")
     plt.figure(figsize=(6, 3))
     sns.barplot(data=merged, x="index", y="proportion", hue="condition")
-    plt.xticks(rotation=90)
+    plt.xticks(rotation=75)
     plt.xlabel("")
     plt.tight_layout()
     plt.savefig(
