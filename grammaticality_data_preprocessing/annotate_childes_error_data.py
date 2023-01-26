@@ -272,7 +272,7 @@ ALL_VERBS = VERBS_INFINITIVES + VERBS_INFLECTED
 NOUNS_THIRD_PERSON = ["daddy", "mommy", "that", "this", "lion", "farmer", "what", "he", "she", "it", "baby", "everything", "girl", "boy", "who"]
 
 AUXILIARIES = ["will", "had", "do", "does", "did", "have", "has", "hav", "can", "may", "would", "could", "shall", "'ve",
-                  "'ll", "want"]
+                  "'ll", "want", "wants"]
 
 PREPOSITIONS = ["prep", "to", "of", "at", "off", "up", "in", "on", "from", "as", "for", "about", "with", "out"]
 
