@@ -243,6 +243,11 @@ def preprocess_utterances(corpus, transcripts, start_index, args):
             remove_timing_information
         )
 
+        # Fix some occurrences of O instead of 0:
+        utts_transcript["transcript_raw"] = utts_transcript["transcript_raw"].apply(
+            lambda utt: "0 ." if utt == "O ." else utt
+        )
+
         utts_transcript = utts_transcript[
             ~utts_transcript.transcript_raw.apply(has_multiple_events)
         ]
