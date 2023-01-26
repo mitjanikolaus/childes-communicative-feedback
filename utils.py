@@ -385,7 +385,7 @@ ERR_POSSESSIVE = "possessive"
 ERR_PLURAL = "plural"
 ERR_SV_AGREEMENT = "sv_agreement"
 ERR_TENSE_ASPECT = "tense_aspect"
-ERR_PRESENT_PROGRESSIVE = "present_progressive"
+ERR_PROGRESSIVE = "progressive"
 ERR_DETERMINER = "determiner"
 ERR_PREPOSITION = "preposition"
 ERR_AUXILIARY = "auxiliary"
@@ -551,9 +551,9 @@ def categorize_error(word_error, word_corrected, row=None):
     elif (word_error, word_corrected) in ERRORS_TENSE_ASPECT:
         err = ERR_TENSE_ASPECT
     elif (word_error, word_corrected) in ERRORS_PRESENT_PROGRESSIVE:
-        err = ERR_PRESENT_PROGRESSIVE
+        err = ERR_PROGRESSIVE
     elif word_corrected in [word_error + suffix for suffix in ["ing", "ting", "ning"]] or word_error in [word_corrected + suffix for suffix in ["ing", "ting", "ning"]] or word_corrected in [word_error[:-1] + "ing"] or word_error in [word_corrected[:-1] + "ing"] or word_corrected in [word_error[:-2] + "ing"]:
-        err = ERR_PRESENT_PROGRESSIVE
+        err = ERR_PROGRESSIVE
     elif (word_error, word_corrected) in ERRORS_SUBJECT:
         err = ERR_SUBJECT
     elif (word_error, word_corrected) in ERRORS_OBJECT:

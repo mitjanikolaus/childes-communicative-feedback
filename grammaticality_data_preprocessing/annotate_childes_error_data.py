@@ -13,7 +13,7 @@ from utils import categorize_error, ERR_VERB, ERR_AUXILIARY, ERR_PREPOSITION, \
     remove_superfluous_annotations, \
     ERR_TENSE_ASPECT, ERR_PLURAL, UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, \
     ERR_OTHER, UTTERANCES_WITH_SPEECH_ACTS_FILE, split_into_words, WORDS_WRONG_TENSE_ASPECT_INFLECTION, \
-    WORDS_WRONG_PLURAL_INFLECTION, clean_utterance, ERR_PRESENT_PROGRESSIVE
+    WORDS_WRONG_PLURAL_INFLECTION, clean_utterance, ERR_PROGRESSIVE
 from tqdm import tqdm
 tqdm.pandas()
 
@@ -132,7 +132,7 @@ def get_error_from_whole_utt(row):
             return ERR_PLURAL
 
     if re.search("\[\*] \S*[\s\S]+ing", utt):
-        return ERR_PRESENT_PROGRESSIVE
+        return ERR_PROGRESSIVE
 
     if prev_word in ALL_VERBS + AUXILIARIES and following_word in ["again", "in", "a", "here"]:
         return ERR_OBJECT
@@ -154,7 +154,7 @@ def get_error_from_whole_utt(row):
 
     for t in zip(words, words[1:]):
         if t in BIGRAMS_MISSING_PROGRESSIVE_ENDING + BIGRAMS_MISSING_IS_ARE:
-            return ERR_PRESENT_PROGRESSIVE
+            return ERR_PROGRESSIVE
 
         if t in BIGRAMS_ILLEGAL_VERB:
             return ERR_SV_AGREEMENT
@@ -320,7 +320,7 @@ def guess_omission_error_types(word, utt, prev_word=None):
     elif word in ["'s", "0's", "my", "his", "your"]:
         error = ERR_POSSESSIVE
     elif word in ["ing"]:
-        error = ERR_PRESENT_PROGRESSIVE
+        error = ERR_PROGRESSIVE
     elif word in ["ed", "en", "ne", "n", "ten", "ped"]:
         error = ERR_TENSE_ASPECT
     elif word in ["es", "es'nt"] or word in ["s"] and prev_word in ALL_VERBS:
