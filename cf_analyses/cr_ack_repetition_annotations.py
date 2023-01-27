@@ -1,8 +1,11 @@
+import itertools
 import os
+import numpy as np
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+from sklearn.linear_model import LogisticRegression
 
 from sklearn.metrics import precision_recall_fscore_support
 
@@ -11,6 +14,40 @@ from utils import PROJECT_ROOT_DIR
 
 
 RESULTS_DIR = PROJECT_ROOT_DIR+"/results/cr_ack/"
+
+
+def train_cr_classifier(train_annotations_file, test_annotations_file):
+    train_data = pd.read_csv(train_annotations_file, index_col=0)
+
+    repetition_ratios = train_data.apply(get_repetition_ratios, axis=1)
+    train_data["rep_utt"] = repetition_ratios.apply(lambda ratios: ratios[0])
+    train_data["rep_response"] = repetition_ratios.apply(lambda ratios: ratios[1])
+
+    reg = LogisticRegression(solver="liblinear", class_weight="balanced")
+    reg.fit(train_data[["rep_utt", "rep_response"]], train_data["is_cr"])
+
+    prf = precision_recall_fscore_support(train_data["is_cr"], reg.predict(train_data[["rep_utt", "rep_response"]]), average="binary")
+    print("\nTrain Precision, recall, f-score: ", prf)
+
+    plt.figure(figsize=(5, 4))
+    counts = train_data.groupby(['rep_utt', 'rep_response', "is_cr"]).size().reset_index(name='number')
+    sns.scatterplot(data=counts, x="rep_utt", y="rep_response", hue="is_cr", size="number", sizes=(30, 1000), alpha=0.8)
+
+    # x = np.array(list(itertools.product(np.arange(0, 1, 0.1), np.arange(0, 1, 0.1))))
+    # y = reg.predict(x)
+    # sns.scatterplot(x=x[:, 0], y=x[:, 1], hue=y)
+    x1 = np.arange(0, 1.1, 0.1)
+    plt.plot(x1, 1 + (reg.intercept_[0] - reg.coef_[0, 0] * x1) / reg.coef_[0, 1], color="red")
+
+    # Eval
+    test_data = pd.read_csv(test_annotations_file, index_col=0)
+    repetition_ratios_test = test_data.apply(get_repetition_ratios, axis=1)
+    test_data["rep_utt"] = repetition_ratios_test.apply(lambda ratios: ratios[0])
+    test_data["rep_response"] = repetition_ratios_test.apply(lambda ratios: ratios[1])
+
+    print(reg.score(test_data[["rep_utt", "rep_response"]], test_data["is_cr"]))
+    prf = precision_recall_fscore_support(test_data["is_cr"], reg.predict(test_data[["rep_utt", "rep_response"]]), average="binary")
+    print("\nTest Precision, recall, f-score: ", prf)
 
 
 def eval_crs(annotations_file):
@@ -37,8 +74,8 @@ def eval_crs(annotations_file):
     annotated["is_cr_auto_rep"] = annotated.apply(is_repetition_clarification_request, axis=1).astype(int)
     prf = precision_recall_fscore_support(annotated["is_cr"], annotated["is_cr_auto_rep"], average="binary")
     print("\n Precision, recall, f-score: ", prf)
-    print("Misclassified: ")
-    print(annotated[annotated.is_cr != annotated.is_cr_auto_rep].to_string(index=False))
+    # print("Misclassified: ")
+    # print(annotated[annotated.is_cr != annotated.is_cr_auto_rep].to_string(index=False))
 
 
 def eval_acks(annoations_file):
@@ -68,8 +105,8 @@ def eval_acks(annoations_file):
     prf = precision_recall_fscore_support(annotated["is_ack"], annotated["is_ack_auto_rep"], average="binary")
     print("\n Precision, recall, f-score: ", prf)
 
-    print("Misclassified: ")
-    print(annotated[annotated.is_ack != annotated.is_ack_auto_rep].to_string(index=False))
+    # print("Misclassified: ")
+    # print(annotated[annotated.is_ack != annotated.is_ack_auto_rep].to_string(index=False))
 
 
 def generate_data_for_annotation(for_clarification_requests: bool):
@@ -85,9 +122,11 @@ if __name__ == "__main__":
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
     eval_crs(PROJECT_ROOT_DIR+"/data/CR_manual_annotations.csv")
-    eval_acks(PROJECT_ROOT_DIR+"/data/ACK_manual_annotations.csv")
+    # eval_acks(PROJECT_ROOT_DIR+"/data/ACK_manual_annotations.csv")
 
     eval_crs(PROJECT_ROOT_DIR+"/data/CR_manual_annotations_test.csv")
-    eval_acks(PROJECT_ROOT_DIR+"/data/ACK_manual_annotations_test.csv")
+    # eval_acks(PROJECT_ROOT_DIR+"/data/ACK_manual_annotations_test.csv")
+
+    train_cr_classifier(PROJECT_ROOT_DIR+"/data/CR_manual_annotations.csv", PROJECT_ROOT_DIR+"/data/CR_manual_annotations_test.csv")
 
     plt.show()
