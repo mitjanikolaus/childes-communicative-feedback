@@ -1,101 +1,201 @@
-index,utt_transcript_clean,response_transcript_clean,is_ack,utt_repetition_ratio,resp_repetition_ratio
-1887378,boo.,boo.,1,1,1
-2712312,that didn't work.,that didn't work.,1,1,0.25
-531839,and this goes here.,"Fraser, you know where this goes.",0,1,0.166666666666667
-2559621,lobster.,a lobster yep.,1,1,0.333333333333333
-325489,Miss Miss Christopher.,Miss Miss Christian.,0,0.5,0.5
-2152654,red light's on there.,oh no it's alright the red light being on that.,0,1,0.181818181818182
-800485,oh here.,here we go.,0,0.5,0.333333333333333
-194971,Aladdin.,Aladdin.,1,1,1
-1920208,lying down.,lying down.,1,1,0.5
-1424028,Ariel.,baby Ariel.,1,1,0.5
-1350888,daddy.,daddy.,1,1,1
-2617302,there a bug right?,it's not a bug it's a shell.,0,0.5,0.166666666666667
-2438253,you can't catch me I'm the gingerbread man.,and the little old woman and the little old man ran and ran.,0,0.333333333333333,0.142857142857143
-1018203,we can't go to sleep when it's dark.,we can go to sleep when it's dark.,0,1,0.333333333333333
-1727343,down.,you wanna get down.,0,1,0.25
-2951457,and a card.,and a card.,1,1,0.333333333333333
-2411442,say red again.,red again.,0,0.5,0.5
-1421275,are they white Mom?,I don't know because look this is white.,0,0.5,0.111111111111111
-854630,then we say hip hip hooray.,hooray.,0,0.333333333333333,1
-227733,red.,red.,1,1,1
-2537476,is he.,he's not any of those guys.,0,0.5,0.142857142857143
-314670,five.,five.,1,1,1
-2360777,you hear me?,I didn't hear you.,0,1,0.2
-1671278,yeah.,yeah.,1,1,1
-2217966,a Bug.,oh a Bug that's right.,1,1,0.166666666666667
-1875783,songs one please.,the songs one please.,1,1,0.75
-429859,stay there.,stay there.,1,1,0.5
-604539,there's one.,one honey bear.,0,1,0.333333333333333
-630826,see I told you that's a hat.,that's not a hat.,0,0.333333333333333,0.2
-1000886,good and good night Mummy.,and good night Helen.,0,0.666666666666667,0.5
-1688273,beep beep.,beep beep yes.,1,1,0.5
-689760,let's do it.,let's see.,0,1,0.333333333333333
-1403323,it fell down.,it fell down.,1,1,0.333333333333333
-343275,chair.,chair.,1,1,1
-2143416,that's not very nice is it?,it isn't very nice.,1,1,0.2
-1118024,good afternoon Laurren.,good afternoon Miss Miss Patrick.,0,0.666666666666667,0.5
-1435373,it doesn't really cut it.,"no, doesn't really cut it.",1,1,0.333333333333333
-1513847,raccoon.,raccoon.,1,1,1
-785473,"I love you, Mummy.","I love you, Gina.",0,0.5,0.25
-157579,yeah.,yeah.,1,1,1
-1178676,what's that for?,that's for me.,0,0.75,0.75
-1445550,do they live in Vermont?,no they don't live in Vermont silly.,0,1,0.25
-2448870,four.,"no, almost made four.",0,1,0.25
-483568,they're Jeannine's shoes.,they're not Jeannine's shoes.,0,1,0.333333333333333
-2241627,boo.,boo.,1,1,1
-1106350,yeah.,yeah.,1,1,1
-515191,that his nose?,her nose.,0,1,0.5
-2640389,Mom you go at my daddy's dentist?,actually he's my dentist.,0,0.25,0.2
-2995137,can I go on the doggy?,you can go on the doggy when Amy's finished.,0,1,0.2
-2731845,cut them off.,cut them off.,1,1,0.333333333333333
-346691,jigsaw puzzle again.,you do the jigsaw puzzle.,1,1,0.4
-466348,I want a wee wee.,you wanna wee wee.,1,0.5,0.333333333333333
-1262160,what's this?,what is that insect.,0,0.333333333333333,0.25
-1875188,cake.,cake.,1,1,1
-2878752,we put the lights on then?,we put the lights on on the tree.,1,1,0.333333333333333
-1947595,not me.,not you.,1,0.5,0.5
-1709311,all done.,all done.,1,1,0.5
-2017907,and the driver coming.,the driver's coming.,1,1,0.5
-1691524,no.,no.,1,1,1
-1539276,no.,no but what.,0,1,0.333333333333333
-1305351,cock a doodle doo.,cock a doodle doo.,1,1,0.75
-1727647,two hat.,two hat.,1,1,1
-1859977,police car shirt.,police car shirt.,1,1,1
-1411752,she's my cousin.,she.,0,0.25,1
-1897856,it's fine.,it's fine.,1,1,0.333333333333333
-2874328,you can't lie on daddy.,I can.,0,0.166666666666667,0.5
-2569732,a muscle man.,a muscle man.,1,1,0.666666666666667
-2263346,then m.,m.,1,0.5,1
-2614188,tools.,tools.,1,1,1
-1661751,and eyes.,"your eyes too, okay.",1,1,0.25
-446878,no throwing.,no throwing.,1,1,0.5
-1742323,up and down.,up and down.,1,1,1
-1696191,no cheese.,no cheese.,1,1,0.5
-1236876,oh.,oh thank you so much.,0,1,0.2
-2596081,smell bad.,it smells bad.,1,0.5,0.333333333333333
-1031869,what's bake?,pasta's when I pasta bake is when I put the pasta and the sauce in and I put it in the oven and bake it.,0,1,0.0769230769230769
-1494419,what Piglet doing?,it looks like Piglet is looking up at Pooh bear who is trying to.,0,1,0.0769230769230769
-2830183,here.,here here's a bucket of water.,0,1,0.166666666666667
-2767495,pants.,yeah that's a piece of torn pants.,1,1,0.125
-1827471,Nana Grandad tea sandwiches.,Grandma and Grandad eat sandwiches.,0,0.5,0.4
-1809530,Mummy do it.,Mummy do it.,1,1,0.333333333333333
-1884579,brown hare.,Little Nut Brown Hare and Big Nut Brown Hare.,1,1,0.333333333333333
-128158,big.,big.,1,1,1
-1970380,where buzzy bees?,buzzy bees have buzzed off until it's warmer weather.,0,1,0.2
-469474,and that's another eye.,that's another eye.,1,1,0.5
-1818801,ooh.,ooh dear.,0,1,0.5
-2195984,blue.,blue.,1,1,1
-1730837,b c a b c a b c.,a b c a b c.,0,1,0.666666666666667
-1751448,oh Jo Becky.,Jo.,0,0.5,1
-2113139,an e.,I do need an e as well but if.,0,1,0.111111111111111
-1803947,Thomas Henry.,Thomas Henry.,1,1,1
-1869404,what's this?,that's a pound coin.,0,0.333333333333333,0.2
-2061600,blowing some bubbles.,blowing some bubbles.,1,1,0.666666666666667
-652634,two Mr Strongs.,no there isn't two Mr Strongs.,0,1,0.428571428571429
-2870784,water.,the water.,1,1,0.5
-2073536,it's not.,it is.,0,0.333333333333333,0.5
-616334,but or sad bushes.,no or sad bushes.,0,1,0.5
-1461535,comb.,"comb, and a brush, and a bowl full of.",1,1,0.142857142857143
-1127033,and Grandad.,no Grandad.,0,1,0.5
-886324,because I don't want to play with you.,because you don't want to play with me.,1,1,0.222222222222222
+index,utt_transcript_clean,response_transcript_clean,is_ack
+1887378,boo.,boo.,1
+2712312,that didn't work.,that didn't work.,1
+531839,and this goes here.,"Fraser, you know where this goes.",0
+2559621,lobster.,a lobster yep.,1
+325489,Miss Miss Christopher.,Miss Miss Christian.,0
+800485,oh here.,here we go.,0
+194971,Aladdin.,Aladdin.,1
+1920208,lying down.,lying down.,1
+1424028,Ariel.,baby Ariel.,1
+1350888,daddy.,daddy.,1
+2438253,you can't catch me I'm the gingerbread man.,and the little old woman and the little old man ran and ran.,0
+1018203,we can't go to sleep when it's dark.,we can go to sleep when it's dark.,0
+1727343,down.,you wanna get down.,0
+2951457,and a card.,and a card.,1
+2411442,say red again.,red again.,0
+854630,then we say hip hip hooray.,hooray.,0
+227733,red.,red.,1
+2537476,is he.,he's not any of those guys.,0
+314670,five.,five.,1
+1875783,songs one please.,the songs one please.,1
+429859,stay there.,stay there.,1
+604539,there's one.,one honey bear.,0
+630826,see I told you that's a hat.,that's not a hat.,0
+1000886,good and good night Mummy.,and good night Helen.,0
+1688273,beep beep.,beep beep yes.,1
+689760,let's do it.,let's see.,0
+1403323,it fell down.,it fell down.,1
+343275,chair.,chair.,1
+1118024,good afternoon Laurren.,good afternoon Miss Miss Patrick.,0
+1435373,it doesn't really cut it.,"no, doesn't really cut it.",1
+1513847,raccoon.,raccoon.,1
+785473,"I love you, Mummy.","I love you, Gina.",0
+2448870,four.,"no, almost made four.",0
+483568,they're Jeannine's shoes.,they're not Jeannine's shoes.,0
+2241627,boo.,boo.,1
+2731845,cut them off.,cut them off.,1
+346691,jigsaw puzzle again.,you do the jigsaw puzzle.,1
+466348,I want a wee wee.,you wanna wee wee.,1
+1875188,cake.,cake.,1
+1947595,not me.,not you.,1
+1709311,all done.,all done.,1
+2017907,and the driver coming.,the driver's coming.,1
+1691524,no.,no.,1
+1539276,no.,no but what.,0
+1305351,cock a doodle doo.,cock a doodle doo.,1
+1727647,two hat.,two hat.,1
+1859977,police car shirt.,police car shirt.,1
+1411752,she's my cousin.,she.,0
+1897856,it's fine.,it's fine.,1
+2874328,you can't lie on daddy.,I can.,0
+2569732,a muscle man.,a muscle man.,1
+2263346,then m.,m.,1
+2614188,tools.,tools.,1
+1661751,and eyes.,"your eyes too, okay.",1
+446878,no throwing.,no throwing.,1
+1742323,up and down.,up and down.,1
+1696191,no cheese.,no cheese.,1
+2596081,smell bad.,it smells bad.,1
+2830183,here.,here here's a bucket of water.,0
+1827471,Nana Grandad tea sandwiches.,Grandma and Grandad eat sandwiches.,0
+1809530,Mummy do it.,Mummy do it.,1
+1884579,brown hare.,Little Nut Brown Hare and Big Nut Brown Hare.,1
+128158,big.,big.,1
+469474,and that's another eye.,that's another eye.,1
+2195984,blue.,blue.,1
+1730837,b c a b c a b c.,a b c a b c.,1
+1751448,oh Jo Becky.,Jo.,0
+2113139,an e.,I do need an e as well but if.,0
+1803947,Thomas Henry.,Thomas Henry.,1
+2061600,blowing some bubbles.,blowing some bubbles.,1
+652634,two Mr Strongs.,no there isn't two Mr Strongs.,0
+2870784,water.,the water.,1
+2073536,it's not.,it is.,0
+616334,but or sad bushes.,no or sad bushes.,0
+1461535,comb.,"comb, and a brush, and a bowl full of.",1
+1127033,and Grandad.,no Grandad.,0
+886324,because I don't want to play with you.,because you don't want to play with me.,1
+4271299,now he has a ear on the top of his head.,that's not an ear.,0
+2107508,happy.,happy.,1
+171947,c.,c yay letter c!,1
+4233917,see.,no he can't see.,0
+527125,Grandpa.,"that's right, that's your great grandpa, that's Mama's grandpa.",0
+564854,one green.,"one green, mhm.",1
+2091225,Elsie Grandma coming next week.,Elsie Grandma coming tomorrow.,0
+365013,sheep.,sheep I never heard her say sheep before.,0
+2131931,I don't know the words words.,I don't know the words either.,0
+199629,beep beep.,"beep beep, here they come shouts Thomas.",0
+2160648,some of them can't.,some of them can't.,1
+132722,pull pull.,no you don't have to pull that.,0
+482031,bye.,bye daddy.,0
+199795,ducks green.,ducks that's right.,1
+203567,so high.,world so high.,1
+351081,I'm getting tired of all of those chips.,all of those chips.,1
+365271,cow.,hi cows.,0
+4225882,it's bag.,it's a bag.,1
+443639,hello Parrot.,hello Parrot Darrot.,0
+215392,umbrella.,"umbrella, that's right.",1
+365928,meow meow.,meow meow meow meow meow.,0
+232507,"in top, then it won't get.",nothing will happen if you stick it in the top.,0
+2093531,it is.,it is not.,0
+2173736,hello.,hello.,0
+2146301,three.,three.,1
+329715,and fell.,then you fell.,1
+2187161,dip it in.,that's it.,0
+371747,sticky sticky letter.,sticky letter a.,0
+2101636,can't do it.,you haven't even tried yet.,0
+289144,thy xylophone.,the xylophone.,1
+400543,how lucky.,how lucky.,1
+534475,a.,a.,1
+336859,and Sassy!,Sassy!,1
+368573,flowers.,flowers.,1
+446035,a bear.,good morning bear.,0
+2095578,watch.,I am watching.,1
+225996,the red one or the blue one.,the red one or the blue one.,1
+304016,I'm laughing too.,we are laughing because we're so surprised.,0
+203739,pig.,"it's a pig, alright.",1
+370961,bucket.,that is one big bucket.,1
+323906,no.,"no, but what are the little animals.",0
+341850,here's it has no face.,it doesn't have any face you're right.,1
+276741,and train.,the train's going around in a circle.,0
+297178,right there.,right there.,1
+2186217,I'm driving.,Amy's driving.,1
+4235565,a flower.,a flower.,1
+280181,work.,he goes to work but don't.,0
+208574,eggs!,eggs!,1
+194870,hip hip hip hip.,hip hip hooray.,0
+306511,no and corn.,corn.,0
+524740,duh duh duh.,duh duh duh.,1
+305956,can you.,thank you honey.,0
+4218411,Daddy!,byebye Daddy.,0
+218275,fire chief.,fire chief.,1
+505341,go.,a hunting we will go.,0
+4276317,hi!,hi!,0
+296421,no.,no.,1
+298834,adios.,adios.,0
+2132929,Mrs Tinklewinkle.,Mrs Tiggywinkle.,0
+271426,happy.,happy.,1
+397482,birdie birdie bird on it.,there's a birdie birdie bird on it she says.,1
+391894,missing armadillo.,I think we are missing the armadillo.,1
+305552,"okay, yes.","yes, let's look at some of the flowers.",0
+356808,I wanna try that next time.,I think you should try that you want me to show you pictures of it I have pictures of it when we went.,0
+287798,see you later Mommy.,see you later honey.,0
+311457,there it is.,here it is.,1
+384304,fox.,we saw a fox in our.,0
+524709,wet.,wet.,1
+213990,that away.,"this away,, that away.",1
+221051,room.,room room room!,1
+2100035,Elsie Grandma.,Elsie Grandma's not coming until tomorrow.,0
+2158414,I don't.,I know.,0
+168931,a big triangle.,first I'll make little ones then I'll do big ones.,0
+206709,light on.,right he has the light on because it's dark.,1
+490909,come in here.,I'm coming.,1
+206232,microphone.,"whoa, yeah, it's your microphone and it belong on your shirt.",0
+148608,China.,China.,1
+303891,this is a pink b.,and a pink b wow.,1
+162203,Dorothy.,"no, that's not for Dorothy.",0
+4219783,a baby cow.,that is a baby cow.,1
+282070,lowly worm and Goldbug.,and there's lowly worm and Goldbug.,1
+304435,big hole in the ground.,a big hole in the ground called the grand canyon.,1
+372517,big.,they made big towers.,0
+4218991,hay.,he eats hay.,0
+566715,"yay, I turn into my turtle.",turn into your turtle.,1
+2082938,say excuse me.,excuse me.,0
+300987,Vermont.,Vermont.,1
+531172,pocketbook.,pocketbook.,1
+157782,this fireman.,Fireman Small.,0
+414352,spoon for that macaroni.,I'll get you a spoon.,0
+4224896,byebye.,byebye.,0
+225483,sarasponda sarasponda.,sarasponda ret set set.,0
+287998,soda soda.,"and soda soda, oh my goodness.",0
+555370,it's cement truck.,it's a cement truck that's right.,1
+424123,it's thunder.,it's thunder.,1
+2213678,she isn't.,she is.,0
+2068693,bathtime.,bathtime.,1
+415442,blue.,blue.,1
+231627,"that had been overlooked, another battery.","it'd been overlooked, yeah.",1
+128995,red.,red.,1
+381626,mosquitos.,"there are many mosquitos in Maine, that's for sure.",0
+302422,and I have a fit.,you had a fit.,1
+215688,there.,there ya go.,0
+2209786,Lara.,Lara.,1
+226188,ribbit.,ribbit.,1
+207410,round.,that's right the wheels on the school bus go round and round.,1
+2087623,no doggies.,no.,1
+353660,I'm having a party.,you're having a party.,1
+2098144,there.,there.,1
+231248,"no you can't, no you can't!","no she can't, no she can't!",0
+341500,and and my tooth broke I can grow a new one.,yes when your baby teeth broke break you can grow a new one.,1
+529268,the butterfly.,"the butterfly, that's right.",1
+149323,the light.,light by light.,0
+2082260,want bottle.,you want your bottle.,1
+198500,squish.,squish squish squish.,1
+371250,Alice Alice.,yes this is Alice.,1
+322987,silly hat.,silly head.,1
+2082723,have a look at fish.,having a look at the fish.,1
+242588,look spreading it out.,you're spreading it out.,1
+202754,blow up.,"blow it up, don't put it to your nose.",1
+2133573,we don't want the monsters.,unless they're nice monsters like in your book.,0
+312787,daddy says that.,"you're right, that's your game with daddy.",0
+352743,I'm going to go to the swim club.,"you're going to go to the swim club, wow.",1

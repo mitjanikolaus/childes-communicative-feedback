@@ -1,101 +1,201 @@
-index,utt_transcript_clean,response_transcript_clean,is_cr,utt_repetition_ratio,resp_repetition_ratio
-347180,is it?,oh what is it?,1,1,0.5
-2650161,don't!,don't what?,1,1,0.666666666666667
-2591482,"yeah, and grab it like this popcorn.",who makes good popcorn?,0,0.25,0.25
-2530395,"one time, we go to the park and Firstname stayed home.","that's right, you went to the park with aunt Firstname?",0,0.285714285714286,0.181818181818182
-1419688,what's.,"that's Jackie and Steve, and remember we went to the aquarium with them Carly and Sam?",0,0.5,0.0666666666666666
-81194,byebye.,did Daddy go byebye car?,0,1,0.2
-667591,it was good.,was it good?,1,1,0.333333333333333
-1948919,what's it mean?,where has it been?,0,0.25,0.25
-548029,"hello, joker.","hello, joker?",1,1,1
-1782929,Mummy do it.,Mummy do it?,1,1,0.333333333333333
-1168133,because.,because what?,1,1,0.5
-92556,how come we got big ones?,how come?,1,0.25,0.5
-2646004,I wanna build a beaver damn when you are all done.,don't you wanna look at any more pictures?,0,0.2,0.111111111111111
-903433,no.,no?,1,1,1
-1861203,cross.,cross controller?,1,1,0.5
-2587203,yeah.,yeah?,1,1,1
-1909702,oh too big.,they're too big?,1,1,0.25
-1956662,my van's very better now.,your van's very better now is it?,1,1,0.25
-2837373,what.,what did she do?,0,1,0.25
-1939118,my shapes.,your shapes?,1,1,0.5
-1442424,three days?,three days can I see three on your fingers?,0,1,0.25
-2042489,I a baby I call it a fridge.,when you're a baby you call it a fridge?,1,1,0.375
-2871032,I want more.,you want more what?,1,1,0.25
-1509565,who was taking care of you?,who was taking care of you today?,1,1,0.285714285714286
-2595177,hotdogs.,hotdogs?,1,1,1
-1963626,I not a postman now.,you're not a postman now?,1,1,0.166666666666667
-1741246,a big bang.,a big bead?,1,0.5,0.333333333333333
-1777459,Mummy.,is Mummy called Jean?,1,1,0.25
-2014141,oh get some pair scissors.,get a pair of scissors?,1,1,0.6
-575868,I can see them Jacob's bedroom.,you can see Jacob's bedroom?,1,1,0.5
-1800597,oh kick football first.,you wanna kick the football first?,1,1,0.5
-2128971,I just roll my sleeves up.,you're rolling your sleeves up are you?,1,0.5,0.142857142857143
-1008529,find the pictures.,can you find his Wellington boots?,0,0.5,0.166666666666667
-2528385,red.,red?,1,1,1
-483765,who watching t v?,who's watching t v?,1,1,0.4
-337100,red.,red?,1,1,1
-2641593,the lake was empty.,the lake was empty?,1,1,0.5
-1403352,Oregon.,Oregon and this one?,1,1,0.25
-1652461,c.,"c, as in cat?",1,1,0.25
-2903774,that's cold.,"it's cold, is it?",1,1,0.25
-570339,you've got to play it.,I've got to play?,1,1,0.4
-536391,another train.,is it another train?,1,1,0.5
-922709,Peppa's going to the doctor's too.,is everybody going to the doctor's with Daddy Pig?,0,0.666666666666667,0.2
-529030,then it's princess music.,princess music?,1,1,1
-1031343,little Miss Riding Hood.,little Miss Rididng Hood?,1,0.75,0.75
-1886699,Dadda watch.,Daddy's watch?,1,0.5,0.333333333333333
-364494,that?,what's that?,1,1,0.333333333333333
-885661,"Mummy, but I not going to sleep.",you're not going to sleep?,1,0.666666666666667,0.333333333333333
-2733342,mom.,oh is that the mom?,1,1,0.2
-2041239,one of the one one of the duck take his sock off.,the duck has taken his sock off?,1,0.5,0.285714285714286
-1030582,because because because children are scared of witches.,are they?,1,0.166666666666667,0.5
-2530541,painting.,"mhm, what is he painting?",1,1,0.2
-122003,Dad Dada.,where's Dada?,1,0.5,0.333333333333333
-2789630,no.,no?,1,1,1
-2067410,zim.,zim?,1,1,1
-1920948,what that noise?,"what's what noise, love?",1,1,0.25
-2902441,he have them after.,he's having them after the horsie ride?,1,0.75,0.375
-381219,there.,that's a cat there isn't it?,0,1,0.125
-364324,no juice.,you want juice?,1,1,0.333333333333333
-2220350,I don't like them.,you don't like them?,1,1,0.2
-670818,I need a light green now.,use the light green one now?,1,0.666666666666667,0.333333333333333
-344224,Timmy.,who's Timmy?,1,1,0.333333333333333
-1720109,in the big chair.,in the what?,1,0.5,0.666666666666667
-963503,I stretched really high.,did you stretch really high?,1,0.666666666666667,0.4
-978807,because I didn't like bubble ride.,and why didn't you like it?,0,0.333333333333333,0.142857142857143
-1810007,nice ones.,nice ones?,1,1,1
-1158267,because I didn't want any on.,not your you didn't want it on your lips?,1,1,0.111111111111111
-2528441,"ah, a tractor.",a tractor?,1,1,0.5
-2564130,a crown.,a crown like what who else wears crowns?,0,1,0.125
-2358861,I heard you maw.,you did?,1,0.25,0.5
-108675,why's Bella sad?,Bella was sad?,1,1,0.666666666666667
-1914692,craner Lofty.,Lofty?,1,0.5,1
-2093819,I blue green one.,a white one?,1,0.333333333333333,0.333333333333333
-2027252,look Felix.,is Felix there as well as Tiddles?,0,0.5,0.166666666666667
-2990109,why did Abi Abi's got a climbing frame.,"she hasn't got a sandpit, has she?",0,0.25,0.142857142857143
-1984199,and buy some stones and play on beach.,you brought some stones home didn't you?,0,0.25,0.142857142857143
-804480,think it's Eeyore.,you think it's what?,1,0.5,0.2
-889038,but she is having a bath.,she's not having a bath?,1,1,0.166666666666667
-2613850,no it does.,you think he does or she does?,1,0.333333333333333,0.166666666666667
-584417,no Jacob put that spooky on.,it's spooky?,1,0.333333333333333,0.333333333333333
-136133,what are you doing?,what am I doing?,1,0.5,0.5
-596511,no.,no?,1,1,1
-358109,Cyril Cyril doing?,what's Cyril doing?,1,1,0.25
-1731479,no.,no?,1,1,1
-1788598,ta much.,ta much?,1,1,1
-269484,glasses.,glasses?,1,1,1
-82833,cookie Daddy.,more cookie?,1,0.5,0.5
-539727,it's under there.,it's under there?,1,1,1
-2039770,the builder do.,the builder wants to stack them up does he?,1,1,0.111111111111111
-971173,who?,do you know who baby Alyssa is?,0,1,0.142857142857143
-2063469,Mummy.,have you been a good boy for Mummy?,0,1,0.125
-2586380,back there.,what's back there?,1,1,0.25
-462692,a a baby elephant.,was it a baby elephant?,1,1,0.4
-1165956,robot.,robot?,1,1,1
-1856833,having a Smartie.,you're having a Smartie are you?,1,1,0.166666666666667
-888287,this one.,that one?,1,1,0.5
-388699,gone.,where's it gone?,1,1,0.25
-2908668,I don't know?,you don't know?,1,1,0.25
-930635,I don't want to!,do you want to have tea at Grandma's house?,0,1,0.1
-1128861,it's pretty.,it is very pretty isn't it?,1,1,0.166666666666667
+index,utt_transcript_clean,response_transcript_clean,is_cr
+347180,is it?,oh what is it?,1
+2650161,don't!,don't what?,1
+2591482,"yeah, and grab it like this popcorn.",who makes good popcorn?,0
+2530395,"one time, we go to the park and Firstname stayed home.","that's right, you went to the park with aunt Firstname?",0
+1419688,what's.,"that's Jackie and Steve, and remember we went to the aquarium with them Carly and Sam?",0
+81194,byebye.,did Daddy go byebye car?,0
+667591,it was good.,was it good?,1
+1948919,what's it mean?,where has it been?,0
+548029,"hello, joker.","hello, joker?",1
+1782929,Mummy do it.,Mummy do it?,1
+1168133,because.,because what?,1
+92556,how come we got big ones?,how come?,1
+2646004,I wanna build a beaver damn when you are all done.,don't you wanna look at any more pictures?,0
+903433,no.,no?,1
+1861203,cross.,cross controller?,1
+2587203,yeah.,yeah?,1
+1909702,oh too big.,they're too big?,1
+1956662,my van's very better now.,your van's very better now is it?,1
+2837373,what.,what did she do?,0
+1939118,my shapes.,your shapes?,1
+1442424,three days?,three days can I see three on your fingers?,0
+2042489,I a baby I call it a fridge.,when you're a baby you call it a fridge?,1
+2871032,I want more.,you want more what?,1
+1509565,who was taking care of you?,who was taking care of you today?,1
+2595177,hotdogs.,hotdogs?,1
+1963626,I not a postman now.,you're not a postman now?,1
+1741246,a big bang.,a big bead?,1
+1777459,Mummy.,is Mummy called Jean?,1
+2014141,oh get some pair scissors.,get a pair of scissors?,1
+575868,I can see them Jacob's bedroom.,you can see Jacob's bedroom?,1
+1800597,oh kick football first.,you wanna kick the football first?,1
+2128971,I just roll my sleeves up.,you're rolling your sleeves up are you?,1
+1008529,find the pictures.,can you find his Wellington boots?,0
+2528385,red.,red?,1
+483765,who watching t v?,who's watching t v?,1
+337100,red.,red?,1
+2641593,the lake was empty.,the lake was empty?,1
+1403352,Oregon.,Oregon and this one?,1
+1652461,c.,"c, as in cat?",1
+2903774,that's cold.,"it's cold, is it?",1
+570339,you've got to play it.,I've got to play?,1
+536391,another train.,is it another train?,1
+922709,Peppa's going to the doctor's too.,is everybody going to the doctor's with Daddy Pig?,0
+529030,then it's princess music.,princess music?,1
+1031343,little Miss Riding Hood.,little Miss Rididng Hood?,1
+1886699,Dadda watch.,Daddy's watch?,1
+364494,that?,what's that?,1
+885661,"Mummy, but I not going to sleep.",you're not going to sleep?,1
+2733342,mom.,oh is that the mom?,1
+2041239,one of the one one of the duck take his sock off.,the duck has taken his sock off?,1
+1030582,because because because children are scared of witches.,are they?,1
+2530541,painting.,"mhm, what is he painting?",1
+122003,Dad Dada.,where's Dada?,1
+2789630,no.,no?,1
+2067410,zim.,zim?,1
+1920948,what that noise?,"what's what noise, love?",1
+2902441,he have them after.,he's having them after the horsie ride?,1
+381219,there.,that's a cat there isn't it?,0
+364324,no juice.,you want juice?,1
+2220350,I don't like them.,you don't like them?,1
+670818,I need a light green now.,use the light green one now?,1
+344224,Timmy.,who's Timmy?,1
+1720109,in the big chair.,in the what?,1
+963503,I stretched really high.,did you stretch really high?,1
+978807,because I didn't like bubble ride.,and why didn't you like it?,0
+1810007,nice ones.,nice ones?,1
+1158267,because I didn't want any on.,not your you didn't want it on your lips?,1
+2528441,"ah, a tractor.",a tractor?,1
+2564130,a crown.,a crown like what who else wears crowns?,0
+2358861,I heard you maw.,you did?,1
+108675,why's Bella sad?,Bella was sad?,1
+1914692,craner Lofty.,Lofty?,1
+2093819,I blue green one.,a white one?,1
+2027252,look Felix.,is Felix there as well as Tiddles?,0
+2990109,why did Abi Abi's got a climbing frame.,"she hasn't got a sandpit, has she?",0
+1984199,and buy some stones and play on beach.,you brought some stones home didn't you?,0
+804480,think it's Eeyore.,you think it's what?,1
+889038,but she is having a bath.,she's not having a bath?,1
+2613850,no it does.,you think he does or she does?,1
+584417,no Jacob put that spooky on.,it's spooky?,1
+136133,what are you doing?,what am I doing?,1
+596511,no.,no?,1
+358109,Cyril Cyril doing?,what's Cyril doing?,1
+1731479,no.,no?,1
+1788598,ta much.,ta much?,1
+269484,glasses.,glasses?,1
+82833,cookie Daddy.,more cookie?,1
+539727,it's under there.,it's under there?,1
+2039770,the builder do.,the builder wants to stack them up does he?,1
+971173,who?,do you know who baby Alyssa is?,0
+2063469,Mummy.,have you been a good boy for Mummy?,0
+2586380,back there.,what's back there?,1
+462692,a a baby elephant.,was it a baby elephant?,1
+1165956,robot.,robot?,1
+1856833,having a Smartie.,you're having a Smartie are you?,1
+888287,this one.,that one?,1
+388699,gone.,where's it gone?,1
+2908668,I don't know?,you don't know?,1
+930635,I don't want to!,do you want to have tea at Grandma's house?,0
+1128861,it's pretty.,it is very pretty isn't it?,1
+562764,yeah and some trucks.,some trucks?,1
+4252908,is this a little pull thing?,that looks like a little sheep huh?,1
+573608,I put some raisins here.,like raisins?,1
+392428,where'd it go?,Naima where'd the letter k go?,0
+278482,shoes.,they have shoes?,1
+2094888,I want some more glue.,some more glue?,1
+2113123,do you wanna tell me?,tell you what?,1
+2122656,why without his crown?,why without his crown?,1
+4272176,farm.,farm?,1
+399402,what's Dad doing.,what's Dad doing?,1
+285208,this dirty doughnut.,"oh, it's a dirty piece of doughnut?",1
+4232340,it's silly.,is it silly?,1
+270573,Matt?,Matt?,1
+461276,his name is get the Tig.,get the Tig?,1
+4220907,stuck.,yeah is this stuck?,1
+339323,like the state house.,there's a chandelier at the state house?,1
+4246973,they can go make some some dinner for them.,are they going to make dinner?,1
+500150,so we can make another.,you going to make this one again?,0
+2165116,can't have any.,any?,1
+2187792,we've just got to go in.,we've got to go in?,1
+312151,but I can reach.,you can't reach blankie?,1
+350080,can I have it?,sure we'll look and see if we have it we'll read it okay?,0
+269961,pink.,is that pink?,0
+2149580,it's hopping.,it's hopping?,1
+324772,no.,no?,1
+569797,I don't want to.,"you don't, why don't you want to go to the zoo?",0
+2077633,no C.,no what?,1
+2077629,daddy.,can daddy call mummy C?,0
+429699,what is that?,what do you think it is?,0
+369221,soggy Mommy soggy Daddy.,soggy Daddy?,1
+423515,what is the dirty water?,what is the dirty water?,1
+2092018,on my bib.,have you got toast on your bib?,0
+2152779,in his black.,in his black?,1
+4219328,this along.,that along?,1
+2152699,I don't want them.,don't you want them?,1
+216625,tank engine.,tank engine who's that?,0
+563787,I'm going to on your lap.,you wanna do it on my lap?,1
+2202388,don't want that.,don't you?,1
+4221242,oh hay.,hay or a pumpkin?,0
+369911,more cheese.,more cheese you want some plain cheese pieces?,0
+466638,"let's stop taking, let's take away all this.",you wanna stop recording?,0
+2181867,can't see what you're doing.,can't you?,1
+2178472,it's not a bed.,"I know it's not a bed but you're having a sleep, aren't you?",0
+4267695,no.,there's no nightlight in here like in your room is there?,0
+302255,it has.,it does are you going to put in on and show Manuela?,0
+143602,a one.,which one?,0
+2148205,he needs lots because he's big.,he needs lots why?,1
+2194410,you can sit next to me.,can I?,1
+4255042,what's in there?,what what kind do you have?,0
+341863,I wonder when it's going to be this baby?,what is the baby going to be?,1
+4257936,maybe you want you need to go in the mud.,who can go in the mud?,1
+4221508,no.,no?,1
+443438,"yes she does, so she's going to find Doggie Woggie.",she's going to look for Doggie Woggie on vacation?,0
+4254166,what?,what are you doing Joshua?,0
+2130456,I'm bit excited!,are you a bit excited?,1
+427132,there's left a little bit of smoothie.,there is?,1
+331307,what are they?,are they mice?,0
+551353,over there.,"oh, I see Percy over there by the mirror, isn't?",0
+238594,Po!,where's Po?,0
+383261,"chee, tent.",you wanna make another tent for the friends?,0
+398227,I like them.,you liked them?,1
+144392,Elmo Zoe.,"oh no we can't watch Elmo and Zoe right now but we'll watch them later, okay?",0
+378932,"Lucy, Lucy Bucy.","Lucy Bucy, and who's this?",0
+412988,can go get the mommy bear.,mommy bear?,1
+183448,I don't wanna play anymore.,I can't play?,0
+302787,and this.,and your Dora book too?,0
+271622,blue.,blue?,1
+187364,cow.,yeah where do you see a cow?,0
+351310,because the fireball is coming.,oh the fireball is coming?,1
+2147859,crash.,crash?,1
+281960,a teapot.,a teapot and what's that?,0
+559874,I swimming.,I don't know is he swimming in the police garage?,0
+4246070,that is that.,what's that?,0
+284348,no.,huh no?,1
+493293,he's skipping.,skipping?,1
+207179,on this.,you want it on that one?,1
+2157562,a train.,a train?,1
+2165381,shall we play?,shall we play what?,1
+151261,a Bob?,Bob the builder?,1
+4253030,squishy feet.,are they squishy?,1
+440019,mamaless.,mamaless?,1
+2077626,mummy.,mummy?,1
+397160,what's that?,what is that Naima?,0
+523890,is this?,what is it?,0
+2109119,Abi.,Abi?,1
+4240193,shoes.,he's wearing shoes isn't he?,1
+2146172,you can have the flower one.,I can what?,1
+401537,Ma make an r.,make an r?,1
+2148293,make yours bowl.,make mine what?,1
+4253299,no he's slipping.,is he slipping?,1
+488637,I see.,whadda you see?,1
+2205686,pumped.,did you pump?,1
+263480,puppy.,the puppies live across the street?,0
+4217957,this the mommy cow.,is that a cow?,1
+4261367,nose.,find his nose?,0
+2095080,throwing ball.,"you wanna play football throwing ball while my tape's on, do you?",0
+515832,squid.,squid right?,1
+2095844,what you going to do be let's pretend area.,in the let's pretend area?,1
+2160283,can I wash the lady?,wash what lady?,1
+4250754,when that one done we can put these in.,oh when this one's done?,1

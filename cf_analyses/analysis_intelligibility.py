@@ -1,6 +1,7 @@
 import argparse
 import math
 import os
+import pickle
 from collections import Counter
 
 import matplotlib.pyplot as plt
@@ -14,6 +15,7 @@ from analysis_reproduce_warlaumont import (
     str2bool,
     has_response,
 )
+from utils import CF_CLASSIFIER_FILE, ACK_CLASSIFIER_FILE
 from extract_micro_conversations import DEFAULT_RESPONSE_THRESHOLD
 from utils import (
     age_bin,
@@ -139,11 +141,13 @@ def is_keyword_acknowledgement(micro_conv):
     return False
 
 
+classifier_ack = pickle.load(open(ACK_CLASSIFIER_FILE, "rb"))
+
+
 def is_repetition_acknowledgement(micro_conv):
     if micro_conv["utt_transcript_clean"][-1] != "?":
         if micro_conv["response_transcript_clean"][-1] != "?":
-            if micro_conv["rep_utt"] == 1 and micro_conv["rep_response"] >= 0.5:
-                return True
+            return bool(classifier_ack.predict([micro_conv[["rep_utt", "rep_response"]]])[0])
     return False
 
 
@@ -154,10 +158,12 @@ def response_is_acknowledgement(micro_conv):
     return ack_keyword or ack_repetition
 
 
+classifier_cf = pickle.load(open(CF_CLASSIFIER_FILE, "rb"))
+
+
 def is_repetition_clarification_request(micro_conv):
     if micro_conv["response_transcript_clean"][-1] == "?":
-        if (micro_conv["rep_response"] >= 0.5) and (micro_conv["rep_utt"] >= 0.0):
-            return True
+        return bool(classifier_cf.predict([micro_conv[["rep_utt", "rep_response"]]])[0])
     return False
 
 
@@ -182,6 +188,7 @@ def response_is_clarification_request(micro_conv):
 
 # List of stopwords to be ignored for repetition calculation
 STOPWORDS = {'my', 'doing', 'than', 'doesn', 'do', 'him', 's', 'her', 'won', 'myself', 'his', 'were', 'during', 'few', 'yourself', 'mightn', 'into', 'we', 'above', 'below', 'you', 'what', 'has', 'under', 'each', 'before', 'am', 'after', 'me', 'once', 'out', 'y', 'have', 'ain', 'of', 'will', 'weren', 'with', 'no', 'm', 'whom', 'only', 'ours', 'nor', 'mustn', 'himself', 're', 'was', 'o', 'having', 'for', 'ourselves', 'theirs', 'ma', 'off', 'too', 'i', 'further', 'hadn', 'wasn', 'their', 'more', 'or', 'them', 'again', 't', 'against', 'own', 'those', 'hers', 'does', 've', 'its', 'herself', 'over', 'not', 'should', 'aren', 'that', 'our', 'as', 'been', 'who', 'while', 'to', 'hasn', 'through', 'about', 'haven', 'how', 'can', 'and', 'they', 'in', 'until', 'had', 'an', 'between', 'then', 'both', 'shouldn', 'this', 'down', 'don', 'now', 'yourselves', 'he', 'couldn', 'a', 'where', 'themselves', 'other', 'these', 'wouldn', 'the', 'because', 'but', 'your', 'why', 'up', 'by', 'if', 'most', 'she', 'be', 'is', 'just', 'any', 'such', 'very', 'all', 'are', 'on', 'didn', 'itself', 'll', 'so', 'yours', 'same', 'needn', 'd', 'which', 'isn', 'some', 'here', 'it', 'when', 'at', 'from', 'did', 'being', 'there', 'oh', 'ooh', 'huh', 'ah', 'mhm', 'mm', 'shan'}
+STOPWORDS = STOPWORDS | RESPONSES_ACKNOWLEDGEMENT_CERTAIN
 
 stemmer = SnowballStemmer("english")
 
