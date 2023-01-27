@@ -125,14 +125,14 @@ if __name__ == "__main__":
     # generate_data_for_annotation(True)
 
     print("\nClassifier CR:")
-    train_classifier(PROJECT_ROOT_DIR + "/data/CR_manual_annotations.csv",
-                     PROJECT_ROOT_DIR + "/data/CR_manual_annotations_test.csv",
+    train_classifier(PROJECT_ROOT_DIR + "/data/feedback_classifiers/CR_manual_annotations.csv",
+                     PROJECT_ROOT_DIR + "/data/feedback_classifiers/CR_manual_annotations_test.csv",
                      target_column="is_cr")
 
 
     print("\nClassifier ACK:")
-    train_classifier(PROJECT_ROOT_DIR + "/data/ACK_manual_annotations.csv",
-                     PROJECT_ROOT_DIR + "/data/ACK_manual_annotations_test.csv",
+    train_classifier(PROJECT_ROOT_DIR + "/data/feedback_classifiers/ACK_manual_annotations.csv",
+                     PROJECT_ROOT_DIR + "/data/feedback_classifiers/ACK_manual_annotations_test.csv",
                      target_column="is_ack")
 
     plt.show()
