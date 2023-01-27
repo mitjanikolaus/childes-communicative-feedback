@@ -81,7 +81,7 @@ def plot_corpus_error_stats(utterances):
                      linewidth=1, edgecolor=".1")
     plt.ylabel("num errors per child utterance")
     plt.xlabel("")
-    plt.legend(loc='upper left', ncol=2)
+    plt.legend(loc='upper left', ncol=2, fontsize=12)
     plt.setp(ax.get_xticklabels(), rotation=75, size=7)
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.3)
