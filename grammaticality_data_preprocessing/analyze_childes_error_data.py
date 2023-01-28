@@ -82,9 +82,11 @@ def plot_corpus_error_stats(utterances):
     plt.ylabel("num errors per child utterance")
     plt.xlabel("")
     plt.legend(loc='upper left', ncol=2, fontsize=12)
-    plt.setp(ax.get_xticklabels(), rotation=75, size=7)
+    xticklabels = ["MPI-EVA-\nManchester" if l.get_text() == "MPI-EVA-Manchester" else l.get_text() for l in ax.get_xticklabels()]
+    ax.set_xticklabels(xticklabels)
+    plt.xticks(rotation=75, size=7)
     plt.tight_layout()
-    plt.subplots_adjust(bottom=0.3)
+    plt.subplots_adjust(bottom=0.2)
     plt.savefig(
         os.path.join(RESULTS_DIR, "error_proportions_by_label.png"), dpi=300
     )
