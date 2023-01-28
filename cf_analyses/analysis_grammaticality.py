@@ -243,10 +243,34 @@ def make_plots(conversations, conversations_melted, results_dir):
     sns.move_legend(axis, "lower left")
     axis.set(xlabel="age (months)", ylabel="prop_clarification_request")
     axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
-    plt.ylim((0, 0.4))
+    # plt.ylim((0, 0.4))
     plt.tight_layout()
     plt.savefig(
         os.path.join(results_dir, "cf_quality_clarification_request.png"), dpi=300
+    )
+
+    conversations_ellisweismer_one_child = conversations.copy()
+    conversations_ellisweismer_one_child.loc[conversations_ellisweismer_one_child.corpus == "EllisWeismer", "child_name"] = "EllisWeismer"
+    plt.figure(figsize=(6, 3))
+    axis = sns.barplot(
+        data=conversations_ellisweismer_one_child,
+        x="child_name",
+        y="response_is_clarification_request",
+        hue="utt_is_grammatical",
+        linewidth=1,
+        edgecolor="w",
+    )
+    legend = axis.legend()
+    legend.texts[0].set_text("ungrammatical")
+    legend.texts[1].set_text("grammatical")
+    # sns.move_legend(axis, "lower left")
+    axis.set(xlabel="child", ylabel="prop_clarification_request")
+    xticklabels = [l.get_text().replace("_","\n") for l in axis.get_xticklabels()]
+    axis.set_xticklabels(xticklabels)
+    plt.xticks(rotation=75, size=6)
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(results_dir, "cf_quality_clarification_request_by_child.png"), dpi=300
     )
 
     plt.figure(figsize=(6, 3))
@@ -268,6 +292,29 @@ def make_plots(conversations, conversations_melted, results_dir):
     plt.tight_layout()
     plt.savefig(
         os.path.join(results_dir, "cf_quality_acknowledgements.png"), dpi=300
+    )
+
+    plt.figure(figsize=(6, 3))
+    axis = sns.barplot(
+        data=conversations_ellisweismer_one_child,
+        x="child_name",
+        y="response_is_acknowledgement",
+        hue="utt_is_grammatical",
+        linewidth=1,
+        edgecolor="w",
+    )
+    legend = axis.legend()
+    legend.texts[0].set_text("ungrammatical")
+    legend.texts[1].set_text("grammatical")
+    # sns.move_legend(axis, "lower left")
+    axis.set(xlabel="child", ylabel="prop_acknowledgement")
+    xticklabels = [l.get_text().replace("_","\n") for l in axis.get_xticklabels()]
+    axis.set_xticklabels(xticklabels)
+    plt.xticks(rotation=75, size=6)
+    # plt.ylim((0, 0.35))
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(results_dir, "cf_quality_acknowledgements_by_child.png"), dpi=300
     )
 
     plt.figure(figsize=(6, 3))
@@ -317,6 +364,15 @@ def make_plots(conversations, conversations_melted, results_dir):
     conversations_melted_duplicated["age"] = math.inf
     conversations_melted_with_avg_age = pd.concat([conversations_melted, conversations_melted_duplicated], ignore_index=True)
 
+
+    conversations_melted_cr = conversations_melted[
+        conversations_melted.response_is_clarification_request
+    ]
+
+    conversations_melted_cr_ellisweismer_one_child = conversations_melted_cr.copy()
+    conversations_melted_cr_ellisweismer_one_child.loc[
+        conversations_melted_cr_ellisweismer_one_child.child_name.str.startswith("EllisWeismer"), "child_name"] = "EllisWeismer"
+
     conversations_melted_cr_with_avg_age = conversations_melted_with_avg_age[
         conversations_melted_with_avg_age.response_is_clarification_request
     ]
@@ -340,6 +396,29 @@ def make_plots(conversations, conversations_melted, results_dir):
     plt.tight_layout()
     plt.savefig(
         os.path.join(results_dir, "cf_effect_clarification_request.png"), dpi=300
+    )
+
+    plt.figure(figsize=(6, 3))
+    axis = sns.barplot(
+        data=conversations_melted_cr_ellisweismer_one_child,
+        x="child_name",
+        y="is_grammatical",
+        hue="is_follow_up",
+        linewidth=1,
+        edgecolor="w",
+        palette=sns.color_palette(),
+    )
+    legend = axis.legend()
+    legend.texts[0].set_text("utterance")
+    legend.texts[1].set_text("follow-up")
+    # sns.move_legend(axis, "upper left")
+    axis.set(xlabel="child", ylabel="prop_is_grammatical")
+    xticklabels = [l.get_text().replace("_","\n") for l in axis.get_xticklabels()]
+    axis.set_xticklabels(xticklabels)
+    plt.xticks(rotation=75, size=6)
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(results_dir, "cf_effect_clarification_request_by_child.png"), dpi=300
     )
 
     conversations_melted_ack_with_avg_age = conversations_melted_with_avg_age[
