@@ -151,7 +151,7 @@ def preprocess_utterances(corpus, transcripts, start_index, args):
 
     # Get target child names (prepend corpus name to make the names unique)
     child_names = [
-        header["Participants"][SPEAKER_CODE_CHILD]["corpus"]
+        corpus
         + "_"
         + header["Participants"][SPEAKER_CODE_CHILD]["name"]
         if SPEAKER_CODE_CHILD in header["Participants"]
@@ -175,8 +175,22 @@ def preprocess_utterances(corpus, transcripts, start_index, args):
             # Interview transcripts do not contain child-caregiver interactions
             continue
         if child_name is None:
-            # Child is not present in transcript, ignore
-            continue
+            if corpus == "EllisWeismer":
+                child_name = corpus + "_"+ os.path.basename(file).replace(".cha", "")
+            else:
+                # Child is not present in transcript, ignore
+                continue
+        if child_name.split("_")[1:] == ["Target", "Child"]:
+            if corpus in ["EllisWeismer", "Bates"]:
+                child_name = corpus + "_"+ os.path.basename(file).replace(".cha", "")
+            elif corpus in ["Valian"]:
+                child_name = corpus + "_"+ os.path.basename(file).replace(".cha", "")[:-1]
+            elif corpus in ["Edinburgh", "Tommerdahl", "Rollins"]:
+                child_name = corpus + "_" + re.sub(r"\d", "", os.path.basename(file).replace(".cha", ""))
+            elif corpus in ["HSLLD"]:
+                child_name = corpus + "_" + os.path.basename(file).replace(".cha", "")[:5]
+            elif corpus in ["Bernstein", "McCune", "Sekali", "Belfast", "MPI-EVA-Manchester"]:
+                child_name = corpus + "_"+ file.split("/")[-2]
         if age is None or age == 0:
             # Child age can sometimes be read from the file name
             if corpus in ["MPI-EVA-Manchester", "Bernstein", "Brent", "Braunwald", "Weist", "MacWhinney", "Belfast", "Sekali"]:
@@ -185,6 +199,9 @@ def preprocess_utterances(corpus, transcripts, start_index, args):
             elif corpus == "Rollins":
                 age_info = os.path.basename(file).split(".cha")[0]
                 age = int(age_info[2:4])
+            elif corpus == "EllisWeismer":
+                age_info = file.split("/")[-2]
+                age = int(age_info[0:2])
             elif corpus == "Tommerdahl" and os.path.basename(file) == "MEH2.cha":
                 age = 39    # Missing value copied from "MEH2.cha"
             elif corpus == "Gleason" and file.endswith("Father/eddie.cha"):
