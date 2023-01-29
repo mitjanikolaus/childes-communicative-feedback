@@ -1,21 +1,20 @@
 import argparse
 import math
 import os
-import pickle
 from collections import Counter
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from nltk import SnowballStemmer
 from statsmodels.stats.weightstats import ztest
 
 from analysis_reproduce_warlaumont import (
     str2bool,
     has_response,
 )
-from utils import CF_CLASSIFIER_FILE, ACK_CLASSIFIER_FILE
+from cf_analyses.cr_ack_annotations import get_repetition_ratios, response_is_clarification_request, \
+    response_is_acknowledgement
 from extract_micro_conversations import DEFAULT_RESPONSE_THRESHOLD
 from utils import (
     age_bin,
@@ -40,11 +39,6 @@ DEFAULT_EXCLUDED_CORPORA = ["Forrester", "Providence"]
 
 # currently not used to exclude corpora, just stored for reference:
 CORPORA_NOT_LONGITUDINAL = ["Gleason", "Rollins", "Edinburgh"]
-
-SPEECH_ACTS_CLARIFICATION_REQUEST = [
-    "EQ",  # Eliciting question (e.g. hmm?).
-    "RR",  # Request to repeat utterance.
-]
 
 RESULTS_DIR = "results/intelligibility/"
 
@@ -98,136 +92,6 @@ def parse_args():
     args = argparser.parse_args()
 
     return args
-
-
-CAREGIVER_NAMES = [
-    "dad",
-    "daddy",
-    "dada",
-    "mom",
-    "mum",
-    "mommy",
-    "mummy",
-    "mama",
-    "mamma",
-    "nin",
-]
-
-
-RESPONSES_ACKNOWLEDGEMENT_IF_ALONE = {"right"}
-
-RESPONSES_ACKNOWLEDGEMENT_CERTAIN = {"uhhuh", "uhuh", "uhhum", "mhm", "mm", "huh", "ummhm", "sure", "okay", "ok",
-                                     "'kay", "kay", "alright", "yep", "yeah", "yeh"}
-RESPONSES_ACKNOWLEDGEMENT_EVALUATIVE = {"oh", "ooh", "wow", "uhoh"}
-
-
-def is_keyword_acknowledgement(micro_conv):
-    if micro_conv["utt_transcript_clean"][-1] != "?":
-        response = micro_conv["response_transcript_clean"].lower()
-
-        words = [word.lower() for word in split_into_words(response, split_on_apostrophe=True, remove_commas=True,
-                                                           remove_trailing_punctuation=True)]
-        if len(words) > 0:
-            if len(set(words) & (RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_EVALUATIVE | RESPONSES_ACKNOWLEDGEMENT_IF_ALONE)) == len(
-                    set(words)):
-                # Consider sentences ending with full stop, but not exclamation marks or question marks, as they are changing
-                # the function of the word (i.e. "okay?" or "huh?" are not acknowledgements)
-                if len(response) > 0 and response[-1] == ".":
-                    return True
-                else:
-                    return False
-            elif words[0] in RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_EVALUATIVE:
-                return True
-    return False
-
-
-classifier_ack = pickle.load(open(ACK_CLASSIFIER_FILE, "rb"))
-
-
-def is_repetition_acknowledgement(micro_conv):
-    if micro_conv["utt_transcript_clean"][-1] != "?":
-        if micro_conv["response_transcript_clean"][-1] != "?":
-            return bool(classifier_ack.predict([micro_conv[["rep_utt", "rep_response"]]])[0])
-    return False
-
-
-def response_is_acknowledgement(micro_conv):
-    ack_keyword = micro_conv["response_is_keyword_acknowledgement"]
-    ack_repetition = micro_conv["response_is_repetition_acknowledgement"]
-
-    return ack_keyword or ack_repetition
-
-
-classifier_cf = pickle.load(open(CF_CLASSIFIER_FILE, "rb"))
-
-
-def is_repetition_clarification_request(micro_conv):
-    if micro_conv["response_transcript_clean"][-1] == "?":
-        return bool(classifier_cf.predict([micro_conv[["rep_utt", "rep_response"]]])[0])
-    return False
-
-
-def is_clarification_request_speech_act(micro_conv):
-    if micro_conv["response_speech_act"] in SPEECH_ACTS_CLARIFICATION_REQUEST:
-        utt = micro_conv["utt_transcript_clean"]
-        unique_words = set(
-            split_into_words(utt, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True))
-        if len(unique_words) == 1 and unique_words.pop().lower() in CAREGIVER_NAMES:
-            # If the initial utterance is just a call for attention, the response is not a clarification request.
-            return False
-        else:
-            return True
-    return False
-
-
-def response_is_clarification_request(micro_conv):
-    cf_speech_act = micro_conv["response_is_clarification_request_speech_act"]
-    cf_repetition = micro_conv["response_is_repetition_clarification_request"]
-    return cf_speech_act or cf_repetition
-
-
-# List of stopwords to be ignored for repetition calculation
-STOPWORDS = {'my', 'doing', 'than', 'doesn', 'do', 'him', 's', 'her', 'won', 'myself', 'his', 'were', 'during', 'few', 'yourself', 'mightn', 'into', 'we', 'above', 'below', 'you', 'what', 'has', 'under', 'each', 'before', 'am', 'after', 'me', 'once', 'out', 'y', 'have', 'ain', 'of', 'will', 'weren', 'with', 'no', 'm', 'whom', 'only', 'ours', 'nor', 'mustn', 'himself', 're', 'was', 'o', 'having', 'for', 'ourselves', 'theirs', 'ma', 'off', 'too', 'i', 'further', 'hadn', 'wasn', 'their', 'more', 'or', 'them', 'again', 't', 'against', 'own', 'those', 'hers', 'does', 've', 'its', 'herself', 'over', 'not', 'should', 'aren', 'that', 'our', 'as', 'been', 'who', 'while', 'to', 'hasn', 'through', 'about', 'haven', 'how', 'can', 'and', 'they', 'in', 'until', 'had', 'an', 'between', 'then', 'both', 'shouldn', 'this', 'down', 'don', 'now', 'yourselves', 'he', 'couldn', 'a', 'where', 'themselves', 'other', 'these', 'wouldn', 'the', 'because', 'but', 'your', 'why', 'up', 'by', 'if', 'most', 'she', 'be', 'is', 'just', 'any', 'such', 'very', 'all', 'are', 'on', 'didn', 'itself', 'll', 'so', 'yours', 'same', 'needn', 'd', 'which', 'isn', 'some', 'here', 'it', 'when', 'at', 'from', 'did', 'being', 'there', 'oh', 'ooh', 'huh', 'ah', 'mhm', 'mm', 'shan'}
-STOPWORDS = STOPWORDS | RESPONSES_ACKNOWLEDGEMENT_CERTAIN
-
-stemmer = SnowballStemmer("english")
-
-
-def get_repetition_ratios(micro_conv):
-    if pd.isna(micro_conv["response_transcript_clean"]):
-        return [0, 0]
-
-    utt = micro_conv["utt_transcript_clean"].lower()
-    utt_split = split_into_words(utt, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True)
-    words_utt = set([stemmer.stem(w) for w in utt_split])
-    words_utt_no_stopwords = {word for word in words_utt if word not in STOPWORDS}
-
-    response = micro_conv["response_transcript_clean"].lower()
-    response_split = split_into_words(response, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True)
-    words_response = set([stemmer.stem(w) for w in response_split])
-
-    words_response_no_stopwords = {word for word in words_response if word not in STOPWORDS}
-
-    overlap = words_utt_no_stopwords & words_response_no_stopwords
-
-    len_utt = len(words_utt_no_stopwords)
-    len_response = len(words_response_no_stopwords)
-    if len_utt == 0 or len_response == 0:
-        overlap = words_utt & words_response
-        len_utt = len(words_utt)
-        len_response = len(words_response)
-
-    if len_utt == 0:
-        utt_rep_ratio = 0
-    else:
-        utt_rep_ratio = len(overlap) / len_utt
-
-    if len_response == 0:
-        resp_rep_ratio = 0
-    else:
-        resp_rep_ratio = len(overlap) / len_response
-
-    return [utt_rep_ratio, resp_rep_ratio]
 
 
 def melt_variable(conversations, variable_suffix):

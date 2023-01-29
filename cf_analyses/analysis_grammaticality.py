@@ -7,10 +7,10 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.patches import Patch
 
-from analysis_intelligibility import response_is_clarification_request, melt_variable, response_is_acknowledgement, \
-    get_repetition_ratios, filter_utts_for_num_words, filter_follow_ups_for_num_words, \
-    is_clarification_request_speech_act, is_repetition_clarification_request, is_repetition_acknowledgement, \
-    is_keyword_acknowledgement
+from analysis_intelligibility import melt_variable, filter_utts_for_num_words, filter_follow_ups_for_num_words
+from cr_ack_annotations import is_clarification_request_speech_act, is_repetition_clarification_request, \
+    is_keyword_acknowledgement, response_is_acknowledgement, get_repetition_ratios, response_is_clarification_request, \
+    is_repetition_acknowledgement
 from grammaticality_data_preprocessing.analyze_childes_error_data import PALETTE_CATEGORICAL, HUE_ORDER
 from utils import (
     age_bin,
