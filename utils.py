@@ -62,9 +62,6 @@ MICRO_CONVERSATIONS_WITHOUT_NON_SPEECH_FILE = os.path.expanduser(
     "~/data/communicative_feedback/micro_conversations_without_non_speech.csv"
 )
 
-ACK_CLASSIFIER_FILE = PROJECT_ROOT_DIR+"/data/feedback_classifiers/ack.p"
-CF_CLASSIFIER_FILE = PROJECT_ROOT_DIR+"/data/feedback_classifiers/cf.p"
-
 SPEECH_ACT_NO_FUNCTION = "YY"
 SPEECH_ACTS_NO_FUNCTION = ["YY", "OO"]
 
@@ -953,7 +950,7 @@ def replace_slang_forms(utterance):
     return cleaned_utterance.strip()
 
 
-DISFLUENCIES = ["uhm", "um", "uh", "erh", "err", "aw", "ehm", "hm"]
+DISFLUENCIES = ["uhm", "um", "uh", "erh", "err", "aw", "ehm"]
 
 
 def clean_disfluencies(utterance):

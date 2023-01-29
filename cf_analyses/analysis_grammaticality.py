@@ -8,9 +8,7 @@ import seaborn as sns
 from matplotlib.patches import Patch
 
 from analysis_intelligibility import melt_variable, filter_utts_for_num_words, filter_follow_ups_for_num_words
-from cr_ack_annotations import is_clarification_request_speech_act, is_repetition_clarification_request, \
-    is_keyword_acknowledgement, response_is_acknowledgement, get_repetition_ratios, response_is_clarification_request, \
-    is_repetition_acknowledgement
+from cr_ack_annotations import annotate_crs_and_acks
 from grammaticality_data_preprocessing.analyze_childes_error_data import PALETTE_CATEGORICAL, HUE_ORDER
 from utils import (
     age_bin,
@@ -87,18 +85,7 @@ def perform_analysis_grammaticality(conversations, args):
     conversations = conversations[conversations.response_is_speech_related].copy()
     conversations = filter_utts_for_num_words(conversations, min_num_words=MIN_NUM_WORDS)
 
-    repetition_ratios = conversations.apply(get_repetition_ratios, axis=1)
-    conversations["rep_utt"] = repetition_ratios.apply(lambda ratios: ratios[0])
-    conversations["rep_response"] = repetition_ratios.apply(lambda ratios: ratios[1])
-
-    conversations["response_is_clarification_request_speech_act"] = conversations.apply(is_clarification_request_speech_act, axis=1)
-    conversations["response_is_repetition_clarification_request"] = conversations.apply(is_repetition_clarification_request, axis=1)
-
-    conversations["response_is_keyword_acknowledgement"] = conversations.apply(is_keyword_acknowledgement, axis=1)
-    conversations["response_is_repetition_acknowledgement"] = conversations.apply(is_repetition_acknowledgement, axis=1)
-
-    conversations["response_is_clarification_request"] = conversations.apply(response_is_clarification_request, axis=1)
-    conversations["response_is_acknowledgement"] = conversations.apply(response_is_acknowledgement, axis=1)
+    annotate_crs_and_acks(conversations)
 
     num_utts_grammatical = len(conversations[conversations.utt_is_grammatical])
     num_utts_ungrammatical = len(conversations[~conversations.utt_is_grammatical])

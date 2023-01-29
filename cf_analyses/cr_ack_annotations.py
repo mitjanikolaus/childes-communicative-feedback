@@ -10,18 +10,25 @@ from nltk import SnowballStemmer
 from sklearn.linear_model import LogisticRegression
 
 from sklearn.metrics import precision_recall_fscore_support
-from utils import CF_CLASSIFIER_FILE, ACK_CLASSIFIER_FILE, split_into_words
+from utils import split_into_words
 
 from utils import PROJECT_ROOT_DIR
 
 
 RESULTS_DIR = PROJECT_ROOT_DIR+"/results/cr_ack/"
 
+# "right" is only considered an acknowledgement if alone, otherwise it can be confounded with
+# expressions such as "right there" or "right here"
 RESPONSES_ACKNOWLEDGEMENT_IF_ALONE = {"right"}
 
-RESPONSES_ACKNOWLEDGEMENT_CERTAIN = {"uhhuh", "uhuh", "uhhum", "mhm", "mm", "huh", "ummhm", "sure", "okay", "ok",
-                                     "'kay", "kay", "alright", "yep", "yeah", "yeh"}
-RESPONSES_ACKNOWLEDGEMENT_EVALUATIVE = {"oh", "ooh", "wow", "uhoh"}
+# We include words like "yes" which can be used as responses, as we check that the previous utterance was not a question
+RESPONSES_ACKNOWLEDGEMENT_CERTAIN = {"uhhuh", "uhuh", "uhhum", "mhm", "mm", "hm", "huh", "ummhm", "sure", "okay", "ok",
+                                     "'kay", "kay", "alright", "yes", "yep", "yeah", "yeh", "yup", "ahhah", "ah"}
+RESPONSES_ACKNOWLEDGEMENT_MULTI_WORD = {"I see", "I see", "I know", "all right", "go ahead", "go on then", "go on",
+                                        "good job", "very good", "it is", "it's alright", "that's right", "that's true"}
+RESPONSES_ACKNOWLEDGEMENT_EVALUATIVE = {"oh", "ooh", "wow", "uhoh", "actually", "excellent", "exactly", "good", "great",
+                                        "hey", "hooray", "oops", "whoops", "woo", "woohoo", "yay"}
+ALL_ACKS_SINGLE_WORD = RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_EVALUATIVE | RESPONSES_ACKNOWLEDGEMENT_IF_ALONE
 
 SPEECH_ACTS_CLARIFICATION_REQUEST = [
     "EQ",  # Eliciting question (e.g. hmm?).
@@ -48,40 +55,71 @@ CAREGIVER_NAMES = [
     "nin",
 ]
 
+ACK_CLASSIFIER_FILE = PROJECT_ROOT_DIR+"/data/feedback_classifiers/ack_classifier_weights.p"
+CF_CLASSIFIER_FILE = PROJECT_ROOT_DIR+"/data/feedback_classifiers/cf_classifier_weights.p"
+
+
+def annotate_crs_and_acks(conversations):
+    annotate_repetition_ratios(conversations)
+
+    conversations["response_is_clarification_request_speech_act"] = conversations.apply(
+        is_clarification_request_speech_act, axis=1)
+    conversations["response_is_repetition_clarification_request"] = conversations.apply(
+        is_repetition_clarification_request, axis=1)
+
+    conversations["response_is_keyword_acknowledgement"] = conversations.apply(is_keyword_acknowledgement, axis=1)
+    conversations["response_is_repetition_acknowledgement"] = conversations.apply(is_repetition_acknowledgement, axis=1)
+
+    conversations["response_is_clarification_request"] = conversations.apply(response_is_clarification_request, axis=1)
+    conversations["response_is_acknowledgement"] = conversations.apply(response_is_acknowledgement, axis=1)
+
+
+def annotate_repetition_ratios(conversations):
+    repetition_ratios = conversations.apply(get_repetition_ratios, stem_words=True, axis=1)
+    conversations["rep_utt_stemmed"] = repetition_ratios.apply(lambda ratios: ratios[0])
+    conversations["rep_response_stemmed"] = repetition_ratios.apply(lambda ratios: ratios[1])
+
+    repetition_ratios = conversations.apply(get_repetition_ratios, stem_words=False, axis=1)
+    conversations["rep_utt"] = repetition_ratios.apply(lambda ratios: ratios[0])
+    conversations["rep_response"] = repetition_ratios.apply(lambda ratios: ratios[1])
+
 
 def is_keyword_acknowledgement(micro_conv):
     if micro_conv["utt_transcript_clean"][-1] != "?":
-        response = micro_conv["response_transcript_clean"].lower()
+        if micro_conv["response_transcript_clean"][-1] != "?":
+            response = micro_conv["response_transcript_clean"].lower()
+            words = [word.lower() for word in split_into_words(response, split_on_apostrophe=False, remove_commas=True,
+                                                               remove_trailing_punctuation=True)]
 
-        words = [word.lower() for word in split_into_words(response, split_on_apostrophe=True, remove_commas=True,
-                                                           remove_trailing_punctuation=True)]
-        if len(words) > 0:
-            if len(set(words) & (RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_EVALUATIVE | RESPONSES_ACKNOWLEDGEMENT_IF_ALONE)) == len(
-                    set(words)):
-                # Consider sentences ending with full stop, but not exclamation marks or question marks, as they are changing
-                # the function of the word (i.e. "okay?" or "huh?" are not acknowledgements)
-                if len(response) > 0 and response[-1] == ".":
+            if len(words) > 0:
+                response_without_bcs = [word for word in words if word not in ALL_ACKS_SINGLE_WORD]
+                if len(response_without_bcs) == 0:
                     return True
-                else:
-                    return False
-            elif words[0] in RESPONSES_ACKNOWLEDGEMENT_CERTAIN | RESPONSES_ACKNOWLEDGEMENT_EVALUATIVE:
-                return True
+                elif words[0] in RESPONSES_ACKNOWLEDGEMENT_CERTAIN:
+                    return True
+                elif " ".join(words) in RESPONSES_ACKNOWLEDGEMENT_MULTI_WORD:
+                    return True
+                elif " ".join(response_without_bcs) in RESPONSES_ACKNOWLEDGEMENT_MULTI_WORD:
+                    return True
     return False
 
 
-def get_repetition_ratios(micro_conv):
+def get_repetition_ratios(micro_conv, stem_words):
     if pd.isna(micro_conv["response_transcript_clean"]):
         return [0, 0]
 
     utt = micro_conv["utt_transcript_clean"].lower()
     utt_split = split_into_words(utt, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True)
-    words_utt = set([stemmer.stem(w) for w in utt_split])
+    words_utt = set(utt_split)
+    if stem_words:
+        words_utt = {stemmer.stem(w) for w in words_utt}
     words_utt_no_stopwords = {word for word in words_utt if word not in STOPWORDS}
 
     response = micro_conv["response_transcript_clean"].lower()
     response_split = split_into_words(response, split_on_apostrophe=True, remove_commas=True, remove_trailing_punctuation=True)
-    words_response = set([stemmer.stem(w) for w in response_split])
-
+    words_response = set(response_split)
+    if stem_words:
+        words_response = {stemmer.stem(w) for w in words_response}
     words_response_no_stopwords = {word for word in words_response if word not in STOPWORDS}
 
     overlap = words_utt_no_stopwords & words_response_no_stopwords
@@ -128,7 +166,7 @@ classifier_cf = pickle.load(open(CF_CLASSIFIER_FILE, "rb"))
 
 def is_repetition_clarification_request(micro_conv):
     if micro_conv["response_transcript_clean"][-1] == "?":
-        return bool(classifier_cf.predict([micro_conv[["rep_utt", "rep_response"]]])[0])
+        return bool(classifier_cf.predict([micro_conv[["rep_utt_stemmed", "rep_response_stemmed"]]])[0])
     return False
 
 
@@ -159,15 +197,13 @@ def train_classifier(train_annotations_file, test_annotations_file, target_colum
         train_data = annotate_and_filter_keyword_acks(train_data)
         test_data = annotate_and_filter_keyword_acks(test_data)
 
-    repetition_ratios = train_data.apply(get_repetition_ratios, axis=1)
-    train_data["rep_utt"] = repetition_ratios.apply(lambda ratios: ratios[0])
-    train_data["rep_response"] = repetition_ratios.apply(lambda ratios: ratios[1])
+    annotate_repetition_ratios(train_data)
 
     reg = LogisticRegression(penalty="l2", class_weight="balanced")
     reg.fit(train_data[["rep_utt", "rep_response"]].values, train_data[target_column].values)
 
-    prf = precision_recall_fscore_support(train_data[target_column], reg.predict(train_data[["rep_utt", "rep_response"]].values), average="binary")
-    print("Train Precision, recall, f-score: ", prf)
+    precision, recall, f_score, _ = precision_recall_fscore_support(train_data[target_column], reg.predict(train_data[["rep_utt", "rep_response"]].values), average="binary")
+    print(f"Train Precision: {precision:.2f}, recall: {recall:.2f}, f-score: {f_score:.2f}")
 
     plt.figure(figsize=(5, 4))
     counts = train_data.groupby(['rep_utt', 'rep_response', target_column]).size().reset_index(name='number')
@@ -190,9 +226,7 @@ def train_classifier(train_annotations_file, test_annotations_file, target_colum
     plt.xlim((0, 1.1))
     plt.ylim((0, 1.1))
 
-    repetition_ratios_test = test_data.apply(get_repetition_ratios, axis=1)
-    test_data["rep_utt"] = repetition_ratios_test.apply(lambda ratios: ratios[0])
-    test_data["rep_response"] = repetition_ratios_test.apply(lambda ratios: ratios[1])
+    annotate_repetition_ratios(test_data)
 
     if target_column == "is_ack":
         plt.savefig(os.path.join(RESULTS_DIR, "repetition_ack.png"), dpi=300)
@@ -203,16 +237,15 @@ def train_classifier(train_annotations_file, test_annotations_file, target_colum
         pickle.dump(reg, open(CF_CLASSIFIER_FILE, "wb"))
         test_data["predicted"] = test_data.apply(is_repetition_clarification_request, axis=1).astype(int)
 
-    prf = precision_recall_fscore_support(test_data[target_column], test_data["predicted"], average="binary")
+    precision, recall, f_score, _ = precision_recall_fscore_support(test_data[target_column], test_data["predicted"], average="binary")
 
     # print("Misclassified: ")
     # print(test_data[test_data[target_column] != test_data["predicted"]].to_string(index=False))
-
-    print("Test Precision, recall, f-score: ", prf)
+    print(f"Test Precision: {precision:.2f}, recall: {recall:.2f}, f-score: {f_score:.2f}")
 
 
 def annotate_and_filter_keyword_acks(data):
-    repetition_ratios = data.apply(get_repetition_ratios, axis=1)
+    repetition_ratios = data.apply(get_repetition_ratios, stem_words=False, axis=1)
     data["rep_utt"] = repetition_ratios.apply(lambda ratios: ratios[0])
     data["rep_response"] = repetition_ratios.apply(lambda ratios: ratios[1])
     data["response_is_keyword_acknowledgement"] = data.apply(is_keyword_acknowledgement, axis=1)
@@ -223,7 +256,7 @@ def annotate_and_filter_keyword_acks(data):
 
 
 def annotate_and_discard_speech_act_crs(data):
-    repetition_ratios = data.apply(get_repetition_ratios, axis=1)
+    repetition_ratios = data.apply(get_repetition_ratios, stem_words=True, axis=1)
     data["rep_utt"] = repetition_ratios.apply(lambda ratios: ratios[0])
     data["rep_response"] = repetition_ratios.apply(lambda ratios: ratios[1])
     data["response_is_clarification_request_speech_act"] = data.apply(is_clarification_request_speech_act, axis=1)
