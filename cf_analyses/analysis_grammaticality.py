@@ -213,34 +213,46 @@ def make_plots(conversations, conversations_melted, results_dir):
     # Duplicate all entries and set age to infinity to get summary bars over all age groups
     conversations_duplicated = conversations.copy()
     conversations_duplicated["age"] = math.inf
-    conversations_with_avg_age = pd.concat([conversations, conversations_duplicated], ignore_index=True)
 
-    plt.figure(figsize=(6, 3))
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3), width_ratios=(4, 1), sharey="all")
     axis = sns.barplot(
-        data=conversations_with_avg_age,
+        data=conversations,
+        ax=axes[0],
         x="age",
         y="response_is_clarification_request",
         hue="utt_is_grammatical",
         linewidth=1,
         edgecolor="w",
     )
+    axis2 = sns.barplot(
+        data=conversations,
+        ax=axes[1],
+        x=[''] * len(conversations),
+        y="response_is_clarification_request",
+        hue="utt_is_grammatical",
+        linewidth=1,
+        edgecolor="w",
+    )
+    axis2.legend_.remove()
+    axis2.set(ylabel="", xlabel="all data")
     legend = axis.legend()
     legend.texts[0].set_text("ungrammatical")
     legend.texts[1].set_text("grammatical")
-    sns.move_legend(axis, "lower left")
+    # sns.move_legend(axis, "lower left")
     axis.set(xlabel="age (months)", ylabel="prop_clarification_request")
-    axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
-    # plt.ylim((0, 0.4))
+    # plt.ylim((0, 0.35))
     plt.tight_layout()
+    plt.subplots_adjust(wspace=0.05)
     plt.savefig(
         os.path.join(results_dir, "cf_quality_clarification_request.png"), dpi=300
     )
 
-    conversations_ellisweismer_one_child = conversations.copy()
-    conversations_ellisweismer_one_child.loc[conversations_ellisweismer_one_child.corpus == "EllisWeismer", "child_name"] = "EllisWeismer"
+    conversations_child_names_fixed = conversations.copy()
+    conversations_child_names_fixed.loc[conversations_child_names_fixed.child_name.str.startswith("EllisWeismer"), "child_name"] = "EllisWeismer"
+
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations_ellisweismer_one_child,
+        data=conversations_child_names_fixed,
         x="child_name",
         y="response_is_clarification_request",
         hue="utt_is_grammatical",
@@ -260,30 +272,42 @@ def make_plots(conversations, conversations_melted, results_dir):
         os.path.join(results_dir, "cf_quality_clarification_request_by_child.png"), dpi=300
     )
 
-    plt.figure(figsize=(6, 3))
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3), width_ratios=(4, 1), sharey="all")
     axis = sns.barplot(
-        data=conversations_with_avg_age,
+        data=conversations,
+        ax=axes[0],
         x="age",
         y="response_is_acknowledgement",
         hue="utt_is_grammatical",
         linewidth=1,
         edgecolor="w",
     )
+    axis2 = sns.barplot(
+        data=conversations,
+        ax=axes[1],
+        x=[''] * len(conversations),
+        y="response_is_acknowledgement",
+        hue="utt_is_grammatical",
+        linewidth=1,
+        edgecolor="w",
+    )
+    axis2.legend_.remove()
+    axis2.set(ylabel="", xlabel="all data")
     legend = axis.legend()
     legend.texts[0].set_text("ungrammatical")
     legend.texts[1].set_text("grammatical")
-    sns.move_legend(axis, "lower left")
+    # sns.move_legend(axis, "lower left")
     axis.set(xlabel="age (months)", ylabel="prop_acknowledgement")
-    axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
     # plt.ylim((0, 0.35))
     plt.tight_layout()
+    plt.subplots_adjust(wspace=0.05)
     plt.savefig(
         os.path.join(results_dir, "cf_quality_acknowledgements.png"), dpi=300
     )
 
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations_ellisweismer_one_child,
+        data=conversations_child_names_fixed,
         x="child_name",
         y="response_is_acknowledgement",
         hue="utt_is_grammatical",
@@ -317,7 +341,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     legend = axis.legend()
     legend.texts[0].set_text("utterance")
     legend.texts[1].set_text("follow-up")
-    sns.move_legend(axis, "lower right")
+    # sns.move_legend(axis, "lower right")
     axis.set(ylabel="prop_is_grammatical")
     plt.tight_layout()
     plt.savefig(
@@ -338,7 +362,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     legend = axis.legend()
     legend.texts[0].set_text("utterance")
     legend.texts[1].set_text("follow-up")
-    sns.move_legend(axis, "lower right")
+    # sns.move_legend(axis, "lower right")
     axis.set(ylabel="prop_is_grammatical")
     plt.tight_layout()
     plt.savefig(
@@ -349,45 +373,50 @@ def make_plots(conversations, conversations_melted, results_dir):
     # Duplicate all entries and set age to infinity to get summary bars over all age groups
     conversations_melted_duplicated = conversations_melted.copy()
     conversations_melted_duplicated["age"] = math.inf
-    conversations_melted_with_avg_age = pd.concat([conversations_melted, conversations_melted_duplicated], ignore_index=True)
-
 
     conversations_melted_cr = conversations_melted[
         conversations_melted.response_is_clarification_request
     ]
 
-    conversations_melted_cr_ellisweismer_one_child = conversations_melted_cr.copy()
-    conversations_melted_cr_ellisweismer_one_child.loc[
-        conversations_melted_cr_ellisweismer_one_child.child_name.str.startswith("EllisWeismer"), "child_name"] = "EllisWeismer"
-
-    conversations_melted_cr_with_avg_age = conversations_melted_with_avg_age[
-        conversations_melted_with_avg_age.response_is_clarification_request
-    ]
-
-    plt.figure(figsize=(6, 3))
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3), width_ratios=(4, 1), sharey="all")
     axis = sns.barplot(
-        data=conversations_melted_cr_with_avg_age,
+        data=conversations_melted_cr,
+        ax=axes[0],
         x="age",
         y="is_grammatical",
         hue="is_follow_up",
         linewidth=1,
         edgecolor="w",
-        palette=sns.color_palette(),
     )
+    axis2 = sns.barplot(
+        data=conversations_melted_cr,
+        ax=axes[1],
+        x=[''] * len(conversations_melted_cr),
+        y="is_grammatical",
+        hue="is_follow_up",
+        linewidth=1,
+        edgecolor="w",
+    )
+    axis2.legend_.remove()
+    axis2.set(ylabel="", xlabel="all data")
     legend = axis.legend()
     legend.texts[0].set_text("utterance")
     legend.texts[1].set_text("follow-up")
-    sns.move_legend(axis, "upper left")
+    # sns.move_legend(axis, "lower left")
     axis.set(xlabel="age (months)", ylabel="prop_is_grammatical")
-    axis.set_xticklabels(sorted(conversations_melted_cr_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
+    # plt.ylim((0, 0.35))
     plt.tight_layout()
+    plt.subplots_adjust(wspace=0.05)
     plt.savefig(
         os.path.join(results_dir, "cf_effect_clarification_request.png"), dpi=300
     )
 
+    conversations_melted_cr_child_names_fixed = conversations_melted_cr.copy()
+    conversations_melted_cr_child_names_fixed.loc[conversations_melted_cr_child_names_fixed.child_name.str.startswith("EllisWeismer"), "child_name"] = "EllisWeismer"
+
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations_melted_cr_ellisweismer_one_child,
+        data=conversations_melted_cr_child_names_fixed,
         x="child_name",
         y="is_grammatical",
         hue="is_follow_up",
@@ -408,31 +437,42 @@ def make_plots(conversations, conversations_melted, results_dir):
         os.path.join(results_dir, "cf_effect_clarification_request_by_child.png"), dpi=300
     )
 
-    conversations_melted_ack_with_avg_age = conversations_melted_with_avg_age[
-        conversations_melted_with_avg_age.response_is_acknowledgement
+    conversations_melted_ack = conversations_melted[
+        conversations_melted.response_is_acknowledgement
     ]
 
-    plt.figure(figsize=(6, 3))
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3), width_ratios=(4, 1), sharey="all")
     axis = sns.barplot(
-        data=conversations_melted_ack_with_avg_age,
+        data=conversations_melted_ack,
+        ax=axes[0],
         x="age",
         y="is_grammatical",
         hue="is_follow_up",
         linewidth=1,
         edgecolor="w",
-        palette=sns.color_palette(),
     )
+    axis2 = sns.barplot(
+        data=conversations_melted_cr,
+        ax=axes[1],
+        x=[''] * len(conversations_melted_cr),
+        y="is_grammatical",
+        hue="is_follow_up",
+        linewidth=1,
+        edgecolor="w",
+    )
+    axis2.legend_.remove()
+    axis2.set(ylabel="", xlabel="all data")
     legend = axis.legend()
     legend.texts[0].set_text("utterance")
     legend.texts[1].set_text("follow-up")
-    sns.move_legend(axis, "upper left")
+    # sns.move_legend(axis, "lower left")
     axis.set(xlabel="age (months)", ylabel="prop_is_grammatical")
-    axis.set_xticklabels(sorted(conversations_melted_ack_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
+    # plt.ylim((0, 0.35))
     plt.tight_layout()
+    plt.subplots_adjust(wspace=0.05)
     plt.savefig(
         os.path.join(results_dir, "cf_effect_acknowledgement.png"), dpi=300
     )
-
 
 def filter_corpora(conversations):
     print("Including corpora: ", CORPORA_INCLUDED)
