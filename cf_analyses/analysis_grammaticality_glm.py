@@ -37,10 +37,6 @@ def glm_child_behavior_clarification_requests_control(convs):
     convs.is_follow_up.replace({False: -0.5, True: 0.5}, inplace=True)
     convs.response_is_clarification_request.replace({False: -0.5, True: 0.5}, inplace=True)
 
-    # Take into account only convs with response
-    # assert convs.has_response.dtype == bool
-    # convs = convs[convs.has_response == True]
-
     assert convs.is_follow_up.min() == -0.5 and convs.is_follow_up.max() == 0.5
     assert convs.response_is_clarification_request.min() == -0.5 and convs.response_is_clarification_request.max() == 0.5
     assert convs.is_grammatical.dtype == bool
@@ -56,10 +52,7 @@ def glm_child_behavior_clarification_requests(convs):
     # Rescale is_follow_up around 0:
     convs.is_follow_up.replace({False: -0.5, True: 0.5}, inplace=True)
 
-    # Take into account only convs with response and that are CR
-    # assert convs.has_response.dtype == bool
     assert convs.response_is_clarification_request.dtype == bool
-    # convs = convs[convs.has_response == True]
     convs = convs[convs.response_is_clarification_request == True]
 
     assert convs.is_follow_up.min() == -0.5 and convs.is_follow_up.max() == 0.5
@@ -92,5 +85,3 @@ if __name__ == "__main__":
 
     glm_child_behavior_clarification_requests_control(conversations_melted.copy())
     glm_child_behavior_clarification_requests(conversations_melted.copy())
-
-
