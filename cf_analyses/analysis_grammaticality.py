@@ -9,7 +9,7 @@ from matplotlib.patches import Patch
 
 from analysis_intelligibility import melt_variable, filter_utts_for_num_words, filter_follow_ups_for_num_words
 from cr_ack_annotations import annotate_crs_and_acks
-from grammaticality_data_preprocessing.analyze_childes_error_data import PALETTE_CATEGORICAL, HUE_ORDER
+from grammaticality_data_preprocessing.analyze_childes_error_data import PALETTE_CATEGORICAL, HUE_ORDER, explode_labels
 from utils import (
     age_bin,
     SPEAKER_CODE_CHILD, get_num_words,
@@ -192,12 +192,6 @@ def make_plots_error_types(conversations):
     )
 
 
-def explode_labels(conversations):
-    conversations["label"] = conversations.labels.astype(str).apply(lambda x: x.split(", "))
-    conversations.drop(columns="labels", inplace=True)
-    return conversations.explode("label")
-
-
 def make_plots(conversations, conversations_melted, results_dir):
     os.makedirs(results_dir, exist_ok=True)
 
@@ -245,6 +239,67 @@ def make_plots(conversations, conversations_melted, results_dir):
     plt.subplots_adjust(wspace=0.05)
     plt.savefig(
         os.path.join(results_dir, "cf_quality_clarification_request.png"), dpi=300
+    )
+
+    conversations_exploded_labels = explode_labels(conversations.copy())
+
+    plt.figure(figsize=(6, 3))
+    axis = sns.barplot(
+        data=conversations_exploded_labels,
+        x="label",
+        y="response_is_clarification_request",
+        hue="utt_is_grammatical",
+        linewidth=1,
+        edgecolor="w",
+    )
+    legend = axis.legend()
+    legend.texts[0].set_text("ungrammatical")
+    legend.texts[1].set_text("grammatical")
+    # sns.move_legend(axis, "lower left")
+    axis.set(xlabel="", ylabel="prop_clarification_request")
+    xticklabels = [l.get_text().replace("_", "\n") for l in axis.get_xticklabels()]
+    axis.set_xticklabels(xticklabels)
+    plt.xticks(rotation=75, size=6)
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(results_dir, "cf_quality_clarification_request_by_error_type.png"), dpi=300
+    )
+
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3), width_ratios=(1, 1), sharey="none")
+    convs_ungrammatical_cr_rep = conversations[~conversations.response_is_clarification_request_speech_act]
+    axis = sns.barplot(
+        data=convs_ungrammatical_cr_rep,
+        ax=axes[0],
+        x=[''] * len(convs_ungrammatical_cr_rep),
+        y="response_is_clarification_request",
+        hue="utt_is_grammatical",
+        linewidth=1,
+        edgecolor="w",
+    )
+    convs_ungrammatical_cr_sp = conversations[~conversations.response_is_repetition_clarification_request]
+    axis2 = sns.barplot(
+        data=convs_ungrammatical_cr_sp,
+        ax=axes[1],
+        x=[''] * len(convs_ungrammatical_cr_sp),
+        y="response_is_clarification_request",
+        hue="utt_is_grammatical",
+        linewidth=1,
+        edgecolor="w",
+    )
+    axis2.legend_.remove()
+    axis2.set(ylabel="", xlabel="")
+    legend = axis.legend()
+    legend.texts[0].set_text("ungrammatical")
+    legend.texts[1].set_text("grammatical")
+    axis.title.set_text('CR Repetition')
+    axis2.title.set_text('CR Speech Act')
+    # sns.move_legend(axis, "lower left")
+    axis.set(xlabel="", ylabel="prop_response_is_clarification_request")
+    # plt.ylim((0, 0.35))
+    plt.tight_layout()
+    # plt.subplots_adjust(wspace=0.1)
+    plt.savefig(
+        os.path.join(results_dir, "cf_quality_clarification_request_by_cr_type.png"), dpi=300
     )
 
     conversations_child_names_fixed = conversations.copy()
@@ -307,6 +362,28 @@ def make_plots(conversations, conversations_melted, results_dir):
 
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
+        data=conversations_exploded_labels,
+        x="label",
+        y="response_is_acknowledgement",
+        hue="utt_is_grammatical",
+        linewidth=1,
+        edgecolor="w",
+    )
+    legend = axis.legend()
+    legend.texts[0].set_text("ungrammatical")
+    legend.texts[1].set_text("grammatical")
+    # sns.move_legend(axis, "lower left")
+    axis.set(xlabel="", ylabel="prop_acknowledgement")
+    xticklabels = [l.get_text().replace("_", "\n") for l in axis.get_xticklabels()]
+    axis.set_xticklabels(xticklabels)
+    plt.xticks(rotation=75, size=6)
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(results_dir, "cf_quality_acknowledgement_by_error_type.png"), dpi=300
+    )
+
+    plt.figure(figsize=(6, 3))
+    axis = sns.barplot(
         data=conversations_child_names_fixed,
         x="child_name",
         y="response_is_acknowledgement",
@@ -346,6 +423,103 @@ def make_plots(conversations, conversations_melted, results_dir):
     plt.tight_layout()
     plt.savefig(
         os.path.join(results_dir, "cf_effect_clarification_request_control.png"),
+        dpi=300,
+    )
+
+    conversations_ungrammatical = conversations[~conversations.utt_is_grammatical]
+
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3), width_ratios=(4, 1), sharey="all")
+    axis = sns.barplot(
+        data=conversations_ungrammatical,
+        ax=axes[0],
+        x="age",
+        y="follow_up_is_grammatical",
+        hue="response_is_clarification_request",
+        linewidth=1,
+        edgecolor="w",
+    )
+    axis2 = sns.barplot(
+        data=conversations_ungrammatical,
+        ax=axes[1],
+        x=[''] * len(conversations_ungrammatical),
+        y="follow_up_is_grammatical",
+        hue="response_is_clarification_request",
+        linewidth=1,
+        edgecolor="w",
+    )
+    axis2.legend_.remove()
+    axis2.set(ylabel="", xlabel="all data")
+    legend = axis.legend()
+    legend.texts[0].set_text("other response")
+    legend.texts[1].set_text("clarification request")
+    # sns.move_legend(axis, "lower left")
+    axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_grammatical")
+    # plt.ylim((0, 0.35))
+    plt.tight_layout()
+    plt.subplots_adjust(wspace=0.05)
+    plt.savefig(
+        os.path.join(results_dir, "cf_effect_clarification_request_2.png"), dpi=300
+    )
+
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3), width_ratios=(1, 1), sharey="all")
+    convs_ungrammatical_cr_rep = conversations_ungrammatical[~conversations_ungrammatical.response_is_clarification_request_speech_act]
+    axis = sns.barplot(
+        data=convs_ungrammatical_cr_rep,
+        ax=axes[0],
+        x=[''] * len(convs_ungrammatical_cr_rep),
+        y="follow_up_is_grammatical",
+        hue="response_is_clarification_request",
+        linewidth=1,
+        edgecolor="w",
+    )
+    convs_ungrammatical_cr_sp = conversations_ungrammatical[~conversations_ungrammatical.response_is_repetition_clarification_request]
+    axis2 = sns.barplot(
+        data=convs_ungrammatical_cr_sp,
+        ax=axes[1],
+        x=[''] * len(convs_ungrammatical_cr_sp),
+        y="follow_up_is_grammatical",
+        hue="response_is_clarification_request",
+        linewidth=1,
+        edgecolor="w",
+    )
+    axis2.legend_.remove()
+    axis2.set(ylabel="", xlabel="")
+    legend = axis.legend()
+    legend.texts[0].set_text("other response")
+    legend.texts[1].set_text("clarification request")
+    axis.title.set_text('CR Repetition')
+    axis2.title.set_text('CR Speech Act')
+    # sns.move_legend(axis, "lower left")
+    axis.set(xlabel="", ylabel="prop_follow_up_is_grammatical")
+    # plt.ylim((0, 0.35))
+    plt.tight_layout()
+    plt.subplots_adjust(wspace=0.05)
+    plt.savefig(
+        os.path.join(results_dir, "cf_effect_clarification_request_2_by_cr_type.png"), dpi=300
+    )
+
+
+    conversations_ungrammatical_by_error_type = explode_labels(conversations_ungrammatical.copy())
+
+    plt.figure(figsize=(6, 3))
+    axis = sns.barplot(
+        data=conversations_ungrammatical_by_error_type,
+        x="label",
+        y="follow_up_is_grammatical",
+        hue="response_is_clarification_request",
+        linewidth=1,
+        edgecolor="w",
+        palette=sns.color_palette(),
+    )
+    legend = axis.legend()
+    legend.texts[0].set_text("other response")
+    legend.texts[1].set_text("clarification request")
+    # sns.move_legend(axis, "lower right")
+    axis.set(ylabel="prop_follow_up_is_grammatical")
+    plt.xticks(rotation=75, size=6)
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(results_dir, "cf_effect_clarification_request_2_by_error_type.png"),
         dpi=300,
     )
 
@@ -409,6 +583,43 @@ def make_plots(conversations, conversations_melted, results_dir):
     plt.subplots_adjust(wspace=0.05)
     plt.savefig(
         os.path.join(results_dir, "cf_effect_clarification_request.png"), dpi=300
+    )
+
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3), width_ratios=(1, 1), sharey="all")
+    convs_ungrammatical_cr_rep = conversations_melted_cr[~conversations_melted_cr.response_is_clarification_request_speech_act]
+    axis = sns.barplot(
+        data=convs_ungrammatical_cr_rep,
+        ax=axes[0],
+        x=[''] * len(convs_ungrammatical_cr_rep),
+        y="is_grammatical",
+        hue="is_follow_up",
+        linewidth=1,
+        edgecolor="w",
+    )
+    convs_ungrammatical_cr_sp = conversations_melted_cr[~conversations_melted_cr.response_is_repetition_clarification_request]
+    axis2 = sns.barplot(
+        data=convs_ungrammatical_cr_sp,
+        ax=axes[1],
+        x=[''] * len(convs_ungrammatical_cr_sp),
+        y="is_grammatical",
+        hue="is_follow_up",
+        linewidth=1,
+        edgecolor="w",
+    )
+    axis2.legend_.remove()
+    axis2.set(ylabel="", xlabel="")
+    legend = axis.legend()
+    legend.texts[0].set_text("utterance")
+    legend.texts[1].set_text("follow-up")
+    axis.title.set_text('CR Repetition')
+    axis2.title.set_text('CR Speech Act')
+    # sns.move_legend(axis, "lower left")
+    axis.set(xlabel="", ylabel="prop_follow_up_is_grammatical")
+    # plt.ylim((0, 0.35))
+    plt.tight_layout()
+    plt.subplots_adjust(wspace=0.05)
+    plt.savefig(
+        os.path.join(results_dir, "cf_effect_clarification_request_by_cr_type.png"), dpi=300
     )
 
     conversations_melted_cr_child_names_fixed = conversations_melted_cr.copy()

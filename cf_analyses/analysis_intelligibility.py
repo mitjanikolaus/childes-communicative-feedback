@@ -102,6 +102,8 @@ def melt_variable(conversations, variable_suffix):
         id_vars=[
             "index",
             "response_is_clarification_request",
+            "response_is_repetition_clarification_request",
+            "response_is_clarification_request_speech_act",
             "response_is_acknowledgement",
             "child_name",
             "age",

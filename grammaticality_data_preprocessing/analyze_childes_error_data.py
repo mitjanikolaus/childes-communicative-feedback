@@ -22,6 +22,12 @@ HUE_ORDER = [ERR_SUBJECT, ERR_VERB, ERR_OBJECT, ERR_DETERMINER, ERR_PREPOSITION,
 PALETTE_CATEGORICAL = sns.color_palette() + [(0, 0, 0), (1, 1, 1)]
 
 
+def explode_labels(utterances):
+    utterances["label"] = utterances.labels.astype(str).apply(lambda x: x.split(", "))
+    utterances.drop(columns="labels", inplace=True)
+    return utterances.explode("label")
+
+
 def plot_corpus_error_stats(utterances):
     os.makedirs(RESULTS_DIR, exist_ok=True)
     utterances = utterances[utterances.speaker_code == SPEAKER_CODE_CHILD].copy()
@@ -68,9 +74,7 @@ def plot_corpus_error_stats(utterances):
     )
     print(f"Corpora with more than {ERROR_RATIO_THRESHOLD}% errors: {joined[joined.ratio > ERROR_RATIO_THRESHOLD].index.to_list()}")
 
-    error_utts["label"] = error_utts.labels.astype(str).apply(lambda x: x.split(", "))
-    error_utts.drop(columns="labels", inplace=True)
-    utts_exploded = error_utts.explode("label")
+    utts_exploded = explode_labels(error_utts)
 
     err_counts = utts_exploded.groupby(['corpus'])["label"].value_counts().rename("count").reset_index()
 
