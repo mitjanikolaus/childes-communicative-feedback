@@ -242,20 +242,19 @@ def make_plots(conversations, conversations_melted, results_dir):
     )
 
     conversations_exploded_labels = explode_labels(conversations.copy())
-
+    cr_ratio_grammatical = conversations[conversations.utt_is_grammatical].response_is_clarification_request.mean()
+    conversations_exploded_ungrammatical = conversations_exploded_labels[~conversations.utt_is_grammatical]
     plt.figure(figsize=(6, 3))
     axis = sns.barplot(
-        data=conversations_exploded_labels,
+        data=conversations_exploded_ungrammatical,
         x="label",
         y="response_is_clarification_request",
-        hue="utt_is_grammatical",
+        order=HUE_ORDER,
+        palette=PALETTE_CATEGORICAL,
         linewidth=1,
         edgecolor="w",
     )
-    legend = axis.legend()
-    legend.texts[0].set_text("ungrammatical")
-    legend.texts[1].set_text("grammatical")
-    # sns.move_legend(axis, "lower left")
+    plt.axhline(y=cr_ratio_grammatical, color="black", linestyle="--")
     axis.set(xlabel="", ylabel="prop_clarification_request")
     xticklabels = [l.get_text().replace("_", "\n") for l in axis.get_xticklabels()]
     axis.set_xticklabels(xticklabels)
