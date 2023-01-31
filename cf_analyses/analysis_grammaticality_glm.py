@@ -65,6 +65,24 @@ def glm_child_behavior_clarification_requests(convs):
     print(fitted[["Estimate", "SE", "Sig"]])
 
 
+def glm_child_behavior_clarification_requests_by_cr_type(convs):
+    # Rescale is_follow_up around 0:
+    convs.is_follow_up.replace({False: -0.5, True: 0.5}, inplace=True)
+
+    assert convs.response_is_clarification_request.dtype == bool
+    convs = convs[convs.response_is_clarification_request == True]
+
+    assert convs.is_follow_up.min() == -0.5 and convs.is_follow_up.max() == 0.5
+    assert convs.is_grammatical.dtype == bool
+
+    mod = Lmer('is_grammatical ~ is_follow_up * response_is_repetition_clarification_request + (1 | child_name) + (1 | conversation_id)', family='binomial',
+               data=convs)
+    print("=" * 50 + "\nChild behavior: Effect of clarification requests\n" + "=" * 50)
+    fitted = mod.fit()
+    print(fitted)
+    print(fitted[["Estimate", "SE", "Sig"]])
+
+
 if __name__ == "__main__":
     conversations = pd.read_csv(PROJECT_ROOT_DIR+"/results/grammaticality/conversations.csv", dtype={"error": object, "labels": object})
     pd.set_option('display.width', 1000)
@@ -85,3 +103,5 @@ if __name__ == "__main__":
 
     glm_child_behavior_clarification_requests_control(conversations_melted.copy())
     glm_child_behavior_clarification_requests(conversations_melted.copy())
+
+    glm_child_behavior_clarification_requests_by_cr_type(conversations_melted.copy())
