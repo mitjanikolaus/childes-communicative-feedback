@@ -205,24 +205,27 @@ def train_classifier(train_annotations_file, test_annotations_file, target_colum
     precision, recall, f_score, _ = precision_recall_fscore_support(train_data[target_column], reg.predict(train_data[["rep_utt", "rep_response"]].values), average="binary")
     print(f"Train Precision: {precision:.2f}, recall: {recall:.2f}, f-score: {f_score:.2f}")
 
-    plt.figure(figsize=(5, 4))
+    plt.figure(figsize=(5.5, 4))
     counts = train_data.groupby(['rep_utt', 'rep_response', target_column]).size().reset_index(name='number')
-    ax = sns.scatterplot(data=counts, x="rep_utt", y="rep_response", hue=target_column, size="number", sizes=(30, 1000), alpha=0.8)
+    ax = sns.scatterplot(data=counts, x="rep_utt", y="rep_response", hue=target_column, size="number", sizes=(30, 1000),
+                         alpha=0.8)
     handles, labels = ax.get_legend_handles_labels()
-    handles = handles[3:]
-    labels = labels[3:]
-    plt.legend(handles, labels, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., handleheight=4, handlelength=3)
+    if target_column == "is_ack":
+        handles = [handles[2], handles[1], handles[4], handles[6]] + handles[8:]
+        labels = ["Acknowledge-\nment", "Other\nresponse"] + labels[4:6] + labels[8:]
+    else:
+        handles = [handles[2], handles[1], handles[4], handles[6]] + handles[8:]
+        labels = ["Clarification\nRequest", "Other\nresponse"] + labels[4:6] + labels[8:]
+    plt.legend(handles, labels, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., handleheight=0.7,
+               handlelength=3, labelspacing=2, fancybox=False, framealpha=0.0)
     plt.tight_layout()
-    plt.subplots_adjust(right=0.72)
-
+    plt.subplots_adjust(right=0.68)
     x1 = np.arange(0, 1.2, 0.1)
     x2 = (- reg.intercept_[0] - reg.coef_[0, 0] * x1) / reg.coef_[0, 1]
     plt.plot(x1, x2, color="black", lw=1, ls='--')
-
     ymin, ymax = 0, 1.5
     plt.fill_between(x1, x2, ymin, color=sns.color_palette()[0], alpha=0.1)
     plt.fill_between(x1, x2, ymax, color=sns.color_palette()[1], alpha=0.1)
-
     plt.xlim((0, 1.1))
     plt.ylim((0, 1.1))
 
