@@ -404,7 +404,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         os.path.join(results_dir, "cf_quality_acknowledgements_by_child.png"), dpi=300
     )
 
-    plt.figure(figsize=(6, 3))
+    plt.figure(figsize=(6, 2))
     axis = sns.barplot(
         data=conversations_melted,
         x="response_is_clarification_request",
@@ -418,7 +418,8 @@ def make_plots(conversations, conversations_melted, results_dir):
     legend.texts[0].set_text("utterance")
     legend.texts[1].set_text("follow-up")
     # sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prop_is_grammatical")
+    axis.set(ylabel="prop_is_grammatical", xlabel="")
+    axis.set_xticklabels(["Other Response", "Clarification Request"])
     plt.tight_layout()
     plt.savefig(
         os.path.join(results_dir, "cf_effect_clarification_request_control.png"),

@@ -80,17 +80,17 @@ def plot_corpus_error_stats(utterances):
 
     err_counts["ratio"] = err_counts.apply(lambda row: row["count"] / num_utts_data[row.corpus], axis=1)
     sns.set_palette(PALETTE_CATEGORICAL)
-    plt.figure(figsize=(12, 4))
+    plt.figure(figsize=(12, 2))
     ax = sns.barplot(x="corpus", y="ratio", hue="label", data=err_counts, order=joined.index, hue_order=HUE_ORDER,
                      linewidth=1, edgecolor=".1")
-    plt.ylabel("num errors per child utterance")
+    plt.ylabel("num errors per child utterance", fontsize=8)
     plt.xlabel("")
-    plt.legend(loc='upper left', ncol=2, fontsize=12)
+    plt.legend(loc='upper left', ncol=2, fontsize=10)
     xticklabels = ["MPI-EVA-\nManchester" if l.get_text() == "MPI-EVA-Manchester" else l.get_text() for l in ax.get_xticklabels()]
     ax.set_xticklabels(xticklabels)
-    plt.xticks(rotation=75, size=7)
+    plt.xticks(size=7)
     plt.tight_layout()
-    plt.subplots_adjust(bottom=0.2)
+    plt.subplots_adjust(bottom=0.1, top=0.99)
     plt.savefig(
         os.path.join(RESULTS_DIR, "error_proportions_by_label.png"), dpi=300
     )
