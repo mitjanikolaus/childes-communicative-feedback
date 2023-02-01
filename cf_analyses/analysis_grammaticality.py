@@ -252,7 +252,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         order=HUE_ORDER,
         palette=PALETTE_CATEGORICAL,
         linewidth=1,
-        edgecolor="w",
+        edgecolor=".1",
     )
     plt.axhline(y=cr_ratio_grammatical, color="black", linestyle="--")
     axis.set(xlabel="", ylabel="prop_clarification_request")
