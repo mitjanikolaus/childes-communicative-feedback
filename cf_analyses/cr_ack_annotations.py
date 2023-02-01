@@ -205,7 +205,7 @@ def train_classifier(train_annotations_file, test_annotations_file, target_colum
     precision, recall, f_score, _ = precision_recall_fscore_support(train_data[target_column], reg.predict(train_data[["rep_utt", "rep_response"]].values), average="binary")
     print(f"Train Precision: {precision:.2f}, recall: {recall:.2f}, f-score: {f_score:.2f}")
 
-    plt.figure(figsize=(5.5, 4))
+    plt.figure(figsize=(7, 4))
     counts = train_data.groupby(['rep_utt', 'rep_response', target_column]).size().reset_index(name='number')
     ax = sns.scatterplot(data=counts, x="rep_utt", y="rep_response", hue=target_column, size="number", sizes=(30, 1000),
                          alpha=0.8)
@@ -219,7 +219,7 @@ def train_classifier(train_annotations_file, test_annotations_file, target_colum
     plt.legend(handles, labels, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., handleheight=0.7,
                handlelength=3, labelspacing=2, fancybox=False, framealpha=0.0)
     plt.tight_layout()
-    plt.subplots_adjust(right=0.68)
+    plt.subplots_adjust(right=0.73)
     x1 = np.arange(0, 1.2, 0.1)
     x2 = (- reg.intercept_[0] - reg.coef_[0, 0] * x1) / reg.coef_[0, 1]
     plt.plot(x1, x2, color="black", lw=1, ls='--')
