@@ -404,7 +404,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         os.path.join(results_dir, "cf_quality_acknowledgements_by_child.png"), dpi=300
     )
 
-    plt.figure(figsize=(6, 2))
+    plt.figure(figsize=(6, 3))
     axis = sns.barplot(
         data=conversations_melted,
         x="response_is_clarification_request",
