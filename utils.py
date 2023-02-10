@@ -341,7 +341,6 @@ def clean_utterance(utterance):
 
     utt_clean = remove_events_and_non_parseable_words(utterance)
     utt_clean = replace_slang_forms(utt_clean)
-    utt_clean = clean_disfluencies(utt_clean)
 
     # Remove underscores
     utt_clean = utt_clean.replace("_", " ")
@@ -948,16 +947,6 @@ def replace_slang_forms(utterance):
     ]
     cleaned_utterance = " ".join(cleaned_utterance)
     return cleaned_utterance.strip()
-
-
-DISFLUENCIES = ["uhm", "um", "uh", "erh", "err", "aw", "ehm"]
-
-
-def clean_disfluencies(utterance):
-    words = utterance.split(" ")
-    words = [word for word in words if not word.replace(",", "") in DISFLUENCIES]
-    utterance = " ".join(words)
-    return utterance
 
 
 def remove_babbling(utterance):
