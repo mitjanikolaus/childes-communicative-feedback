@@ -9,13 +9,13 @@ import pandas as pd
 import numpy as np
 from statsmodels.stats.weightstats import ztest
 
-from analysis_reproduce_warlaumont import (
+from cf_analyses.analysis_reproduce_warlaumont import (
     str2bool,
     has_response,
 )
 from cf_analyses.cr_ack_annotations import get_repetition_ratios, response_is_clarification_request, \
     response_is_acknowledgement
-from extract_micro_conversations import DEFAULT_RESPONSE_THRESHOLD
+from cf_analyses.extract_micro_conversations import DEFAULT_RESPONSE_THRESHOLD
 from utils import (
     age_bin,
     filter_transcripts_based_on_num_child_utts, split_into_words,

@@ -7,8 +7,8 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.patches import Patch
 
-from analysis_intelligibility import melt_variable, filter_utts_for_num_words, filter_follow_ups_for_num_words
-from cr_ack_annotations import annotate_crs_and_acks
+from cf_analyses.analysis_intelligibility import melt_variable, filter_utts_for_num_words, filter_follow_ups_for_num_words
+from cf_analyses.cr_ack_annotations import annotate_crs_and_acks
 from grammaticality_data_preprocessing.analyze_childes_error_data import PALETTE_CATEGORICAL, HUE_ORDER, explode_labels
 from utils import (
     age_bin,
@@ -685,12 +685,15 @@ def make_plots(conversations, conversations_melted, results_dir):
         os.path.join(results_dir, "cf_effect_acknowledgement.png"), dpi=300
     )
 
-def filter_corpora(conversations):
-    print("Including corpora: ", CORPORA_INCLUDED)
-    conversations = conversations[conversations.corpus.isin(CORPORA_INCLUDED)]
 
-    print("Excluding corpora: ", CORPORA_EXCLUDED)
-    conversations = conversations[~conversations.corpus.isin(CORPORA_EXCLUDED)]
+def filter_corpora(conversations, corpora_included, corpora_excluded):
+    if corpora_included:
+        print("Including corpora: ", corpora_included)
+        conversations = conversations[conversations.corpus.isin(corpora_included)]
+
+    if corpora_excluded:
+        print("Excluding corpora: ", corpora_excluded)
+        conversations = conversations[~conversations.corpus.isin(corpora_excluded)]
 
     return conversations
 
@@ -710,6 +713,6 @@ if __name__ == "__main__":
     print("Excluding children: ", EXCLUDED_CHILDREN)
     conversations = conversations[~conversations.child_name.isin(EXCLUDED_CHILDREN)]
 
-    conversations = filter_corpora(conversations)
+    conversations = filter_corpora(conversations, CORPORA_INCLUDED, CORPORA_EXCLUDED)
 
     perform_analysis_grammaticality(conversations, args)

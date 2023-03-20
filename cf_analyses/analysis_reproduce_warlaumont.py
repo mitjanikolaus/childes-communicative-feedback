@@ -10,7 +10,7 @@ import seaborn as sns
 
 from scipy.stats import ttest_1samp
 
-from extract_micro_conversations import DEFAULT_RESPONSE_THRESHOLD
+from cf_analyses.extract_micro_conversations import DEFAULT_RESPONSE_THRESHOLD
 from utils import (
     age_bin,
     str2bool,
