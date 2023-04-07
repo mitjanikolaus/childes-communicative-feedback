@@ -90,7 +90,7 @@ def plot_corpus_error_stats(utterances):
     ax.set_xticklabels(xticklabels)
     plt.xticks(size=7)
     plt.tight_layout()
-    plt.subplots_adjust(bottom=0.1, top=0.99)
+    plt.subplots_adjust(bottom=0.15, top=0.99)
     plt.savefig(
         os.path.join(RESULTS_DIR, "error_proportions_by_label.png"), dpi=300
     )
