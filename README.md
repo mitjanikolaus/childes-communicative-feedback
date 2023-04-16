@@ -2,13 +2,12 @@
 
 This repository contains code accompanying the following paper:
 
-**Communicative Feedback as a Mechanism Supporting the Production of Intelligible Speech in Early Childhood** \
-*In Proceedings of the 44th Annual Meeting of the Cognitive Science Society. (2022)* \
+**Communicative Feedback in Response to Children's Grammatical Errors** \
+*In Proceedings of the 45th Annual Meeting of the Cognitive Science Society. (2023)* \
 Mitja Nikolaus, Laurent Prévot and Abdellah Fourtassi
 
 To reproduce the exact results from the paper, the
-[cogsci_2022](https://github.com/mitjanikolaus/childes-communicative-feedback/tree/cogsci_2022) branch should be used.
-The main branch contains some addtional tweaks for the preprocessing of utterances.
+[cogsci_2023](https://github.com/mitjanikolaus/childes-communicative-feedback/tree/cogsci_2023) branch should be used.
 
 ## Python Environment
 
@@ -39,11 +38,8 @@ conda env create --file environments/environment_nn.yml
 ## Data
 
 ### CHILDES corpora
-All CHILDES corpora listed in 'preprocess.py' need to be downloaded from the
+All English CHILDES corpora need to be downloaded from the
 [CHILDES database](https://childes.talkbank.org/) and extracted to `~/data/CHILDES/`.
-
-The following corpora were considered in the analyses:
-Bernstein, Bloom, Braunwald, Brent, Edinburgh, Gleason, MPI-EVA-Manchester, MacWhinney, McCune, McMillan, Nelson, NewmanRatner, Peters, Providence, Rollins, Sachs, Snow, Soderstrom, Thomas, Tommerdahl, VanHouten, Weist
 
 ## Preprocessing
 
@@ -52,10 +48,9 @@ The CHILDES corpus data is loaded using [my fork of the pylangacq repo](https://
 To preprocess the data, once you've installed the [pylangacq](https://github.com/mitjanikolaus/pylangacq) library as
 mentioned above, you can run:
 ```
-python preprocess.py --require-timing-information --corpora Edinburgh VanHouten MPI-EVA-Manchester McMillan Rollins Gleason Forrester Braunwald Bloom McCune Tommerdahl Soderstrom Weist NewmanRatner Snow Thomas Peters MacWhinney Sachs Bernstein Brent Nelson Providence
+python preprocess.py
 ```
-This preprocessed all corpora that are conversational (have child AND caregiver transcripts), are English, and
-have timing information.
+This preprocessed all corpora that are conversational (have child AND caregiver transcripts), and are in English.
 
 Afterwards, annotate speech-relatedness and intelligibility:
 ```
@@ -72,15 +67,12 @@ python crf_annotate.py --model checkpoint_full_train --data ~/data/communicative
 
 First, extract the micro conversations for both analyses (speech-likeness and intelligibility):
 ```
-python extract_micro_conversations.py
 python extract_micro_conversations.py --discard-non-speech-related-utterances
 ```
 
-The scripts `analysis_reproduce_warlaumont.py` and `analysis_intelligibility` perform the respective analyses and
-produce the plots.
+The script `analysis_grammaticality.py` performs the analyses and produce the results plots.
 
-The scripts `analysis_reproduce_warlaumont_glm.py` and `analysis_intelligibility_glm.py` are used for the GLM analyses
-of the results.
+The script `analysis_grammaticality_glm.py` is used for the GLM analyses of the results.
 
 
 ## Annotation Scheme
