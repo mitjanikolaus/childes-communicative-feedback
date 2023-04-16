@@ -1,13 +1,20 @@
 # CHILDES communicative feedback
 
-This repository contains code accompanying the following paper:
+This repository contains code accompanying the following papers:
 
 **Communicative Feedback in Response to Children's Grammatical Errors** \
 *In Proceedings of the 45th Annual Meeting of the Cognitive Science Society. (2023)* \
 Mitja Nikolaus, Laurent Prévot and Abdellah Fourtassi
 
-To reproduce the exact results from the paper, the
-[cogsci_2023](https://github.com/mitjanikolaus/childes-communicative-feedback/tree/cogsci_2023) branch should be used.
+(To reproduce the exact results from the paper, the
+[cogsci_2023](https://github.com/mitjanikolaus/childes-communicative-feedback/tree/cogsci_2023) branch should be used.)
+
+**Communicative Feedback as a Mechanism Supporting the Production of Intelligible Speech in Early Childhood** \
+*In Proceedings of the 44th Annual Meeting of the Cognitive Science Society. (2022)* \
+Mitja Nikolaus, Laurent Prévot and Abdellah Fourtassi
+
+(To reproduce the exact results from the paper, the
+[cogsci_2022](https://github.com/mitjanikolaus/childes-communicative-feedback/tree/cogsci_2022) branch should be used.)
 
 ## Python Environment
 
