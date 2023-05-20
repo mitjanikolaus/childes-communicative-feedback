@@ -9,7 +9,7 @@ from cf_analyses.analysis_reproduce_warlaumont import DEFAULT_EXCLUDED_CORPORA a
 from cf_analyses.analysis_grammaticality import filter_corpora as filter_corpora_grammaticality
 from cf_analyses.analysis_reproduce_warlaumont import AGE_BIN_NUM_MONTHS
 from utils import filter_transcripts_based_on_num_child_utts, \
-    UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, PROJECT_ROOT_DIR, SPEAKER_CODE_CHILD, filter_for_min_num_utts
+    UTTERANCES_WITH_CHILDES_ERROR_ANNOTATIONS_FILE, PROJECT_ROOT_DIR, SPEAKER_CODE_CHILD, filter_for_min_num_words
 
 MIN_AGE = 10
 MAX_AGE = 60
@@ -67,7 +67,7 @@ def make_proportion_plots(utterances_all, results_dir):
     utterances.loc[~utterances.is_intelligible, "is_grammatical"] = False
     utterances_filtered_grammaticality = filter_corpora_grammaticality(utterances)
 
-    utterances_filtered_grammaticality = filter_for_min_num_utts(utterances_filtered_grammaticality, MIN_NUM_WORDS)
+    utterances_filtered_grammaticality = filter_for_min_num_words(utterances_filtered_grammaticality, MIN_NUM_WORDS)
 
     proportion_grammatical_per_transcript = utterances_filtered_grammaticality.groupby(
         "transcript_file"

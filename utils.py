@@ -981,7 +981,7 @@ def remove_babbling(utterance):
     return filtered_utterance.strip()
 
 
-def filter_for_min_num_utts(utterances, min_num_words):
+def filter_for_min_num_words(utterances, min_num_words):
     num_words = utterances.transcript_clean.apply(
         lambda x: len(split_into_words(x, split_on_apostrophe=False, remove_commas=True,
                                        remove_trailing_punctuation=True)))
