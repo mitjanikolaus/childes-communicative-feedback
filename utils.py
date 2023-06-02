@@ -739,6 +739,8 @@ def remove_superfluous_annotations(utterance):
             word = re.sub(r"\^", "", word)
             # remove filled-pause prefix
             word = re.sub(r"&-", "", word)
+            # remove remaining backslashes
+            word = re.sub(r"\\", "", word)
 
             cleaned_utterance.append(word)
 
