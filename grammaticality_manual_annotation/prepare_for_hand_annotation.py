@@ -5,7 +5,7 @@ import pandas as pd
 
 from utils import (
     SPEAKER_CODE_CHILD,
-    SPEAKER_CODES_CAREGIVER, ANNOTATED_UTTERANCES_FILE, filter_for_min_num_words, PROJECT_ROOT_DIR
+    SPEAKER_CODES_CAREGIVER, ANNOTATED_UTTERANCES_FILE, filter_for_min_num_words, PROJECT_ROOT_DIR, split_into_words
 )
 import random
 
@@ -13,21 +13,37 @@ from tqdm import tqdm
 tqdm.pandas()
 
 
-TOKEN_CHILD = "CHI"
+TOKEN_CHILD = SPEAKER_CODE_CHILD
 TOKEN_CAREGIVER = "CAR"
 TOKEN_OTHER = "OTH"
 
 MIN_NUM_WORDS = 1
 
-# The caregivers of these children are using slang (e.g., "you was" or "she don't") and are therefore excluded
-# We are unfortunately only studying mainstream US English
-EXCLUDED_CHILDREN = ["Brent_Jaylen", "Brent_Tyrese", "Brent_Vas", "Brent_Vas_Coleman", "Brent_Xavier"]
+# The caregivers of children in these corpora are using slang (e.g., "you was" or "she don't") and are therefore excluded
+# We are unfortunately only studying mainstream US/UK English
+EXCLUDED_CORPORA = ["Wells", "MPI-EVA-Manchester", "Post", "HSLLD", "Bohannon", "Brown", "Hall", "Brent", "Gleason", "Morisset", "Belfast"]
 
 TRANSCRIPT_FILES_EXCLUDED = ["Braunwald/020128.cha", "MPI-EVA-Manchester/Fraser/030100b.cha", "Providence/Alex/021025.cha"]
 
 MIN_AGE = 24
 MAX_AGE = 60
 NUM_UTTS_TO_ANNOTATE_PER_FILE = 200
+
+
+def filter_for_child_caregiver_conversations(utterances):
+    """Filter out transcripts which include other interlocutors"""
+
+    child_car_utts = utterances[utterances.speaker_code.isin([TOKEN_CHILD, TOKEN_CAREGIVER])]
+    child_car_utts_per_transcript = child_car_utts.groupby("transcript_file").size()
+    utts_per_transcript = utterances.groupby("transcript_file").size()
+
+    transcripts_child_car = utts_per_transcript[
+        utts_per_transcript == child_car_utts_per_transcript
+    ].index
+
+    return utterances[
+        utterances.transcript_file.isin(transcripts_child_car)
+    ].copy()
 
 
 def speaker_code_to_special_token(code):
@@ -58,7 +74,9 @@ def prepare(args):
     # Remove already annotated transcripts
     utterances = utterances[~utterances.transcript_file.isin([TRANSCRIPT_FILES_EXCLUDED])]
 
-    utterances = utterances[~utterances.child_name.isin(EXCLUDED_CHILDREN)]
+    utterances = utterances[~utterances.corpus.isin(EXCLUDED_CORPORA)]
+
+    utterances = filter_for_child_caregiver_conversations(utterances)
 
     # Shuffle transcripts
     groups = [utt for _, utt in utterances.groupby('transcript_file')]
@@ -72,22 +90,26 @@ def prepare(args):
     file_idx = 0
     start_idx = 0
     end_idx = 0
-    num_child_utts = 0
-    while end_idx < len(utterances):
-        if utterances.iloc[end_idx].speaker_code == SPEAKER_CODE_CHILD:
-            num_child_utts += 1
+    num_utts_to_annotate = 0
 
-        if num_child_utts >= NUM_UTTS_TO_ANNOTATE_PER_FILE:
+    utterances["num_words"] = utterances.transcript_clean.apply(
+        lambda x: len(split_into_words(x, split_on_apostrophe=False, remove_commas=True,
+                                       remove_trailing_punctuation=True)))
+
+    while end_idx < len(utterances):
+        if (utterances.iloc[end_idx].speaker_code == SPEAKER_CODE_CHILD) & (utterances.iloc[end_idx].num_words > 1):
+            num_utts_to_annotate += 1
+
+        if num_utts_to_annotate >= NUM_UTTS_TO_ANNOTATE_PER_FILE:
             utterances_selection = utterances.iloc[start_idx:end_idx].copy()
             utterances_selection["is_grammatical"] = ""
-            utterances_selection["labels"] = ""
             utterances_selection["note"] = ""
-            utterances_selection.loc[utterances_selection.speaker_code == SPEAKER_CODE_CHILD, "is_grammatical"] = "TODO"
+            utterances_selection.loc[(utterances_selection.speaker_code == SPEAKER_CODE_CHILD) & (utterances_selection.num_words > 1), "is_grammatical"] = "TODO"
 
-            utterances_selection = utterances_selection[["transcript_file", "speaker_code", "transcript_clean", "is_grammatical", "labels", "note"]]
+            utterances_selection = utterances_selection[["transcript_file", "speaker_code", "transcript_clean", "is_grammatical", "note"]]
 
             utterances_selection.to_csv(os.path.join(base_path, f"{file_idx}.csv"))
-            num_child_utts = 0
+            num_utts_to_annotate = 0
             file_idx += 1
             start_idx = end_idx
 
