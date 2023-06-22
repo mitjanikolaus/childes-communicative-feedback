@@ -741,6 +741,9 @@ def remove_superfluous_annotations(utterance):
             word = re.sub(r"&-", "", word)
             # remove remaining backslashes
             word = re.sub(r"\\", "", word)
+            # Remove POS annotations
+            if "$" in word:
+                word = word.split("$")[0]
 
             cleaned_utterance.append(word)
 
