@@ -91,7 +91,12 @@ def is_intelligible(
 
 
 def annotate(args):
-    utterances = pd.read_pickle(UTTERANCES_WITH_SPEECH_ACTS_FILE)
+    file = UTTERANCES_WITH_SPEECH_ACTS_FILE
+    if os.path.isfile(file):
+        utterances = pd.read_pickle(UTTERANCES_WITH_SPEECH_ACTS_FILE)
+    else:
+        file = file.replace(".p", ".csv")
+        utterances = pd.read_csv(file, index_col=0)
 
     utterances = utterances.assign(
         is_speech_related=utterances.transcript_raw.apply(
