@@ -1,5 +1,4 @@
 import argparse
-import math
 import os
 from collections import Counter
 
@@ -388,7 +387,7 @@ def make_plots(conversations, conversations_melted, results_dir):
         marker=".",
     )
     plt.tight_layout()
-    axis.set(xlabel="age (months)", ylabel="prop_intelligible")
+    axis.set(xlabel="age (months)", ylabel="proportion intelligible")
     axis.set_xticks(
         np.arange(
             conversations.age.min(),
@@ -398,88 +397,96 @@ def make_plots(conversations, conversations_melted, results_dir):
     )
     plt.savefig(os.path.join(results_dir, "proportion_intelligible.png"), dpi=300)
 
-    conversations_duplicated = conversations.copy()
-    conversations_duplicated["age"] = math.inf
-    conversations_with_avg_age = conversations.append(conversations_duplicated, ignore_index=True)
-
-    plt.figure(figsize=(6, 3))
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3), width_ratios=(4, 1), sharey="all")
     axis = sns.barplot(
-        data=conversations_with_avg_age,
+        data=conversations,
+        ax=axes[0],
         x="age",
         y="has_response",
         hue="utt_is_intelligible",
         linewidth=1,
         edgecolor="w",
     )
+    axis2 = sns.barplot(
+        data=conversations,
+        ax=axes[1],
+        x=[''] * len(conversations),
+        y="has_response",
+        hue="utt_is_intelligible",
+        linewidth=1,
+        edgecolor="w",
+    )
+    axis2.legend_.remove()
+    axis2.set(ylabel="", xlabel="all data")
     legend = axis.legend()
-    legend.texts[0].set_text("unintelligible")
-    legend.texts[1].set_text("intelligible")
+    legend.texts[0].set_text("unintelligible utterance")
+    legend.texts[1].set_text("intelligible utterance")
     sns.move_legend(axis, "lower right")
-    axis.set(xlabel="age (months)", ylabel="prop_has_response")
-    axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
+    axis.set(xlabel="age (months)", ylabel="proportion of time-contingent\nresponses")
     plt.tight_layout()
+    plt.subplots_adjust(wspace=0.05)
     plt.savefig(os.path.join(results_dir, "cf_quality_timing.png"), dpi=300)
 
-    conversations_with_response = conversations_with_avg_age[conversations_with_avg_age.has_response]
-    plt.figure(figsize=(6, 3))
+    conversations_with_response = conversations[conversations.has_response]
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3), width_ratios=(4, 1), sharey="all")
     axis = sns.barplot(
         data=conversations_with_response,
+        ax=axes[0],
         x="age",
         y="response_is_clarification_request",
         hue="utt_is_intelligible",
         linewidth=1,
         edgecolor="w",
     )
-    legend = axis.legend()
-    legend.texts[0].set_text("unintelligible")
-    legend.texts[1].set_text("intelligible")
-    sns.move_legend(axis, "upper left")
-    axis.set(xlabel="age (months)", ylabel="prop_clarification_request")
-    axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
-    plt.tight_layout()
-    plt.savefig(
-        os.path.join(results_dir, "cf_quality_clarification_request.png"), dpi=300
-    )
-
-    plt.figure(figsize=(6, 3))
-    axis = sns.barplot(
-        data=conversations_with_avg_age,
-        x="age",
-        y="pos_feedback",
+    axis2 = sns.barplot(
+        data=conversations_with_response,
+        ax=axes[1],
+        x=[''] * len(conversations_with_response),
+        y="response_is_clarification_request",
         hue="utt_is_intelligible",
         linewidth=1,
         edgecolor="w",
     )
+    axis2.legend_.remove()
+    axis2.set(ylabel="", xlabel="all data")
     legend = axis.legend()
-    legend.texts[0].set_text("unintelligible")
-    legend.texts[1].set_text("intelligible")
-    sns.move_legend(axis, "lower right")
-    axis.set(xlabel="age (months)", ylabel="prop_pos_feedback")
-    axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
+    legend.texts[0].set_text("unintelligible utterance")
+    legend.texts[1].set_text("intelligible utterance")
+    sns.move_legend(axis, "upper right")
+    axis.set(xlabel="age (months)", ylabel="proportion of\nclarification request responses")
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "cf_quality_all.png"), dpi=300)
+    plt.subplots_adjust(wspace=0.05)
+    plt.savefig(os.path.join(results_dir, "cf_quality_clarification_request.png"), dpi=300)
 
-    plt.figure(figsize=(6, 3))
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3), width_ratios=(4, 1), sharey="all")
     axis = sns.barplot(
-        data=conversations_with_avg_age[conversations_with_avg_age.utt_is_intelligible],
+        data=conversations[conversations.utt_is_intelligible],
+        ax=axes[0],
         x="age",
         y="follow_up_is_intelligible",
         hue="has_response",
         linewidth=1,
         edgecolor="w",
-        palette=sns.color_palette(),
     )
+    axis2 = sns.barplot(
+        data=conversations[conversations.utt_is_intelligible],
+        ax=axes[1],
+        x=[''] * len(conversations[conversations.utt_is_intelligible]),
+        y="follow_up_is_intelligible",
+        hue="has_response",
+        linewidth=1,
+        edgecolor="w",
+    )
+    axis2.legend_.remove()
+    axis2.set(ylabel="", xlabel="all data")
     legend = axis.legend()
     legend.texts[0].set_text("no response")
     legend.texts[1].set_text("response")
     sns.move_legend(axis, "lower right")
-    axis.set(xlabel="age (months)", ylabel="prop_follow_up_is_intelligible")
-    axis.set_xticklabels(sorted(conversations_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
+    axis.set(xlabel="age (months)", ylabel="proportion of\nintelligible follow-ups")
     plt.tight_layout()
-    plt.savefig(
-        os.path.join(results_dir, "cf_effect_pos_feedback_on_intelligible_timing.png"),
-        dpi=300,
-    )
+    plt.subplots_adjust(wspace=0.05)
+    plt.savefig(os.path.join(results_dir, "cf_effect_pos_feedback_on_intelligible_timing.png"), dpi=300)
 
     conversations_melted_with_response = conversations_melted[
         conversations_melted.has_response
@@ -498,7 +505,7 @@ def make_plots(conversations, conversations_melted, results_dir):
     legend.texts[0].set_text("utterance")
     legend.texts[1].set_text("follow-up")
     sns.move_legend(axis, "lower right")
-    axis.set(ylabel="prop_is_intelligible")
+    axis.set(ylabel="proportion intelligible")
     plt.tight_layout()
     plt.savefig(
         os.path.join(results_dir, "cf_effect_clarification_request_control.png"),
@@ -509,30 +516,35 @@ def make_plots(conversations, conversations_melted, results_dir):
         conversations_melted_with_response.response_is_clarification_request
     ]
 
-    conversations_melted_duplicated = conversations_melted_cr.copy()
-    conversations_melted_duplicated["age"] = math.inf
-    conversations_melted_cr_with_avg_age = conversations_melted_cr.append(conversations_melted_duplicated, ignore_index=True)
-
-    plt.figure(figsize=(6, 3))
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3), width_ratios=(4, 1), sharey="all")
     axis = sns.barplot(
-        data=conversations_melted_cr_with_avg_age,
+        data=conversations_melted_cr,
+        ax=axes[0],
         x="age",
         y="is_intelligible",
         hue="is_follow_up",
         linewidth=1,
         edgecolor="w",
-        palette=sns.color_palette(),
     )
+    axis2 = sns.barplot(
+        data=conversations_melted_cr,
+        ax=axes[1],
+        x=[''] * len(conversations_melted_cr),
+        y="is_intelligible",
+        hue="is_follow_up",
+        linewidth=1,
+        edgecolor="w",
+    )
+    axis2.legend_.remove()
+    axis2.set(ylabel="", xlabel="all data")
     legend = axis.legend()
     legend.texts[0].set_text("utterance")
     legend.texts[1].set_text("follow-up")
     sns.move_legend(axis, "upper left")
-    axis.set(xlabel="age (months)", ylabel="prop_is_intelligible")
-    axis.set_xticklabels(sorted(conversations_melted_cr_with_avg_age.age.unique()[:-1].astype(int)) + ["all"])
+    axis.set(xlabel="age (months)", ylabel="proportion intelligible")
     plt.tight_layout()
-    plt.savefig(
-        os.path.join(results_dir, "cf_effect_clarification_request.png"), dpi=300
-    )
+    plt.subplots_adjust(wspace=0.05)
+    plt.savefig(os.path.join(results_dir, "cf_effect_clarification_request.png"), dpi=300)
 
 
 if __name__ == "__main__":
