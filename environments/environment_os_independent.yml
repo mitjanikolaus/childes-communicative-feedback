@@ -9,8 +9,10 @@ dependencies:
   - tqdm
   - rpy2
   - hunspell-en
-  - pyenchant
   - matplotlib
   - pymer4=0.8.0
   - seaborn
   - statsmodels
+  - nltk
+  - pip:
+      - pyenchant
