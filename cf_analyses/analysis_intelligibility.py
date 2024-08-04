@@ -122,8 +122,8 @@ def melt_variable(conversations, variable_suffix):
     return conversations_melted
 
 
-def filter_utts_for_num_words(conversations, min_num_words):
-    num_unique_words_utt = conversations.utt_transcript_clean.apply(
+def filter_utts_for_num_words(conversations, min_num_words, utt_column_name="utt_transcript_clean"):
+    num_unique_words_utt = conversations[utt_column_name].apply(
         lambda x: len(split_into_words(x, split_on_apostrophe=False, remove_commas=True,
                                        remove_trailing_punctuation=True)))
     return conversations[num_unique_words_utt >= min_num_words]
