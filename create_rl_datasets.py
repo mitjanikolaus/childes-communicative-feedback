@@ -109,7 +109,7 @@ def create_fb_data():
     print("Number of repetition Acks: ", len(conversations[conversations.response_is_repetition_acknowledgement]))
 
     conversations = conversations[
-        ["utt_transcript_clean", "response_is_clarification_request", "response_is_acknowledgement"]]
+        ["utt_transcript_clean", "response_transcript_clean", "response_is_clarification_request", "response_is_acknowledgement"]]
     conversations.to_csv(RESULTS_DIR + "conversations.csv", index=False)
 
 
