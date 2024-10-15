@@ -14,7 +14,7 @@ from utils import (
 DEFAULT_LM_MIN_AGE = 10
 DEFAULT_LM_MAX_AGE = 60
 
-DEFAULT_FB_MIN_AGE = 36
+DEFAULT_FB_MIN_AGE = 10
 DEFAULT_FB_MAX_AGE = 60
 
 MIN_NUM_WORDS = 2
@@ -109,7 +109,7 @@ def create_fb_data():
     print("Number of repetition Acks: ", len(conversations[conversations.response_is_repetition_acknowledgement]))
 
     conversations = conversations[
-        ["utt_transcript_clean", "response_transcript_clean", "response_is_clarification_request", "response_is_acknowledgement"]]
+        ["transcript_file", "utt_transcript_clean", "response_transcript_clean", "response_is_clarification_request", "response_is_acknowledgement"]]
     conversations.to_csv(RESULTS_DIR + "conversations.csv", index=False)
 
 
